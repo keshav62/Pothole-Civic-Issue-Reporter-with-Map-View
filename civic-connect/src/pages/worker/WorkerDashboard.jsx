@@ -1,13 +1,13 @@
-import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  currentWorker,
-  workerTasks,
-  recentActivity,
-  CATEGORY_META,
-} from '../../data/workerMockData';
+import React, { useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { useCivic } from '../../context/CivicContext';
+import { recentActivity, CATEGORY_META } from '../../data/workerMockData';
 import WorkerStatCard from '../../components/worker/WorkerStatCard';
-import TaskCard       from '../../components/worker/TaskCard';
+import TaskCard from '../../components/worker/TaskCard';
+import { IssueStatus } from '../../components/issues/IssueStatus';
+import { IssuePriority } from '../../components/issues/IssuePriority';
+import { Button } from '../../components/common/Button';
 import { cn } from '../../utils/cn';
 import {
   ArrowRight,
@@ -21,6 +21,10 @@ import {
   UploadCloud,
   UserCheck,
   ChevronRight,
+  HardHat,
+  MapPin,
+  Eye,
+  Navigation
 } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -29,11 +33,6 @@ function getGreeting() {
   if (h < 12) return { text: 'Good Morning', emoji: '☀️' };
   if (h < 17) return { text: 'Good Afternoon', emoji: '🌤️' };
   return { text: 'Good Evening', emoji: '🌙' };
-}
-
-function isOverdue(dueDateISO, status) {
-  if (status === 'resolved') return false;
-  return new Date(dueDateISO) < new Date();
 }
 
 // ─── Activity type config ─────────────────────────────────────────────────────
@@ -47,7 +46,7 @@ const ACTIVITY_CONFIG = {
 // ─── Sections ─────────────────────────────────────────────────────────────────
 
 /** Greeting + context banner */
-const GreetingBanner = ({ stats }) => {
+const GreetingBanner = ({ stats, currentUser }) => {
   const greeting = getGreeting();
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/20">
@@ -63,7 +62,7 @@ const GreetingBanner = ({ stats }) => {
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug">
-            {greeting.text}, {currentWorker.firstName} {greeting.emoji}
+            {greeting.text}, {currentUser?.name?.split(' ')[0] || 'Worker'} {greeting.emoji}
           </h1>
           <p className="mt-2 text-indigo-200 text-sm max-w-sm leading-relaxed">
             You have{' '}
@@ -93,17 +92,17 @@ const GreetingBanner = ({ stats }) => {
 
         <div className="flex items-center gap-4 self-start sm:self-center">
           <div className="text-right hidden sm:block">
-            <p className="font-bold text-lg leading-none">{currentWorker.name}</p>
-            <p className="text-indigo-300 text-xs mt-1">{currentWorker.department}</p>
-            <p className="text-indigo-300 text-xs">{currentWorker.assignedWard}</p>
+            <p className="font-bold text-lg leading-none">{currentUser?.name}</p>
+            <p className="text-indigo-300 text-xs mt-1">{currentUser?.department || 'Field Operations'}</p>
+            <p className="text-indigo-300 text-xs">{currentUser?.ward || 'All Wards'}</p>
             <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
               Available
             </span>
           </div>
           <img
-            src={currentWorker.avatar}
-            alt={currentWorker.name}
+            src={currentUser?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80'}
+            alt={currentUser?.name}
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ring-4 ring-white/20 bg-indigo-500 object-cover shadow-lg flex-shrink-0"
           />
         </div>
@@ -138,7 +137,7 @@ const StatsRow = ({ stats }) => (
     />
     <WorkerStatCard
       label="Completed"
-      value={currentWorker.completedAllTime}
+      value={stats.resolved}
       icon="✅"
       colorSet={{ bg: 'bg-emerald-100', text: 'text-emerald-700', ring: 'ring-emerald-100' }}
       footnote="All time"
@@ -156,7 +155,9 @@ const StatsRow = ({ stats }) => (
 
 /** Today's Tasks list */
 const TodaysTasks = ({ tasks }) => {
-  const active = tasks.filter(t => t.status !== 'resolved');
+  const navigate = useNavigate();
+  const active = tasks.filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved');
+  
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -175,7 +176,53 @@ const TodaysTasks = ({ tasks }) => {
       </div>
       <div className="p-4 space-y-3">
         {active.length > 0 ? (
-          active.map(task => <TaskCard key={task.id} task={task} />)
+          active.slice(0, 5).map(task => (
+            <div key={task.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-xs text-blue-600">{task.id}</span>
+                  <IssuePriority priority={task.priority} />
+                </div>
+                <IssueStatus status={task.status} />
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">{task.title}</h3>
+                <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  {task.address || task.location?.address}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                <span className="text-slate-500 font-semibold flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  SLA: {task.slaHours ? `${Math.max(0, task.slaHours - task.elapsedHours)}h remaining` : 'Pending'}
+                </span>
+                <span className="text-blue-600 font-bold">Nearby</span>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={Navigation}
+                  onClick={() => window.open(`https://maps.google.com/?q=${task.latitude || task.location?.lat},${task.longitude || task.location?.lng}`, '_blank')}
+                >
+                  Navigate
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={Eye}
+                  onClick={() => navigate(`/worker/tasks/${task.id}`)}
+                >
+                  View Task
+                </Button>
+              </div>
+            </div>
+          ))
         ) : (
           <div className="py-14 flex flex-col items-center text-center">
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-3" />
@@ -189,16 +236,16 @@ const TodaysTasks = ({ tasks }) => {
 };
 
 /** SVG pseudo-map of nearby tasks */
-const NearbyTasksMap = ({ tasks }) => {
-  const activeTasks = tasks.filter(t => t.status !== 'resolved');
-  const PRIORITY_COLORS = { High: '#ef4444', Medium: '#f59e0b', Low: '#60a5fa' };
+const NearbyTasksMap = ({ tasks, currentUser }) => {
+  const activeTasks = tasks.filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved');
+  const PRIORITY_COLORS = { HIGH: '#ef4444', High: '#ef4444', CRITICAL: '#dc2626', MEDIUM: '#f59e0b', Medium: '#f59e0b', LOW: '#60a5fa', Low: '#60a5fa' };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-full">
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
         <div>
           <h2 className="text-base font-bold text-slate-900">Nearby Tasks</h2>
-          <p className="text-xs text-slate-500 mt-0.5">{currentWorker.assignedWard}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{currentUser?.ward || 'Your Area'}</p>
         </div>
         <Link
           to="/worker/map"
@@ -227,19 +274,21 @@ const NearbyTasksMap = ({ tasks }) => {
           <line x1="0" y1="75%" x2="100%" y2="75%" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="5 7" />
 
           {/* Task pins */}
-          {activeTasks.map(task => {
+          {activeTasks.map((task, idx) => {
             const col = PRIORITY_COLORS[task.priority] || '#94a3b8';
-            const catMeta = CATEGORY_META[task.category] || {};
+            // Generate pseudo-random positions if they don't have mapX/mapY
+            const mapX = task.location?.mapX || ((idx * 15 + 20) % 90);
+            const mapY = task.location?.mapY || ((idx * 25 + 15) % 90);
             return (
               <g key={task.id}>
                 {/* Glow ring */}
-                <circle cx={`${task.location.mapX}%`} cy={`${task.location.mapY}%`} r="16" fill={col} fillOpacity="0.12" />
+                <circle cx={`${mapX}%`} cy={`${mapY}%`} r="16" fill={col} fillOpacity="0.12" />
                 {/* Outer ring */}
-                <circle cx={`${task.location.mapX}%`} cy={`${task.location.mapY}%`} r="9" fill={col} fillOpacity="0.25" />
+                <circle cx={`${mapX}%`} cy={`${mapY}%`} r="9" fill={col} fillOpacity="0.25" />
                 {/* Core dot */}
-                <circle cx={`${task.location.mapX}%`} cy={`${task.location.mapY}%`} r="6" fill={col} />
+                <circle cx={`${mapX}%`} cy={`${mapY}%`} r="6" fill={col} />
                 {/* White center */}
-                <circle cx={`${task.location.mapX}%`} cy={`${task.location.mapY}%`} r="2.5" fill="white" />
+                <circle cx={`${mapX}%`} cy={`${mapY}%`} r="2.5" fill="white" />
               </g>
             );
           })}
@@ -301,16 +350,16 @@ const RecentActivityFeed = ({ activities }) => (
                   {cfg.label}
                 </span>
               </div>
-              <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">{item.taskTitle}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{item.message}</p>
-              <p className="text-[11px] text-slate-400 mt-1">{item.timeAgo}</p>
+              <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">{item.taskTitle || item.detail}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{item.message || item.action}</p>
+              <p className="text-[11px] text-slate-400 mt-1">{item.timeAgo || item.time}</p>
             </div>
 
             {/* Link */}
             <Link
-              to={`/worker/tasks/${item.taskId}`}
+              to={`/worker/tasks/${item.taskId || item.issueId}`}
               className="flex-shrink-0 self-center p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-              aria-label={`View task ${item.taskId}`}
+              aria-label={`View task ${item.taskId || item.issueId}`}
             >
               <ChevronRight className="w-4 h-4" />
             </Link>
@@ -322,20 +371,30 @@ const RecentActivityFeed = ({ activities }) => (
 );
 
 // ─── WorkerDashboard ──────────────────────────────────────────────────────────
-const WorkerDashboard = () => {
+export const WorkerDashboard = () => {
+  const { currentUser } = useAuth();
+  const { issues } = useCivic();
+
+  const workerName = currentUser?.name || 'Rahul Sharma';
+  
+  // Tasks assigned to this field worker
+  const assignedTasks = useMemo(() => issues.filter(
+    i => i.assignedWorker === workerName || i.workerId === currentUser?.id || i.assignedTo === currentUser?.id || i.department === 'Road Maintenance'
+  ), [issues, workerName, currentUser?.id]);
+
   const stats = useMemo(() => ({
-    total:      workerTasks.length,
-    assigned:   workerTasks.filter(t => t.status === 'assigned').length,
-    inProgress: workerTasks.filter(t => t.status === 'in-progress').length,
-    resolved:   workerTasks.filter(t => t.status === 'resolved').length,
-    overdue:    workerTasks.filter(t => isOverdue(t.dueDate, t.status)).length,
-  }), []);
+    total:      assignedTasks.length,
+    assigned:   assignedTasks.filter(t => t.status === 'ASSIGNED' || t.status === 'assigned').length,
+    inProgress: assignedTasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'in-progress').length,
+    resolved:   assignedTasks.filter(t => t.status === 'RESOLVED' || t.status === 'resolved').length,
+    overdue:    assignedTasks.filter(t => t.slaStatus === 'BREACHED' || (t.slaHours && t.elapsedHours >= t.slaHours)).length,
+  }), [assignedTasks]);
 
   return (
     <div className="p-4 sm:p-6 xl:p-8 max-w-7xl mx-auto space-y-6 pb-10">
 
       {/* 1. Welcome banner */}
-      <GreetingBanner stats={stats} />
+      <GreetingBanner stats={stats} currentUser={currentUser} />
 
       {/* 2. Stat cards */}
       <StatsRow stats={stats} />
@@ -343,10 +402,10 @@ const WorkerDashboard = () => {
       {/* 3. Today's Tasks + Nearby Map — side by side on xl */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          <TodaysTasks tasks={workerTasks} />
+          <TodaysTasks tasks={assignedTasks} />
         </div>
         <div>
-          <NearbyTasksMap tasks={workerTasks} />
+          <NearbyTasksMap tasks={assignedTasks} currentUser={currentUser} />
         </div>
       </div>
 

@@ -1,13 +1,45 @@
-const WorkerNotifications = () => (
-  <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center p-8">
-    <div className="w-20 h-20 rounded-2xl bg-amber-50 flex items-center justify-center mb-4">
-      <svg className="w-10 h-10 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-      </svg>
+import React from 'react';
+import { useCivic } from '../../context/CivicContext';
+import { NotificationItem } from '../../components/notifications/NotificationItem';
+import { Bell, CheckCheck } from 'lucide-react';
+
+export const WorkerNotifications = () => {
+  const { notifications, markNotificationAsRead } = useCivic();
+
+  const workerNotifs = notifications.filter(n => !n.role || n.role === 'FIELD_WORKER');
+
+  return (
+    <div className="space-y-4 max-w-3xl mx-auto pb-10">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-black text-slate-900 flex items-center gap-2">
+            <Bell className="w-5 h-5 text-blue-600" /> Notifications & Task Dispatch Alerts
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">Real-time alerts for task assignment and SLA limits.</p>
+        </div>
+        <button
+          onClick={() => workerNotifs.forEach(n => markNotificationAsRead(n.id))}
+          className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+        >
+          <CheckCheck className="w-4 h-4" /> Mark all read
+        </button>
+      </div>
+
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+        {workerNotifs.length === 0 ? (
+          <p className="text-xs text-slate-400 text-center py-8">No notifications right now.</p>
+        ) : (
+          workerNotifs.map(notif => (
+            <NotificationItem
+              key={notif.id}
+              notif={notif}
+              onMarkRead={markNotificationAsRead}
+            />
+          ))
+        )}
+      </div>
     </div>
-    <h2 className="text-xl font-bold text-gray-800 mb-2">Notifications</h2>
-    <p className="text-gray-500 max-w-sm">You have no new notifications. Task updates and alerts will appear here.</p>
-  </div>
-);
+  );
+};
 
 export default WorkerNotifications;

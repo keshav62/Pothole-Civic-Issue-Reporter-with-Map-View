@@ -1,97 +1,109 @@
-import { useState } from 'react';
-import { mockIssues } from '../../data/mockIssues';
-import { currentWorker } from '../../data/mockUsers';
-import { Link } from 'react-router-dom';
-import { MapPin, Filter } from 'lucide-react';
-import IssueStatus from '../../components/issues/IssueStatus';
+import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useCivic } from '../../context/CivicContext';
+import { IssueStatus } from '../../components/issues/IssueStatus';
+import { IssuePriority } from '../../components/issues/IssuePriority';
+import { Button } from '../../components/common/Button';
+import { MapPin, Clock, Eye, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '../../utils/cn';
 
-const AssignedTasks = () => {
-  const [filter, setFilter] = useState('all');
-  
-  const myIssues = mockIssues.filter(i => i.assignedTo === currentWorker.id);
-  
-  const filteredIssues = myIssues.filter(issue => {
-    if (filter === 'all') return true;
-    return issue.status === filter;
+export const AssignedTasks = () => {
+  const { currentUser } = useAuth();
+  const { issues } = useCivic();
+  const navigate = useNavigate();
+  const [filter, setFilter] = useState('ALL');
+
+  const workerName = currentUser?.name || 'Rahul Sharma';
+  const myTasks = issues.filter(
+    i => i.assignedWorker === workerName || i.workerId === currentUser?.id || i.assignedTo === currentUser?.id
+  );
+
+  const filteredTasks = myTasks.filter(task => {
+    if (filter === 'ACTIVE') return task.status === 'ASSIGNED' || task.status === 'IN_PROGRESS' || task.status === 'assigned' || task.status === 'in-progress';
+    if (filter === 'COMPLETED') return task.status === 'RESOLVED' || task.status === 'resolved';
+    if (filter === 'OVERDUE') return task.slaStatus === 'BREACHED' || task.elapsedHours >= task.slaHours;
+    return true;
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Assigned Tasks</h1>
-          <p className="text-gray-500 mt-1">Manage and update the issues assigned to you.</p>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900">My Assigned Tasks</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage and update the issues assigned to you.</p>
         </div>
         
-        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200">
-          <Filter className="w-4 h-4 text-gray-500" />
+        <div className="flex items-center gap-2 bg-slate-100 px-3 py-2 rounded-lg shadow-sm border border-slate-200">
+          <Filter className="w-4 h-4 text-slate-500" />
           <select 
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="bg-transparent text-sm font-medium text-gray-700 outline-none cursor-pointer"
+            className="bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer"
           >
-            <option value="all">All Tasks</option>
-            <option value="assigned">Pending</option>
-            <option value="in-progress">In Progress</option>
-            <option value="resolved">Completed</option>
+            <option value="ALL">All Tasks</option>
+            <option value="ACTIVE">Active (Pending/In Progress)</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="OVERDUE">Overdue</option>
           </select>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredIssues.length > 0 ? (
-          filteredIssues.map((task) => (
-            <div key={task.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-              {task.images?.before?.[0] && (
-                <div className="h-48 w-full bg-gray-200 relative">
+      {/* Task Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {filteredTasks.length > 0 ? (
+          filteredTasks.map((task) => (
+            <div key={task.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col hover:shadow-md transition-shadow">
+              {task.images?.before?.[0] || task.images?.before ? (
+                <div className="h-40 w-full bg-slate-200 relative mb-4 rounded-lg overflow-hidden shrink-0">
                   <img 
-                    src={task.images.before[0]} 
+                    src={Array.isArray(task.images.before) ? task.images.before[0] : task.images.before} 
                     alt={task.title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute top-3 right-3">
-                    <span className={cn(
-                      "text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm backdrop-blur-md bg-white/90",
-                      task.priority === 'High' ? "text-red-700" :
-                      task.priority === 'Medium' ? "text-amber-700" :
-                      "text-blue-700"
-                    )}>
-                      {task.priority}
-                    </span>
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <IssuePriority priority={task.priority} />
                   </div>
                 </div>
-              )}
-              
-              <div className="p-5 flex-1 flex flex-col">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-500">{task.id}</span>
-                  <IssueStatus status={task.status} />
-                </div>
-                
-                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">{task.title}</h3>
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-1">{task.description}</p>
-                
-                <div className="flex items-start gap-2 text-gray-500 mt-auto pt-4 border-t border-gray-100">
-                  <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span className="text-xs">{task.location.address}</span>
-                </div>
+              ) : null}
+
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-mono font-bold text-xs text-blue-600">{task.id}</span>
+                <IssueStatus status={task.status} />
               </div>
-              
-              <div className="p-4 bg-gray-50 border-t border-gray-100">
-                <Link 
-                  to={`/worker/tasks/${task.id}`}
-                  className="flex items-center justify-center w-full py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
-                >
+
+              <div className="flex-1 flex flex-col">
+                {!task.images?.before && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <IssuePriority priority={task.priority} />
+                    <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold">
+                      {task.category}
+                    </span>
+                  </div>
+                )}
+                <h3 className="text-sm font-bold text-slate-900 line-clamp-2">{task.title}</h3>
+                <p className="text-xs text-slate-500 flex items-start gap-1 mt-2">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                  <span className="line-clamp-2">{task.address || task.location?.address}</span>
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pt-4 mt-4 border-t border-slate-100">
+                <span className="text-slate-500 font-semibold flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  {task.slaHours ? `Due in: ${Math.max(0, task.slaHours - task.elapsedHours)}h` : 'Due soon'}
+                </span>
+                <Button size="sm" variant="primary" icon={Eye} fullWidth className="sm:w-auto" onClick={() => navigate(`/worker/tasks/${task.id}`)}>
                   Manage Task
-                </Link>
+                </Button>
               </div>
             </div>
           ))
         ) : (
-          <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No tasks found</h3>
-            <p className="text-gray-500">There are no tasks matching your current filter.</p>
+          <div className="col-span-full bg-white rounded-xl shadow-sm border border-slate-100 p-12 text-center">
+            <h3 className="text-lg font-bold text-slate-900 mb-1">No tasks found</h3>
+            <p className="text-slate-500">There are no tasks matching your current filter.</p>
           </div>
         )}
       </div>

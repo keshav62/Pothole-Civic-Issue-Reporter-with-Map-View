@@ -9,6 +9,7 @@ export const Select = forwardRef(
       placeholder = 'Select an option',
       error,
       helperText,
+      icon: Icon,
       id,
       name,
       value,
@@ -22,19 +23,24 @@ export const Select = forwardRef(
     ref
   ) => {
     const generatedId = useId();
-    const selectId = id || name || generatedId;
+    const selectId = id || name || (label ? label.toLowerCase().replace(/\s+/g, '-') : generatedId);
 
 
     return (
       <div className={`w-full ${wrapperClassName}`}>
         {label && (
-          <label htmlFor={selectId} className="block text-sm font-medium text-slate-700 mb-1.5">
+          <label htmlFor={selectId} className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
             {label}
             {required && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
 
         <div className="relative rounded-lg shadow-sm">
+          {Icon && (
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Icon className="h-4 w-4" />
+            </div>
+          )}
           <select
             ref={ref}
             id={selectId}
@@ -43,7 +49,9 @@ export const Select = forwardRef(
             onChange={onChange}
             disabled={disabled}
             required={required}
-            className={`block w-full appearance-none rounded-lg text-sm text-slate-900 bg-white transition-colors duration-150 border focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed pl-3.5 pr-10 py-2.5 ${
+            className={`block w-full appearance-none rounded-lg text-sm text-slate-900 bg-white transition-colors duration-150 border focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed ${
+              Icon ? 'pl-9' : 'pl-3.5'
+            } pr-10 py-2.5 ${
               error
                 ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
                 : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100 hover:border-slate-400'

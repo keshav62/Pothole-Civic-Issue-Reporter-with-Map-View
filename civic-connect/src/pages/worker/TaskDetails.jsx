@@ -1,228 +1,204 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { mockIssues } from '../../data/mockIssues';
-import IssueStatus from '../../components/issues/IssueStatus';
-import { ArrowLeft, MapPin, Calendar, UploadCloud, CheckCircle, Clock } from 'lucide-react';
-import { cn } from '../../utils/cn';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useCivic } from '../../context/CivicContext';
+import { IssueStatus } from '../../components/issues/IssueStatus';
+import { IssuePriority } from '../../components/issues/IssuePriority';
+import { IssueMap } from '../../components/map/IssueMap';
+import { Button } from '../../components/common/Button';
+import { ImageUploader } from '../../components/common/ImageUploader';
+import {
+  Clock,
+  MapPin,
+  Navigation,
+  Play,
+  CheckCircle2,
+  ArrowLeft,
+  ShieldCheck
+} from 'lucide-react';
 
-const TaskDetails = () => {
+export const TaskDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [task, setTask] = useState(null);
-  
-  // Form states
-  const [status, setStatus] = useState('');
-  const [notes, setNotes] = useState('');
-  const [uploadedImage, setUploadedImage] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { issues, startTask, completeTask, showToast } = useCivic();
+
+  const issue = issues.find(i => i.id === id) || issues[0];
+
+  // Work Completion Form State
+  const [beforeImage, setBeforeImage] = useState(issue?.images?.before || '');
+  const [afterImage, setAfterImage] = useState(issue?.images?.after || '');
+  const [workNotes, setWorkNotes] = useState(
+    issue?.workNotes || 'Pothole filled with cold asphalt mix, leveled using heavy roller, and road surface sealed.'
+  );
+
+  // Countdown timer simulation (05:42:12)
+  const [timeLeft, setTimeLeft] = useState({ hours: 5, minutes: 42, seconds: 12 });
 
   useEffect(() => {
-    const foundTask = mockIssues.find(i => i.id === id);
-    if (foundTask) {
-      setTask(foundTask);
-      setStatus(foundTask.status);
-    }
-  }, [id]);
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
+        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
+        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
+        return prev;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-  if (!task) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-gray-500">Loading task details...</p>
-      </div>
-    );
-  }
+  if (!issue) return null;
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Create a fake URL for the uploaded image preview
-      const url = URL.createObjectURL(file);
-      setUploadedImage(url);
-    }
+  const isResolved = issue.status === 'RESOLVED';
+  const isInProgress = issue.status === 'IN_PROGRESS';
+
+  const handleStartWork = () => {
+    startTask(issue.id);
   };
 
-  const handleSubmit = (e) => {
+  const handleCompleteWork = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      // In a real app we'd update the backend here
-      // For the mock, we'll just navigate back to tasks
-      setIsSubmitting(false);
-      navigate('/worker/tasks');
-    }, 1000);
+    if (!afterImage) {
+      showToast('Please select or upload an after-repair photo proof first!', 'warning');
+      return;
+    }
+
+    completeTask(issue.id, beforeImage, afterImage, workNotes);
+    showToast(`Task ${issue.id} marked as RESOLVED with your uploaded photo!`, 'success');
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto pb-24">
-      <Link 
-        to="/worker/tasks" 
-        className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Tasks
-      </Link>
+    <div className="space-y-4 max-w-5xl mx-auto pb-10">
+      {/* Navigation Topbar */}
+      <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1 text-xs text-slate-600 font-bold hover:text-slate-900 cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Tasks
+        </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Task Details */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-sm font-medium text-gray-500">{task.id}</span>
-                  <IssueStatus status={task.status} />
-                  <span className={cn(
-                    "text-xs font-semibold px-2.5 py-1 rounded-full",
-                    task.priority === 'High' ? "bg-red-100 text-red-700" :
-                    task.priority === 'Medium' ? "bg-amber-100 text-amber-700" :
-                    "bg-blue-100 text-blue-700"
-                  )}>
-                    {task.priority}
-                  </span>
-                </div>
-                <h1 className="text-2xl font-bold text-gray-900">{task.title}</h1>
-              </div>
-            </div>
-            
-            {task.images?.before?.[0] && (
-              <div className="w-full h-64 bg-gray-100">
-                <img 
-                  src={task.images.before[0]} 
-                  alt="Issue before repair"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+        <span className="font-mono font-bold text-xs text-blue-600">{issue.id}</span>
+      </div>
 
-            <div className="p-6 space-y-6">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Description</h3>
-                <p className="text-gray-900">{task.description}</p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Location</h3>
-                  <div className="flex items-start gap-2 text-gray-900">
-                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                    <span>{task.location.address}</span>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Reported On</h3>
-                  <div className="flex items-center gap-2 text-gray-900">
-                    <Calendar className="w-5 h-5 text-gray-400" />
-                    <span>{new Date(task.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* SLA Countdown Timer Card */}
+      <div className="bg-slate-900 text-white p-4 rounded-xl shadow-md border border-slate-800 flex items-center justify-between">
+        <div>
+          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">SLA Countdown Timer</span>
+          <div className="flex items-center gap-1 font-mono text-2xl font-black text-amber-400 mt-0.5">
+            <Clock className="w-5 h-5 text-amber-400 animate-pulse" />
+            <span>
+              {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+            </span>
           </div>
         </div>
 
-        {/* Right Column - Update Form */}
-        <div className="lg:col-span-1">
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Update Task Status</h2>
-            
-            <div className="space-y-5">
-              {/* Status Select */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Status
-                </label>
-                <div className="grid grid-cols-1 gap-3">
-                  {['assigned', 'in-progress', 'resolved'].map((s) => (
-                    <label 
-                      key={s}
-                      className={cn(
-                        "flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors",
-                        status === s ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:bg-gray-50"
-                      )}
-                    >
-                      <input 
-                        type="radio" 
-                        name="status"
-                        value={s}
-                        checked={status === s}
-                        onChange={(e) => setStatus(e.target.value)}
-                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                      />
-                      <span className="flex items-center gap-2 text-sm font-medium text-gray-900 capitalize">
-                        {s === 'resolved' && <CheckCircle className="w-4 h-4 text-emerald-600" />}
-                        {s === 'in-progress' && <Clock className="w-4 h-4 text-blue-600" />}
-                        {s === 'assigned' && <Clock className="w-4 h-4 text-amber-600" />}
-                        {s.replace('-', ' ')}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Evidence Upload (Shown if resolving) */}
-              {status === 'resolved' && (
-                <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload Proof (After Photo)
-                  </label>
-                  
-                  {uploadedImage ? (
-                    <div className="relative rounded-lg overflow-hidden border border-gray-200 group">
-                      <img src={uploadedImage} alt="Uploaded proof" className="w-full h-40 object-cover" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <label className="cursor-pointer px-4 py-2 bg-white text-sm font-medium text-gray-900 rounded-lg shadow-sm hover:bg-gray-50">
-                          Change Image
-                          <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                        </label>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <UploadCloud className="w-8 h-8 text-gray-400 mb-3" />
-                        <p className="mb-2 text-sm text-gray-500">
-                          <span className="font-semibold text-indigo-600">Click to upload</span> or drag and drop
-                        </p>
-                        <p className="text-xs text-gray-500">SVG, PNG, JPG or GIF (MAX. 5MB)</p>
-                      </div>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                    </label>
-                  )}
-                </div>
-              )}
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Update Notes (Optional)
-                </label>
-                <textarea 
-                  rows={3}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add details about the work done..."
-                  className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm resize-none"
-                />
-              </div>
-
-              <button 
-                type="submit"
-                disabled={isSubmitting || (status === 'resolved' && !uploadedImage)}
-                className="w-full py-3 px-4 flex justify-center items-center gap-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {isSubmitting ? (
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    Save Update
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+        <div className="text-right">
+          <IssuePriority priority={issue.priority} />
+          <div className="mt-1">
+            <IssueStatus status={issue.status} />
+          </div>
         </div>
+      </div>
+
+      {/* Main Task Information */}
+      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+        <h2 className="text-base font-black text-slate-900">{issue.title}</h2>
+        <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">{issue.description}</p>
+
+        <div className="flex items-center gap-2 text-xs text-slate-600">
+          <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+          <span className="font-medium">{issue.address || (issue.location && issue.location.address)}</span>
+        </div>
+
+        <div className="pt-2 flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            icon={Navigation}
+            className="flex-1"
+            onClick={() => window.open(`https://maps.google.com/?q=${issue.latitude || (issue.location && issue.location.lat)},${issue.longitude || (issue.location && issue.location.lng)}`, '_blank')}
+          >
+            Google Maps Navigate
+          </Button>
+
+          {!isInProgress && !isResolved && (
+            <Button size="sm" variant="success" icon={Play} className="flex-1" onClick={handleStartWork}>
+              Start Task
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Map Preview */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden p-2">
+        <IssueMap issues={[issue]} center={[issue.latitude || (issue.location && issue.location.lat) || 28.6139, issue.longitude || (issue.location && issue.location.lng) || 77.2090]} zoom={15} height="220px" rolePrefix="/worker" />
+      </div>
+
+      {/* WORK COMPLETION WORKFLOW FORM */}
+      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-emerald-600" /> Work Completion Verification
+          </h3>
+          {isResolved && (
+            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              ✓ RESOLVED & VERIFIED
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={handleCompleteWork} className="space-y-4">
+          {/* Step 1 & 2: Before / After Photo Comparison */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Before Photo */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase text-slate-600">Step 1: Before Repair Photo</label>
+              <div className="aspect-video rounded-xl overflow-hidden border border-slate-300 relative bg-slate-100">
+                <img src={beforeImage || (Array.isArray(issue.images?.before) ? issue.images.before[0] : issue.images?.before)} alt="Before" className="w-full h-full object-cover" />
+                <span className="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                  BEFORE REPAIR
+                </span>
+              </div>
+            </div>
+
+            {/* Step 2: Real Image Uploader for After Photo */}
+            <ImageUploader
+              image={afterImage || (Array.isArray(issue.images?.after) ? issue.images.after[0] : issue.images?.after)}
+              onImageChange={(newImg) => setAfterImage(newImg)}
+              label="Step 2: Upload After Repair Evidence Photo"
+              placeholderText="Select proof image file from phone / computer"
+              aspectRatio="aspect-video"
+            />
+          </div>
+
+          {/* Step 3: Work Notes Entry */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase text-slate-600">Step 3: Field Operations Log & Work Notes</label>
+            <textarea
+              rows={3}
+              value={workNotes}
+              onChange={(e) => setWorkNotes(e.target.value)}
+              placeholder="Describe materials used, machinery deployed, and resolution status..."
+              className="w-full p-3 rounded-lg border border-slate-300 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          {/* Submit Completion Button */}
+          {!isResolved ? (
+            <Button
+              type="submit"
+              variant="success"
+              className="w-full py-3 text-sm font-bold shadow-md"
+              icon={CheckCircle2}
+            >
+              Submit Completion & Mark as Resolved
+            </Button>
+          ) : (
+            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-center text-xs text-emerald-900 font-bold">
+              🎉 Task completed successfully! Uploaded evidence logged in HQ database.
+            </div>
+          )}
+        </form>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { currentWorker } from '../data/mockUsers';
+import { useAuth } from '../context/AuthContext';
+import { Toast } from '../components/common/Toast';
 import { cn } from '../utils/cn';
 import {
   LayoutDashboard,
@@ -88,13 +89,22 @@ function usePageTitle() {
 }
 
 // ─── WorkerLayout ─────────────────────────────────────────────────────────────
-const WorkerLayout = () => {
+export const WorkerLayout = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [desktopCollapsed, setDesktopCollapsed]   = useState(false);
   const [profileMenuOpen, setProfileMenuOpen]      = useState(false);
   const profileRef = useRef(null);
   const navigate   = useNavigate();
   const pageTitle  = usePageTitle();
+  const { currentUser, logout } = useAuth();
+  
+  const workerData = {
+    name: currentUser?.name || 'Worker',
+    email: currentUser?.email || '',
+    avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+    department: currentUser?.department || 'Field Operations',
+    ward: currentUser?.ward || 'Assigned Area'
+  };
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -113,7 +123,12 @@ const WorkerLayout = () => {
     return () => { document.body.style.overflow = ''; };
   }, [mobileSidebarOpen]);
 
-  const handleLogout = () => navigate('/');
+  const handleLogout = async () => {
+    if (logout) {
+      await logout();
+    }
+    navigate('/');
+  };
 
   // ── Sidebar shell (shared between desktop & mobile) ──────────────────────
   const SidebarContent = ({ isMobile = false }) => (
@@ -166,15 +181,15 @@ const WorkerLayout = () => {
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0">
               <img
-                src={currentWorker.avatar}
-                alt={currentWorker.name}
+                src={workerData.avatar}
+                alt={workerData.name}
                 className="w-9 h-9 rounded-full bg-slate-700 object-cover ring-2 ring-indigo-500/50"
               />
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white truncate">{currentWorker.name}</p>
-              <p className="text-[11px] text-slate-400 truncate">{currentWorker.assignedWard}</p>
+              <p className="text-sm font-semibold text-white truncate">{workerData.name}</p>
+              <p className="text-[11px] text-slate-400 truncate">{workerData.ward}</p>
             </div>
             <div className="flex-shrink-0">
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
@@ -189,7 +204,7 @@ const WorkerLayout = () => {
       {desktopCollapsed && !isMobile && (
         <div className="flex justify-center mt-4 mb-2 flex-shrink-0">
           <div className="relative">
-            <img src={currentWorker.avatar} alt="Avatar" className="w-9 h-9 rounded-full ring-2 ring-indigo-500/50" />
+            <img src={workerData.avatar} alt="Avatar" className="w-9 h-9 rounded-full ring-2 ring-indigo-500/50" />
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
           </div>
         </div>
@@ -236,7 +251,8 @@ const WorkerLayout = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-
+      <Toast />
+      
       {/* ── Desktop Sidebar ────────────────────────────────────────────── */}
       <aside
         className={cn(
@@ -283,7 +299,7 @@ const WorkerLayout = () => {
           {/* Page title */}
           <div className="flex-1 min-w-0">
             <h1 className="text-base sm:text-lg font-bold text-slate-800 truncate">{pageTitle}</h1>
-            <p className="text-xs text-slate-400 hidden sm:block">{currentWorker.department} · {currentWorker.assignedWard}</p>
+            <p className="text-xs text-slate-400 hidden sm:block">{workerData.department} · {workerData.ward}</p>
           </div>
 
           {/* Right section */}
@@ -317,14 +333,14 @@ const WorkerLayout = () => {
               >
                 <div className="relative">
                   <img
-                    src={currentWorker.avatar}
-                    alt={currentWorker.name}
+                    src={workerData.avatar}
+                    alt={workerData.name}
                     className="w-8 h-8 rounded-full bg-slate-200 object-cover ring-2 ring-indigo-500/30"
                   />
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-semibold text-slate-800 leading-none">{currentWorker.name}</p>
+                  <p className="text-sm font-semibold text-slate-800 leading-none">{workerData.name}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Field Worker</p>
                 </div>
                 <ChevronRight className={cn('hidden md:block w-3.5 h-3.5 text-slate-400 transition-transform duration-200', profileMenuOpen && 'rotate-90')} />
@@ -334,8 +350,8 @@ const WorkerLayout = () => {
               {profileMenuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-200/80 py-1.5 z-50">
                   <div className="px-4 py-2.5 border-b border-slate-100">
-                    <p className="text-sm font-semibold text-slate-800">{currentWorker.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{currentWorker.email}</p>
+                    <p className="text-sm font-semibold text-slate-800">{workerData.name}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{workerData.email}</p>
                   </div>
                   <NavLink
                     to="/worker/profile"
