@@ -75,7 +75,7 @@ export const Topbar = ({ toggleSidebar }) => {
                 <p className="text-[11px] text-slate-500">{currentUser?.email}</p>
                 <div className="mt-1.5 flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
                   <ShieldCheck className="w-3 h-3" />
-                  Verified Govt Administrator
+                  {currentUser?.isFirebaseGoogleAuth || currentUser?.isGoogleAuth ? 'Firebase Google SSO Verified' : 'Verified Govt Administrator'}
                 </div>
               </div>
 

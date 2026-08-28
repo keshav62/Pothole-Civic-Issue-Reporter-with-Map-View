@@ -82,7 +82,6 @@ export const CivicProvider = ({ children }) => {
       return issue;
     }));
 
-    // Update worker task count
     if (workerId) {
       setWorkers(prev => prev.map(w => {
         if (w.id === workerId) {
@@ -91,7 +90,6 @@ export const CivicProvider = ({ children }) => {
         return w;
       }));
 
-      // Send notification to worker
       addNotification({
         title: `New Task Assigned: ${issueId}`,
         message: `Task has been assigned to you.`,
@@ -124,6 +122,21 @@ export const CivicProvider = ({ children }) => {
     showToast(`Issue ${issueId} status updated to ${newStatus}`, 'info');
   };
 
+  const updateIssueImages = (issueId, beforeImage, afterImage) => {
+    setIssues(prev => prev.map(issue => {
+      if (issue.id === issueId) {
+        return {
+          ...issue,
+          images: {
+            before: beforeImage !== undefined ? beforeImage : issue.images.before,
+            after: afterImage !== undefined ? afterImage : issue.images.after
+          }
+        };
+      }
+      return issue;
+    }));
+  };
+
   const startTask = (issueId) => {
     setIssues(prev => prev.map(issue => {
       if (issue.id === issueId) {
@@ -150,8 +163,8 @@ export const CivicProvider = ({ children }) => {
           status: 'RESOLVED',
           slaStatus: 'RESOLVED_ON_TIME',
           images: {
-            before: beforeImage || issue.images.before,
-            after: afterImage || 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80'
+            before: beforeImage !== undefined ? beforeImage : issue.images.before,
+            after: afterImage !== undefined ? afterImage : issue.images.after
           },
           workNotes: workNotes || 'Task completed as per standard municipal operating guidelines.',
           timeline: newTimeline
@@ -160,7 +173,6 @@ export const CivicProvider = ({ children }) => {
       return issue;
     }));
 
-    // Update worker stats
     const targetIssue = issues.find(i => i.id === issueId);
     if (targetIssue && targetIssue.workerId) {
       setWorkers(prev => prev.map(w => {
@@ -253,6 +265,7 @@ export const CivicProvider = ({ children }) => {
       assignIssue,
       updateIssuePriority,
       updateIssueStatus,
+      updateIssueImages,
       startTask,
       completeTask,
       escalateIssue,

@@ -87,7 +87,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink
-              key={item.path}
+              key={`${item.label}-${item.path}`}
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                 isActive

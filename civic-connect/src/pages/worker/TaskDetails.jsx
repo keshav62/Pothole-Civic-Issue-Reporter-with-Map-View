@@ -5,19 +5,15 @@ import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
 import { IssueMap } from '../../components/map/IssueMap';
 import { Button } from '../../components/common/Button';
-import { Input } from '../../components/common/Input';
+import { ImageUploader } from '../../components/common/ImageUploader';
 import {
   Clock,
   MapPin,
   Navigation,
   Play,
   CheckCircle2,
-  Upload,
   ArrowLeft,
-  Camera,
-  FileText,
-  ShieldCheck,
-  Sparkles
+  ShieldCheck
 } from 'lucide-react';
 
 export const TaskDetails = () => {
@@ -61,13 +57,12 @@ export const TaskDetails = () => {
   const handleCompleteWork = (e) => {
     e.preventDefault();
     if (!afterImage) {
-      // Set realistic default after image if none provided
-      const defaultAfter = "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80";
-      setAfterImage(defaultAfter);
-      completeTask(issue.id, beforeImage, defaultAfter, workNotes);
-    } else {
-      completeTask(issue.id, beforeImage, afterImage, workNotes);
+      showToast('Please select or upload an after-repair photo proof first!', 'warning');
+      return;
     }
+
+    completeTask(issue.id, beforeImage, afterImage, workNotes);
+    showToast(`Task ${issue.id} marked as RESOLVED with your uploaded photo!`, 'success');
   };
 
   return (
@@ -152,49 +147,27 @@ export const TaskDetails = () => {
         </div>
 
         <form onSubmit={handleCompleteWork} className="space-y-4">
-          {/* Step 1 & 3: Before / After Photo Comparison */}
+          {/* Step 1 & 2: Before / After Photo Comparison */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Before Photo */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase text-slate-600">Step 1: Before Repair Photo</label>
-              <div className="aspect-video rounded-lg overflow-hidden border border-slate-300 relative bg-slate-100">
+              <div className="aspect-video rounded-xl overflow-hidden border border-slate-300 relative bg-slate-100">
                 <img src={beforeImage || issue.images.before} alt="Before" className="w-full h-full object-cover" />
                 <span className="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                  BEFORE
+                  BEFORE REPAIR
                 </span>
               </div>
             </div>
 
-            {/* After Photo Upload/Preview */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase text-slate-600">Step 2: After Repair Evidence Photo</label>
-              <div className="aspect-video rounded-lg overflow-hidden border-2 border-dashed border-blue-400 relative bg-blue-50/30 flex flex-col items-center justify-center text-center p-3">
-                {afterImage || issue.images.after ? (
-                  <>
-                    <img src={afterImage || issue.images.after} alt="After" className="w-full h-full object-cover rounded" />
-                    <span className="absolute bottom-2 left-2 bg-emerald-700 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                      AFTER REPAIR PROOF
-                    </span>
-                  </>
-                ) : (
-                  <div className="space-y-2">
-                    <Camera className="w-8 h-8 text-blue-500 mx-auto animate-bounce" />
-                    <p className="text-xs text-slate-600 font-bold">Snap or Upload Proof Photo</p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        const sampleAfter = "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80";
-                        setAfterImage(sampleAfter);
-                        showToast('Work completion photo captured!', 'success');
-                      }}
-                    >
-                      Use Camera / Upload Sample
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Step 2: Real Image Uploader for After Photo */}
+            <ImageUploader
+              image={afterImage || issue.images.after}
+              onImageChange={(newImg) => setAfterImage(newImg)}
+              label="Step 2: Upload After Repair Evidence Photo"
+              placeholderText="Select proof image file from phone / computer"
+              aspectRatio="aspect-video"
+            />
           </div>
 
           {/* Step 3: Work Notes Entry */}
@@ -222,7 +195,7 @@ export const TaskDetails = () => {
             </Button>
           ) : (
             <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-center text-xs text-emerald-900 font-bold">
-              🎉 Task completed successfully! Resolution logged in HQ database.
+              🎉 Task completed successfully! Uploaded evidence logged in HQ database.
             </div>
           )}
         </form>

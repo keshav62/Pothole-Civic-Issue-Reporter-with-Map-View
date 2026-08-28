@@ -6,6 +6,7 @@ import { IssuePriority } from '../../components/issues/IssuePriority';
 import { IssueTimeline } from '../../components/issues/IssueTimeline';
 import { IssueMap } from '../../components/map/IssueMap';
 import { AssignWorkerModal } from '../../components/issues/AssignWorkerModal';
+import { ImageUploader } from '../../components/common/ImageUploader';
 import { Button } from '../../components/common/Button';
 import { Select } from '../../components/common/Select';
 import {
@@ -25,10 +26,13 @@ import {
 export const AdminIssueDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { issues, verifyIssue, rejectIssue, escalateIssue, updateIssuePriority, updateIssueStatus } = useCivic();
+  const { issues, verifyIssue, rejectIssue, escalateIssue, updateIssuePriority, updateIssueStatus, updateIssueImages } = useCivic();
   const [assignModalOpen, setAssignModalOpen] = useState(false);
 
   const issue = issues.find(i => i.id === id) || issues[0];
+
+  const [beforeImage, setBeforeImage] = useState(issue?.images?.before || '');
+  const [afterImage, setAfterImage] = useState(issue?.images?.after || '');
 
   if (!issue) {
     return (
@@ -38,6 +42,17 @@ export const AdminIssueDetails = () => {
       </div>
     );
   }
+
+  const handleImageUpdate = (type, newUrl) => {
+    if (type === 'before') {
+      setBeforeImage(newUrl);
+      updateIssueImages(issue.id, newUrl, afterImage);
+    }
+    if (type === 'after') {
+      setAfterImage(newUrl);
+      updateIssueImages(issue.id, beforeImage, newUrl);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -141,41 +156,19 @@ export const AdminIssueDetails = () => {
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Before Photo */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
-                <div className="bg-slate-800 text-white px-3 py-1.5 text-xs font-bold flex items-center justify-between">
-                  <span>BEFORE REPAIR</span>
-                  <span className="text-[10px] bg-slate-700 px-2 py-0.5 rounded">Citizen Evidence</span>
-                </div>
-                <div className="aspect-video relative bg-slate-900">
-                  <img
-                    src={issue.images.before}
-                    alt="Before Evidence"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
+              <ImageUploader
+                image={beforeImage || issue.images.before}
+                onImageChange={(img) => handleImageUpdate('before', img)}
+                label="BEFORE REPAIR EVIDENCE"
+                placeholderText="Select or drag & drop before photo"
+              />
 
-              {/* After Photo */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
-                <div className="bg-emerald-700 text-white px-3 py-1.5 text-xs font-bold flex items-center justify-between">
-                  <span>AFTER REPAIR</span>
-                  <span className="text-[10px] bg-emerald-800 px-2 py-0.5 rounded">Worker Proof</span>
-                </div>
-                <div className="aspect-video relative bg-slate-900 flex items-center justify-center">
-                  {issue.images.after ? (
-                    <img
-                      src={issue.images.after}
-                      alt="After Evidence"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <p className="text-xs text-slate-400 text-center px-4">
-                      No after repair photo submitted yet. Pending work completion.
-                    </p>
-                  )}
-                </div>
-              </div>
+              <ImageUploader
+                image={afterImage || issue.images.after}
+                onImageChange={(img) => handleImageUpdate('after', img)}
+                label="AFTER REPAIR EVIDENCE PROOF"
+                placeholderText="Select or drag & drop after repair photo"
+              />
             </div>
 
             {issue.workNotes && (
