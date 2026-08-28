@@ -74,9 +74,5 @@ export const ToastContainer = () => {
   );
 };
 
-export const Toast = {
-  Item: ToastItem,
-  Container: ToastContainer,
-};
-
 export default ToastContainer;
+

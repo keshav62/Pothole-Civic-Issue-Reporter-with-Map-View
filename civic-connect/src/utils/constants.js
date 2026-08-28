@@ -72,3 +72,8 @@ export const NAV_ITEMS = [
     roles: Object.values(USER_ROLES),
   },
 ];
+
+export const ROLE_NAVIGATION_ITEMS = {
+  COMMON: NAV_ITEMS,
+};
+

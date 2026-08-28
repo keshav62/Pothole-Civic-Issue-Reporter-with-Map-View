@@ -1,7 +1,8 @@
 import React from 'react';
-import { Layers, ShieldCheck, Heart } from 'lucide-react';
+import { Layers } from 'lucide-react';
 
 export const Footer = ({ className = '' }) => {
+
   const currentYear = new Date().getFullYear();
 
   return (

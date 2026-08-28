@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 export const Select = forwardRef(
@@ -21,7 +21,9 @@ export const Select = forwardRef(
     },
     ref
   ) => {
-    const selectId = id || name || `select-${Math.random().toString(36).substring(2, 7)}`;
+    const generatedId = useId();
+    const selectId = id || name || generatedId;
+
 
     return (
       <div className={`w-full ${wrapperClassName}`}>

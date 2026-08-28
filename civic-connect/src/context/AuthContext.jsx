@@ -1,25 +1,19 @@
-import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useCallback, useMemo } from 'react';
 import authService from '../services/authService';
 
 export const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // Initialize session from storage
-  useEffect(() => {
+export const AuthProvider = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const user = authService.getCurrentUser();
-      if (user) {
-        setCurrentUser(user);
-      }
-    } catch (err) {
-      console.error('Error initializing auth state:', err);
-    } finally {
-      setLoading(false);
+      return authService.getCurrentUser();
+    } catch {
+      return null;
     }
-  }, []);
+  });
+  const [loading, setLoading] = useState(false);
+
 
   const login = useCallback(async (credentials) => {
     setLoading(true);

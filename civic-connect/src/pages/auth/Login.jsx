@@ -8,7 +8,7 @@ import { Input } from '../../components/common/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { ErrorMessage } from '../../components/common/ErrorMessage';
-import { APP_ROUTES, USER_ROLES, ROLE_LABELS } from '../../utils/constants';
+import { APP_ROUTES, ROLE_LABELS } from '../../utils/constants';
 import { MOCK_USERS } from '../../data/mockUsers';
 
 export const Login = () => {
@@ -53,12 +53,13 @@ export const Login = () => {
       const user = await login({ email: mockUser.email, role: mockUser.role });
       showToast(`Signed in as ${user.name} (${ROLE_LABELS[user.role]})`, 'success');
       navigate(from, { replace: true });
-    } catch (err) {
+    } catch {
       setError('Failed to log in with demo account.');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

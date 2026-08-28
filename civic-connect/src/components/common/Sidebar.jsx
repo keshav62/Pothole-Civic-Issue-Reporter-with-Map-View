@@ -16,7 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { USER_ROLES, APP_ROUTES } from '../../utils/constants';
+import { USER_ROLES, ROLE_NAVIGATION_ITEMS } from '../../utils/constants';
 import Badge from './Badge';
 
 // Map icon names to Lucide icon components
@@ -34,36 +34,6 @@ const ICON_COMPONENTS = {
   Users: <Users className="w-5 h-5" />,
 };
 
-// Configurable sidebar navigation schema by role
-export const ROLE_NAVIGATION_ITEMS = {
-  COMMON: [
-    {
-      label: 'Dashboard',
-      path: APP_ROUTES.DASHBOARD,
-      icon: 'LayoutDashboard',
-    },
-    {
-      label: 'Issue Map',
-      path: APP_ROUTES.MAP,
-      icon: 'MapPin',
-    },
-    {
-      label: 'Reports & Issues',
-      path: APP_ROUTES.REPORTS,
-      icon: 'FileText',
-    },
-    {
-      label: 'Profile',
-      path: APP_ROUTES.PROFILE,
-      icon: 'User',
-    },
-    {
-      label: 'Settings',
-      path: APP_ROUTES.SETTINGS,
-      icon: 'Settings',
-    },
-  ],
-};
 
 export const Sidebar = ({
   isOpen = true,

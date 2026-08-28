@@ -5,8 +5,6 @@ import {
   LogOut,
   User as UserIcon,
   Menu,
-  X,
-  Bell,
   Layers,
   ChevronDown,
 } from 'lucide-react';
@@ -16,22 +14,22 @@ import Badge from './Badge';
 import Button from './Button';
 import { APP_ROUTES } from '../../utils/constants';
 
-export const Navbar = ({ onToggleSidebar, isSidebarOpen }) => {
+export const Navbar = ({ onToggleSidebar }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
       await logout();
       showToast('Logged out successfully', 'info');
       navigate(APP_ROUTES.LOGIN);
-    } catch (err) {
+    } catch {
       showToast('Failed to log out', 'error');
     }
   };
+
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">

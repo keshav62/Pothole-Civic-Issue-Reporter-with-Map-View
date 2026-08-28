@@ -8,7 +8,8 @@ import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/common/Card';
 import { ErrorMessage } from '../../components/common/ErrorMessage';
-import { APP_ROUTES, USER_ROLES, ROLE_LABELS } from '../../utils/constants';
+import { APP_ROUTES, USER_ROLES } from '../../utils/constants';
+
 
 const ROLE_OPTIONS = [
   { value: USER_ROLES.CITIZEN, label: 'Citizen (Public Reporter)' },

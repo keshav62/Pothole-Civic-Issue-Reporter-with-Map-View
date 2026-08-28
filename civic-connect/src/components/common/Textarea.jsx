@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 
 export const Textarea = forwardRef(
   (
@@ -20,7 +20,9 @@ export const Textarea = forwardRef(
     },
     ref
   ) => {
-    const textareaId = id || name || `textarea-${Math.random().toString(36).substring(2, 7)}`;
+    const generatedId = useId();
+    const textareaId = id || name || generatedId;
+
     const currentLength = typeof value === 'string' ? value.length : 0;
 
     return (
