@@ -1,0 +1,11 @@
+{
+  "name": "pothole-civic-issue-reporter-with-map-view",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npm --prefix civic-connect run dev",
+    "build": "npm --prefix civic-connect run build",
+    "lint": "npm --prefix civic-connect run lint",
+    "preview": "npm --prefix civic-connect run preview"
+  }
+}
