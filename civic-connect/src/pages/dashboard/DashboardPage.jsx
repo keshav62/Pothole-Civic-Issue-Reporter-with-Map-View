@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Activity,
   AlertTriangle,
@@ -7,6 +8,7 @@ import {
   Layers,
   Sparkles,
   Info,
+  HardHat,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -17,7 +19,7 @@ import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { EmptyState } from '../../components/common/EmptyState';
-import { ROLE_LABELS } from '../../utils/constants';
+import { ROLE_LABELS, APP_ROUTES } from '../../utils/constants';
 
 export const DashboardPage = () => {
   const { user } = useAuth();
@@ -51,10 +53,20 @@ export const DashboardPage = () => {
           </h1>
           <p className="mt-2 text-blue-100 text-sm sm:text-base leading-relaxed">
             Logged in as <span className="font-semibold text-white">{ROLE_LABELS[user?.role] || user?.role}</span>.
-            This foundation provides authentication, responsive navigation, role routing, and standard UI components ready for team feature modules.
+            This foundation provides authentication, responsive navigation, role routing, and standard UI components.
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Link to={APP_ROUTES.WORKER_PORTAL}>
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold border-none shadow-md flex items-center gap-2"
+              >
+                <HardHat className="w-4 h-4" />
+                Open Field Worker Portal
+              </Button>
+            </Link>
             <Button
               variant="outline"
               size="sm"
