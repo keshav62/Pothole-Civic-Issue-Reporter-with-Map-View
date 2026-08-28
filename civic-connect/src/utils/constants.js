@@ -33,6 +33,7 @@ export const APP_ROUTES = {
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
   DASHBOARD: '/dashboard',
+  WORKER_PORTAL: '/worker/dashboard',
   REPORTS: '/reports',
   MAP: '/map',
   PROFILE: '/profile',
@@ -46,6 +47,13 @@ export const NAV_ITEMS = [
     path: APP_ROUTES.DASHBOARD,
     icon: 'LayoutDashboard',
     roles: Object.values(USER_ROLES),
+  },
+  {
+    label: 'Field Worker Portal',
+    path: APP_ROUTES.WORKER_PORTAL,
+    icon: 'HardHat',
+    roles: Object.values(USER_ROLES),
+    badge: 'Active',
   },
   {
     label: 'Reports & Issues',

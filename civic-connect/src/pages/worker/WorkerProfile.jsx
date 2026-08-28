@@ -25,7 +25,7 @@ export const WorkerProfile = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-4xl mx-auto pb-24">
       {/* Profile Summary Card */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center gap-4">
@@ -110,3 +110,5 @@ export const WorkerProfile = () => {
     </div>
   );
 };
+
+export default WorkerProfile;

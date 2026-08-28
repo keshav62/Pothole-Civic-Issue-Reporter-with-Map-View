@@ -9,7 +9,7 @@ export const WorkerNotifications = () => {
   const workerNotifs = notifications.filter(n => !n.role || n.role === 'FIELD_WORKER');
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-3xl mx-auto pb-10">
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
         <div>
           <h1 className="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -41,3 +41,5 @@ export const WorkerNotifications = () => {
     </div>
   );
 };
+
+export default WorkerNotifications;

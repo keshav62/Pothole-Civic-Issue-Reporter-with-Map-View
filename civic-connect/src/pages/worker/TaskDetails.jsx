@@ -66,7 +66,7 @@ export const TaskDetails = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-5xl mx-auto pb-10">
       {/* Navigation Topbar */}
       <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
         <button
@@ -106,7 +106,7 @@ export const TaskDetails = () => {
 
         <div className="flex items-center gap-2 text-xs text-slate-600">
           <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
-          <span className="font-medium">{issue.address}</span>
+          <span className="font-medium">{issue.address || (issue.location && issue.location.address)}</span>
         </div>
 
         <div className="pt-2 flex items-center gap-2">
@@ -115,7 +115,7 @@ export const TaskDetails = () => {
             variant="outline"
             icon={Navigation}
             className="flex-1"
-            onClick={() => window.open(`https://maps.google.com/?q=${issue.latitude},${issue.longitude}`, '_blank')}
+            onClick={() => window.open(`https://maps.google.com/?q=${issue.latitude || (issue.location && issue.location.lat)},${issue.longitude || (issue.location && issue.location.lng)}`, '_blank')}
           >
             Google Maps Navigate
           </Button>
@@ -130,7 +130,7 @@ export const TaskDetails = () => {
 
       {/* Map Preview */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden p-2">
-        <IssueMap issues={[issue]} center={[issue.latitude, issue.longitude]} zoom={15} height="220px" rolePrefix="/worker" />
+        <IssueMap issues={[issue]} center={[issue.latitude || (issue.location && issue.location.lat) || 28.6139, issue.longitude || (issue.location && issue.location.lng) || 77.2090]} zoom={15} height="220px" rolePrefix="/worker" />
       </div>
 
       {/* WORK COMPLETION WORKFLOW FORM */}
@@ -153,7 +153,7 @@ export const TaskDetails = () => {
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase text-slate-600">Step 1: Before Repair Photo</label>
               <div className="aspect-video rounded-xl overflow-hidden border border-slate-300 relative bg-slate-100">
-                <img src={beforeImage || issue.images.before} alt="Before" className="w-full h-full object-cover" />
+                <img src={beforeImage || (Array.isArray(issue.images?.before) ? issue.images.before[0] : issue.images?.before)} alt="Before" className="w-full h-full object-cover" />
                 <span className="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded">
                   BEFORE REPAIR
                 </span>
@@ -162,7 +162,7 @@ export const TaskDetails = () => {
 
             {/* Step 2: Real Image Uploader for After Photo */}
             <ImageUploader
-              image={afterImage || issue.images.after}
+              image={afterImage || (Array.isArray(issue.images?.after) ? issue.images.after[0] : issue.images?.after)}
               onImageChange={(newImg) => setAfterImage(newImg)}
               label="Step 2: Upload After Repair Evidence Photo"
               placeholderText="Select proof image file from phone / computer"
@@ -203,3 +203,5 @@ export const TaskDetails = () => {
     </div>
   );
 };
+
+export default TaskDetails;

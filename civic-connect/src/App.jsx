@@ -9,6 +9,7 @@ import { ToastContainer } from './components/common/Toast';
 import { AdminLayout } from './layouts/AdminLayout';
 import { DepartmentLayout } from './layouts/DepartmentLayout';
 import { WorkerLayout } from './layouts/WorkerLayout';
+import { CitizenLayout } from './layouts/CitizenLayout';
 
 // Public & Auth Pages
 import { Login } from './pages/Login';
@@ -43,6 +44,9 @@ import { WorkerMap } from './pages/worker/WorkerMap';
 import { WorkerNotifications } from './pages/worker/WorkerNotifications';
 import { WorkerProfile } from './pages/worker/WorkerProfile';
 
+// Citizen Pages
+import { CitizenDashboard } from './pages/citizen/CitizenDashboard';
+
 // Protected Route Wrapper enforcing Role Based Access
 const ProtectedRoute = ({ allowedRoles, children }) => {
   const { currentUser, role } = useAuth();
@@ -65,6 +69,7 @@ const RootRedirect = () => {
   if (role === 'SUPER_ADMIN') return <Navigate to="/admin/dashboard" replace />;
   if (role === 'DEPARTMENT_ADMIN') return <Navigate to="/department/dashboard" replace />;
   if (role === 'FIELD_WORKER') return <Navigate to="/worker/dashboard" replace />;
+  if (role === 'CITIZEN') return <Navigate to="/citizen/dashboard" replace />;
   return <Navigate to="/login" replace />;
 };
 
@@ -139,6 +144,18 @@ export default function App() {
                 <Route path="profile" element={<WorkerProfile />} />
               </Route>
 
+              {/* CITIZEN ROUTES */}
+              <Route
+                path="/citizen"
+                element={
+                  <ProtectedRoute allowedRoles={['CITIZEN', 'SUPER_ADMIN']}>
+                    <CitizenLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/citizen/dashboard" replace />} />
+                <Route path="dashboard" element={<CitizenDashboard />} />
+              </Route>
               {/* FALLBACK */}
               <Route path="*" element={<NotFound />} />
             </Routes>

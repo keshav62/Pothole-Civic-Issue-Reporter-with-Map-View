@@ -8,5 +8,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    hmr: {
+      // Disable the error overlay so PostCSS errors don't block the browser
+      overlay: false,
+    },
+  },
 })
-
