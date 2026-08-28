@@ -27,7 +27,7 @@ export const authService = {
   /**
    * Authenticate user with email and password (or quick role select)
    */
-  async loginUser({ email, password, role }) {
+  async loginUser({ email, password: _password, role }) {
     await delay();
 
     // If role is passed directly (for demo switcher) or found by email
@@ -72,8 +72,9 @@ export const authService = {
   /**
    * Register a new user
    */
-  async registerUser({ name, email, password, role = USER_ROLES.CITIZEN, department = null, phone = null }) {
+  async registerUser({ name, email, password: _password, role = USER_ROLES.CITIZEN, department = null, phone = null }) {
     await delay();
+
 
     if (!name || !email) {
       throw new Error('Name and email are required for registration.');

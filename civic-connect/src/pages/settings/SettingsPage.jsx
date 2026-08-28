@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Bell, Shield, Moon, Globe, Save } from 'lucide-react';
+import { Bell, Save } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
+
 import { useToast } from '../../hooks/useToast';
 
 export const SettingsPage = () => {

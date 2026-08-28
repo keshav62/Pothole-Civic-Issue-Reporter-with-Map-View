@@ -1,9 +1,10 @@
 import React from 'react';
-import { User, Mail, Phone, MapPin, Shield, Calendar } from 'lucide-react';
+import { Mail, Phone, MapPin, Shield } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/common/Card';
+import { Card, CardContent } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+
 import { Button } from '../../components/common/Button';
 import { ROLE_LABELS } from '../../utils/constants';
 

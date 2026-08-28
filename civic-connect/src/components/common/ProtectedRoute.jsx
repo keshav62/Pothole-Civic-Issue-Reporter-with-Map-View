@@ -1,1 +1,5 @@
-export { default, ProtectedRoute } from '../../routes/ProtectedRoute';
+import ProtectedRoute from '../../routes/ProtectedRoute';
+
+export { ProtectedRoute };
+export default ProtectedRoute;
+

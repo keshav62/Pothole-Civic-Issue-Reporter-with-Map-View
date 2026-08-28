@@ -1,7 +1,8 @@
 import React from 'react';
-import { MapPin, Navigation, Layers, Compass } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/common/Card';
+import { Navigation, Layers, Compass } from 'lucide-react';
+import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
+
 import { EmptyState } from '../../components/common/EmptyState';
 import { useToast } from '../../hooks/useToast';
 
