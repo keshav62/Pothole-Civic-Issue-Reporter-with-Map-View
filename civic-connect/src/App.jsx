@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CivicProvider } from './context/CivicContext';
 import { ToastProvider } from './context/ToastContext';
+import { WorkerProvider } from './context/WorkerContext';
 import { ToastContainer } from './components/common/Toast';
 
 // Layouts
@@ -43,6 +44,7 @@ import { TaskDetails } from './pages/worker/TaskDetails';
 import { WorkerMap } from './pages/worker/WorkerMap';
 import { WorkerNotifications } from './pages/worker/WorkerNotifications';
 import { WorkerProfile } from './pages/worker/WorkerProfile';
+import { UploadProof } from './pages/worker/UploadProof';
 
 // Citizen Pages
 import { CitizenDashboard } from './pages/citizen/CitizenDashboard';
@@ -131,7 +133,9 @@ export default function App() {
                 path="/worker"
                 element={
                   <ProtectedRoute allowedRoles={['FIELD_WORKER', 'SUPER_ADMIN', 'DEPARTMENT_ADMIN']}>
-                    <WorkerLayout />
+                    <WorkerProvider>
+                      <WorkerLayout />
+                    </WorkerProvider>
                   </ProtectedRoute>
                 }
               >
@@ -139,6 +143,7 @@ export default function App() {
                 <Route path="dashboard" element={<WorkerDashboard />} />
                 <Route path="tasks" element={<AssignedTasks />} />
                 <Route path="tasks/:id" element={<TaskDetails />} />
+                <Route path="tasks/:id/upload" element={<UploadProof />} />
                 <Route path="map" element={<WorkerMap />} />
                 <Route path="notifications" element={<WorkerNotifications />} />
                 <Route path="profile" element={<WorkerProfile />} />

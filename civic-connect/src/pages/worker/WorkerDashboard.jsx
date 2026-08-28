@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useCivic } from '../../context/CivicContext';
-import { recentActivity, CATEGORY_META } from '../../data/workerMockData';
+import { useWorker } from '../../context/WorkerContext';
 import WorkerStatCard from '../../components/worker/WorkerStatCard';
 import TaskCard from '../../components/worker/TaskCard';
 import { IssueStatus } from '../../components/issues/IssueStatus';
@@ -46,7 +45,7 @@ const ACTIVITY_CONFIG = {
 // ─── Sections ─────────────────────────────────────────────────────────────────
 
 /** Greeting + context banner */
-const GreetingBanner = ({ stats, currentUser }) => {
+const GreetingBanner = ({ stats, worker }) => {
   const greeting = getGreeting();
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/20">
@@ -62,7 +61,7 @@ const GreetingBanner = ({ stats, currentUser }) => {
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug">
-            {greeting.text}, {currentUser?.name?.split(' ')[0] || 'Worker'} {greeting.emoji}
+            {greeting.text}, {worker?.name?.split(' ')[0] || 'Worker'} {greeting.emoji}
           </h1>
           <p className="mt-2 text-indigo-200 text-sm max-w-sm leading-relaxed">
             You have{' '}
@@ -92,17 +91,17 @@ const GreetingBanner = ({ stats, currentUser }) => {
 
         <div className="flex items-center gap-4 self-start sm:self-center">
           <div className="text-right hidden sm:block">
-            <p className="font-bold text-lg leading-none">{currentUser?.name}</p>
-            <p className="text-indigo-300 text-xs mt-1">{currentUser?.department || 'Field Operations'}</p>
-            <p className="text-indigo-300 text-xs">{currentUser?.ward || 'All Wards'}</p>
+            <p className="font-bold text-lg leading-none">{worker?.name}</p>
+            <p className="text-indigo-300 text-xs mt-1">{worker?.department || 'Field Operations'}</p>
+            <p className="text-indigo-300 text-xs">{worker?.ward || 'All Wards'}</p>
             <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
               Available
             </span>
           </div>
           <img
-            src={currentUser?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80'}
-            alt={currentUser?.name}
+            src={worker?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80'}
+            alt={worker?.name}
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ring-4 ring-white/20 bg-indigo-500 object-cover shadow-lg flex-shrink-0"
           />
         </div>
@@ -236,7 +235,7 @@ const TodaysTasks = ({ tasks }) => {
 };
 
 /** SVG pseudo-map of nearby tasks */
-const NearbyTasksMap = ({ tasks, currentUser }) => {
+const NearbyTasksMap = ({ tasks, worker }) => {
   const activeTasks = tasks.filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved');
   const PRIORITY_COLORS = { HIGH: '#ef4444', High: '#ef4444', CRITICAL: '#dc2626', MEDIUM: '#f59e0b', Medium: '#f59e0b', LOW: '#60a5fa', Low: '#60a5fa' };
 
@@ -245,7 +244,7 @@ const NearbyTasksMap = ({ tasks, currentUser }) => {
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
         <div>
           <h2 className="text-base font-bold text-slate-900">Nearby Tasks</h2>
-          <p className="text-xs text-slate-500 mt-0.5">{currentUser?.ward || 'Your Area'}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{worker?.ward || 'Your Area'}</p>
         </div>
         <Link
           to="/worker/map"
@@ -373,28 +372,26 @@ const RecentActivityFeed = ({ activities }) => (
 // ─── WorkerDashboard ──────────────────────────────────────────────────────────
 export const WorkerDashboard = () => {
   const { currentUser } = useAuth();
-  const { issues } = useCivic();
+  const { tasks, recentActivity, profile } = useWorker();
 
-  const workerName = currentUser?.name || 'Rahul Sharma';
-  
-  // Tasks assigned to this field worker
-  const assignedTasks = useMemo(() => issues.filter(
-    i => i.assignedWorker === workerName || i.workerId === currentUser?.id || i.assignedTo === currentUser?.id || i.department === 'Road Maintenance'
-  ), [issues, workerName, currentUser?.id]);
+  const worker = {
+    ...profile,
+    name: currentUser?.name || profile.name
+  };
 
   const stats = useMemo(() => ({
-    total:      assignedTasks.length,
-    assigned:   assignedTasks.filter(t => t.status === 'ASSIGNED' || t.status === 'assigned').length,
-    inProgress: assignedTasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'in-progress').length,
-    resolved:   assignedTasks.filter(t => t.status === 'RESOLVED' || t.status === 'resolved').length,
-    overdue:    assignedTasks.filter(t => t.slaStatus === 'BREACHED' || (t.slaHours && t.elapsedHours >= t.slaHours)).length,
-  }), [assignedTasks]);
+    total:      tasks.length,
+    assigned:   tasks.filter(t => t.status === 'ASSIGNED' || t.status === 'assigned').length,
+    inProgress: tasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'in-progress').length,
+    resolved:   tasks.filter(t => t.status === 'RESOLVED' || t.status === 'resolved').length,
+    overdue:    tasks.filter(t => t.slaStatus === 'BREACHED' || (t.slaHours && t.elapsedHours >= t.slaHours)).length,
+  }), [tasks]);
 
   return (
     <div className="p-4 sm:p-6 xl:p-8 max-w-7xl mx-auto space-y-6 pb-10">
 
       {/* 1. Welcome banner */}
-      <GreetingBanner stats={stats} currentUser={currentUser} />
+      <GreetingBanner stats={stats} worker={worker} />
 
       {/* 2. Stat cards */}
       <StatsRow stats={stats} />
@@ -402,10 +399,10 @@ export const WorkerDashboard = () => {
       {/* 3. Today's Tasks + Nearby Map — side by side on xl */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          <TodaysTasks tasks={assignedTasks} />
+          <TodaysTasks tasks={tasks} />
         </div>
         <div>
-          <NearbyTasksMap tasks={assignedTasks} currentUser={currentUser} />
+          <NearbyTasksMap tasks={tasks} worker={worker} />
         </div>
       </div>
 

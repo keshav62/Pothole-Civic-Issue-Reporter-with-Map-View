@@ -1,164 +1,322 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// workerMockData.js  –  All mock data for the Field Worker module
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Current logged-in worker
-export const currentWorker = {
+export const workerProfile = {
   id: "FW-101",
-  name: "Rajesh Kumar",
-  firstName: "Rajesh",
-  role: "Field Worker",
-  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh",
-  department: "Road Maintenance",
-  assignedWard: "Ward A – Sector 15",
-  email: "rajesh.worker@civicconnect.in",
+  name: "Rahul Sharma",
+  role: "FIELD_WORKER",
+  email: "rahul.sharma@civicconnect.com",
   phone: "+91 98765 43210",
-  employeeId: "EMP-2347",
-  joinedDate: "2024-03-15",
-  completedAllTime: 82,
-  rating: 4.7,
+  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul",
+  department: "Road Maintenance",
+  ward: "Ward 12 - Andheri East",
+  completedTasksCount: 142,
+  activeTasksCount: 3,
+  rating: 4.8,
+  joinDate: "2023-04-15T00:00:00Z"
 };
 
-// ─── Category metadata ────────────────────────────────────────────────────────
-export const CATEGORY_META = {
-  Potholes:     { icon: "🕳️",  color: "red"    },
-  Garbage:      { icon: "🗑️",  color: "orange" },
-  Streetlights: { icon: "💡",  color: "yellow" },
-  Waterlogging: { icon: "🌊",  color: "blue"   },
-  Traffic:      { icon: "🚦",  color: "purple" },
-  Drainage:     { icon: "🚿",  color: "teal"   },
-  RoadDamage:   { icon: "🛣️",  color: "slate"  },
-};
-
-// ─── Priority metadata ────────────────────────────────────────────────────────
-export const PRIORITY_META = {
-  High:   { label: "High",   dot: "#ef4444", badge: "bg-red-100 text-red-700 border-red-200"       },
-  Medium: { label: "Medium", dot: "#f59e0b", badge: "bg-amber-100 text-amber-700 border-amber-200" },
-  Low:    { label: "Low",    dot: "#60a5fa", badge: "bg-blue-100 text-blue-700 border-blue-200"    },
-};
-
-// ─── Tasks assigned to this worker ───────────────────────────────────────────
 export const workerTasks = [
   {
-    id: "ISS-1021",
-    title: "Large Pothole on Main St",
-    category: "Potholes",
-    description: "Massive pothole in the middle lane near the central library causing traffic slowdowns and risk to two-wheelers.",
-    location: { address: "123 Main St, Sector 15", ward: "Ward A", lat: 40.7128, lng: -74.0060, mapX: 42, mapY: 35 },
-    status: "in-progress",
-    priority: "High",
-    assignedAt: "2026-08-25T10:30:00Z",
-    dueDate:    "2026-08-29T17:00:00Z",
-    updatedAt:  "2026-08-28T14:15:00Z",
-    images: { before: ["https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=800"], after: [] },
-    reportedBy: "John D.",
+    id: "CC-1051",
+    title: "Large Pothole on Main Street",
+    category: "Pothole",
+    description: "Deep pothole causing traffic slowdowns and potential damage to vehicles near the intersection.",
+    location: "Main Street, near Central Park",
+    latitude: 19.1136,
+    longitude: 72.8697,
+    priority: "CRITICAL",
+    status: "IN_PROGRESS",
+    dueDate: "2026-08-29T18:00:00Z",
+    assignedDate: "2026-08-28T09:00:00Z",
+    citizenName: "Amit Patel",
+    department: "Road Maintenance",
+    beforeImage: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=400&q=80",
+    afterImage: null
   },
   {
-    id: "ISS-1025",
-    title: "Overflowing Garbage Bin",
-    category: "Garbage",
-    description: "The garbage bin near the park entrance has not been cleared for 3 days. Overflowing and causing stench.",
-    location: { address: "Greenwood Park Entrance", ward: "Ward B", lat: 40.7138, lng: -74.0080, mapX: 60, mapY: 55 },
-    status: "assigned",
-    priority: "Medium",
-    assignedAt: "2026-08-27T08:20:00Z",
-    dueDate:    "2026-08-30T12:00:00Z",
-    updatedAt:  "2026-08-27T10:00:00Z",
-    images: { before: ["https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=800"], after: [] },
-    reportedBy: "Jane S.",
+    id: "CC-1052",
+    title: "Broken Streetlight",
+    category: "Streetlight",
+    description: "Streetlight pole number 42 is completely dark, causing safety issues for pedestrians at night.",
+    location: "Oakwood Avenue",
+    latitude: 19.1145,
+    longitude: 72.8712,
+    priority: "HIGH",
+    status: "ASSIGNED",
+    dueDate: "2026-08-30T12:00:00Z",
+    assignedDate: "2026-08-28T10:30:00Z",
+    citizenName: "Priya Singh",
+    department: "Electrical",
+    beforeImage: "https://images.unsplash.com/photo-1520697926135-b21908d1f2e6?auto=format&fit=crop&w=400&q=80",
+    afterImage: null
   },
   {
-    id: "ISS-1030",
-    title: "Broken Streetlight on Oak Ave",
-    category: "Streetlights",
-    description: "The streetlight on Oak Avenue is completely broken, making the street dangerous at night.",
-    location: { address: "45 Oak Avenue", ward: "Ward A", lat: 40.7150, lng: -74.0100, mapX: 25, mapY: 65 },
-    status: "resolved",
-    priority: "Low",
-    assignedAt: "2026-08-20T18:45:00Z",
-    dueDate:    "2026-08-23T17:00:00Z",
-    updatedAt:  "2026-08-22T09:30:00Z",
-    images: {
-      before: ["https://images.unsplash.com/photo-1519772879590-7d7d363d6b05?auto=format&fit=crop&q=80&w=800"],
-      after:  ["https://images.unsplash.com/photo-1534085444738-f1c508210168?auto=format&fit=crop&q=80&w=800"],
-    },
-    reportedBy: "John D.",
+    id: "CC-1053",
+    title: "Overflowing Garbage Dumpster",
+    category: "Waste Management",
+    description: "Garbage has not been collected for 3 days and is spilling onto the road.",
+    location: "Sector 4 Market Area",
+    latitude: 19.1120,
+    longitude: 72.8680,
+    priority: "MEDIUM",
+    status: "ACCEPTED",
+    dueDate: "2026-08-31T10:00:00Z",
+    assignedDate: "2026-08-28T11:15:00Z",
+    citizenName: "Neha Gupta",
+    department: "Sanitation",
+    beforeImage: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=400&q=80",
+    afterImage: null
   },
   {
-    id: "ISS-1035",
-    title: "Severe Waterlogging at Market Rd",
-    category: "Waterlogging",
-    description: "Drainage is blocked leading to knee-deep waterlogging after yesterday's rain. Urgent clearance needed.",
-    location: { address: "Market Road Junction", ward: "Ward A", lat: 40.7160, lng: -74.0040, mapX: 70, mapY: 30 },
-    status: "assigned",
-    priority: "High",
-    assignedAt: "2026-08-28T07:15:00Z",
-    dueDate:    "2026-08-29T10:00:00Z",   // overdue
-    updatedAt:  "2026-08-28T08:00:00Z",
-    images: { before: ["https://images.unsplash.com/photo-1527402858-5d15a5fbc40d?auto=format&fit=crop&q=80&w=800"], after: [] },
-    reportedBy: "Jane S.",
+    id: "CC-1054",
+    title: "Clogged Storm Drain",
+    category: "Drainage",
+    description: "Water logging occurs even with mild rain due to a completely blocked drain.",
+    location: "MG Road, Phase 2",
+    latitude: 19.1160,
+    longitude: 72.8705,
+    priority: "HIGH",
+    status: "OVERDUE",
+    dueDate: "2026-08-27T18:00:00Z",
+    assignedDate: "2026-08-26T09:00:00Z",
+    citizenName: "Vikram Desai",
+    department: "Water & Sewage",
+    beforeImage: "https://images.unsplash.com/photo-1518002171953-a080ee817e1f?auto=format&fit=crop&w=400&q=80",
+    afterImage: null
   },
   {
-    id: "ISS-1040",
-    title: "Traffic Signal Malfunction",
+    id: "CC-1055",
+    title: "Fallen Tree Branch",
+    category: "Road Hazard",
+    description: "Large tree branch fallen across the walking path.",
+    location: "Lakeview Promenade",
+    latitude: 19.1182,
+    longitude: 72.8734,
+    priority: "LOW",
+    status: "COMPLETED",
+    dueDate: "2026-08-28T18:00:00Z",
+    assignedDate: "2026-08-28T08:00:00Z",
+    citizenName: "Rohan Mehta",
+    department: "Parks & Recreation",
+    beforeImage: "https://images.unsplash.com/photo-1595168058299-dcbcc461cb28?auto=format&fit=crop&w=400&q=80",
+    afterImage: "https://images.unsplash.com/photo-1595168058299-dcbcc461cb28?auto=format&fit=crop&w=400&q=80" // Using same for demo
+  },
+  {
+    id: "CC-1056",
+    title: "Traffic Light Malfunction",
     category: "Traffic",
-    description: "Traffic signal at the main crossroads has been blinking red continuously since morning causing chaos.",
-    location: { address: "MG Road Crossroads", ward: "Ward C", lat: 40.7110, lng: -74.0070, mapX: 55, mapY: 20 },
-    status: "assigned",
-    priority: "High",
-    assignedAt: "2026-08-29T06:00:00Z",
-    dueDate:    "2026-08-29T14:00:00Z",
-    updatedAt:  "2026-08-29T06:00:00Z",
-    images: { before: [], after: [] },
-    reportedBy: "Priya M.",
+    description: "Signals are stuck on red for all directions, causing massive gridlock.",
+    location: "Highway Intersection 9",
+    latitude: 19.1111,
+    longitude: 72.8655,
+    priority: "CRITICAL",
+    status: "IN_PROGRESS",
+    dueDate: "2026-08-29T10:00:00Z",
+    assignedDate: "2026-08-29T08:30:00Z",
+    citizenName: "Arjun Reddy",
+    department: "Traffic Control",
+    beforeImage: "https://images.unsplash.com/photo-1511215160868-6c8a002b8d4c?auto=format&fit=crop&w=400&q=80",
+    afterImage: null
   },
+  {
+    id: "CC-1057",
+    title: "Water Pipe Leak",
+    category: "Water Supply",
+    description: "Fresh water is gushing out of a cracked pipe near the residential complex.",
+    location: "Sunrise Apartments, Gate 2",
+    latitude: 19.1195,
+    longitude: 72.8750,
+    priority: "HIGH",
+    status: "ASSIGNED",
+    dueDate: "2026-08-29T15:00:00Z",
+    assignedDate: "2026-08-29T09:15:00Z",
+    citizenName: "Kavita Rao",
+    department: "Water & Sewage",
+    beforeImage: "https://images.unsplash.com/photo-1542159146-5e5d1ec9c7f6?auto=format&fit=crop&w=400&q=80",
+    afterImage: null
+  },
+  {
+    id: "CC-1058",
+    title: "Missing Manhole Cover",
+    category: "Road Hazard",
+    description: "Dangerous open manhole in the middle of the sidewalk.",
+    location: "Station Road",
+    latitude: 19.1150,
+    longitude: 72.8640,
+    priority: "CRITICAL",
+    status: "ACCEPTED",
+    dueDate: "2026-08-29T12:00:00Z",
+    assignedDate: "2026-08-29T07:45:00Z",
+    citizenName: "Sanjay Joshi",
+    department: "Road Maintenance",
+    beforeImage: "https://images.unsplash.com/photo-1516738901171-8eb4fc13bd20?auto=format&fit=crop&w=400&q=80",
+    afterImage: null
+  },
+  {
+    id: "CC-1059",
+    title: "Graffiti on Public Wall",
+    category: "Vandalism",
+    description: "Offensive graffiti painted on the community center wall.",
+    location: "Community Center, Ward A",
+    latitude: 19.1175,
+    longitude: 72.8715,
+    priority: "LOW",
+    status: "OVERDUE",
+    dueDate: "2026-08-25T17:00:00Z",
+    assignedDate: "2026-08-20T10:00:00Z",
+    citizenName: "Meera Nair",
+    department: "Sanitation",
+    beforeImage: "https://images.unsplash.com/photo-1498084393753-b411b2d26b34?auto=format&fit=crop&w=400&q=80",
+    afterImage: null
+  },
+  {
+    id: "CC-1060",
+    title: "Damaged Bus Shelter",
+    category: "Infrastructure",
+    description: "The roof of the bus shelter has collapsed after the recent storm.",
+    location: "Bus Stop 45, Ring Road",
+    latitude: 19.1105,
+    longitude: 72.8760,
+    priority: "MEDIUM",
+    status: "COMPLETED",
+    dueDate: "2026-08-27T18:00:00Z",
+    assignedDate: "2026-08-25T11:30:00Z",
+    citizenName: "Raj Patil",
+    department: "Public Works",
+    beforeImage: "https://images.unsplash.com/photo-1515286577457-3aa5a11488c9?auto=format&fit=crop&w=400&q=80",
+    afterImage: "https://images.unsplash.com/photo-1515286577457-3aa5a11488c9?auto=format&fit=crop&w=400&q=80"
+  }
 ];
 
-// ─── Recent activity feed ─────────────────────────────────────────────────────
 export const recentActivity = [
   {
     id: "ACT-001",
-    type: "completed",
-    taskId: "ISS-1030",
-    taskTitle: "Broken Streetlight on Oak Ave",
-    message: "Task marked as resolved",
-    timestamp: "2026-08-28T14:30:00Z",
+    type: "assigned",
+    taskId: "CC-1057",
+    taskTitle: "Water Pipe Leak",
+    action: "Task assigned to you",
     timeAgo: "2 hours ago",
+    time: "09:15 AM"
   },
   {
     id: "ACT-002",
-    type: "proof_uploaded",
-    taskId: "ISS-1021",
-    taskTitle: "Large Pothole on Main St",
-    message: "Before/after photos uploaded",
-    timestamp: "2026-08-28T11:00:00Z",
-    timeAgo: "5 hours ago",
+    type: "started",
+    taskId: "CC-1051",
+    taskTitle: "Large Pothole on Main Street",
+    action: "You started working on this task",
+    timeAgo: "4 hours ago",
+    time: "07:30 AM"
   },
   {
     id: "ACT-003",
-    type: "started",
-    taskId: "ISS-1021",
-    taskTitle: "Large Pothole on Main St",
-    message: "Task status changed to In Progress",
-    timestamp: "2026-08-28T09:00:00Z",
-    timeAgo: "7 hours ago",
+    type: "proof_uploaded",
+    taskId: "CC-1055",
+    taskTitle: "Fallen Tree Branch",
+    action: "You uploaded completion photo",
+    timeAgo: "1 day ago",
+    time: "Yesterday, 05:45 PM"
   },
   {
     id: "ACT-004",
-    type: "assigned",
-    taskId: "ISS-1035",
-    taskTitle: "Severe Waterlogging at Market Rd",
-    message: "New task assigned by Dept. Admin",
-    timestamp: "2026-08-28T07:15:00Z",
-    timeAgo: "Yesterday, 8:00 AM",
+    type: "completed",
+    taskId: "CC-1055",
+    taskTitle: "Fallen Tree Branch",
+    action: "Task marked as resolved",
+    timeAgo: "1 day ago",
+    time: "Yesterday, 05:50 PM"
   },
   {
     id: "ACT-005",
     type: "assigned",
-    taskId: "ISS-1025",
-    taskTitle: "Overflowing Garbage Bin",
-    message: "New task assigned by Dept. Admin",
-    timestamp: "2026-08-27T08:20:00Z",
-    timeAgo: "Yesterday, 11:30 AM",
-  },
+    taskId: "CC-1056",
+    taskTitle: "Traffic Light Malfunction",
+    action: "Task assigned to you",
+    timeAgo: "2 days ago",
+    time: "Aug 27, 08:30 AM"
+  }
 ];
+
+
+
+export const workerNotifications = [
+  {
+    id: 'notif-1',
+    type: 'TASK_ASSIGNED',
+    title: 'New Task Assigned',
+    message: 'Pothole #1024 has been assigned to you.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+    isRead: false,
+    taskId: '1024'
+  },
+  {
+    id: 'notif-2',
+    type: 'DEADLINE_APPROACHING',
+    title: 'Task Deadline Approaching',
+    message: 'Pothole #1024 is due tomorrow. Please complete the repair.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+    isRead: false,
+    taskId: '1024'
+  },
+  {
+    id: 'notif-3',
+    type: 'TASK_OVERDUE',
+    title: 'Task Overdue',
+    message: 'Fallen Tree #1027 is now overdue.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+    isRead: true,
+    taskId: '1027'
+  },
+  {
+    id: 'notif-4',
+    type: 'STATUS_UPDATED',
+    title: 'Task Status Updated',
+    message: 'Task #1022 status was updated to IN_PROGRESS.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
+    isRead: true,
+    taskId: '1022'
+  },
+  {
+    id: 'notif-5',
+    type: 'RESOLUTION_APPROVED',
+    title: 'Resolution Approved',
+    message: 'Your resolution proof for #1021 was approved by the department.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), // 3 days ago
+    isRead: true,
+    taskId: '1021'
+  },
+  {
+    id: 'notif-6',
+    type: 'RESOLUTION_REJECTED',
+    title: 'Resolution Rejected',
+    message: 'Your resolution proof for #1025 was rejected. Needs clearer photos.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(), // 4 days ago
+    isRead: true,
+    taskId: '1025'
+  },
+  {
+    id: 'notif-7',
+    type: 'TASK_REASSIGNED',
+    title: 'Task Reassigned',
+    message: 'Task #1020 has been reassigned to another worker.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(), // 5 days ago
+    isRead: true,
+    taskId: '1020'
+  }
+];
+
+export const CATEGORY_META = {
+  Pothole: { icon: "🕳️", color: "text-amber-500", bg: "bg-amber-50" },
+  Streetlight: { icon: "💡", color: "text-blue-500", bg: "bg-blue-50" },
+  "Waste Management": { icon: "🗑️", color: "text-emerald-500", bg: "bg-emerald-50" },
+  Drainage: { icon: "💧", color: "text-cyan-500", bg: "bg-cyan-50" },
+  "Road Hazard": { icon: "🚧", color: "text-red-500", bg: "bg-red-50" },
+  Traffic: { icon: "🚦", color: "text-rose-500", bg: "bg-rose-50" },
+  "Water Supply": { icon: "🚰", color: "text-blue-600", bg: "bg-blue-100" },
+  Vandalism: { icon: "🖌️", color: "text-purple-500", bg: "bg-purple-50" },
+  Infrastructure: { icon: "🏗️", color: "text-slate-500", bg: "bg-slate-50" }
+};
+
+export const PRIORITY_META = {
+  LOW: { color: "text-blue-500", bg: "bg-blue-50" },
+  MEDIUM: { color: "text-amber-500", bg: "bg-amber-50" },
+  HIGH: { color: "text-orange-500", bg: "bg-orange-50" },
+  CRITICAL: { color: "text-red-500", bg: "bg-red-50" }
+};
