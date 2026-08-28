@@ -16,13 +16,16 @@ import {
   Wifi,
   Shield,
 } from 'lucide-react';
+import { NotificationBell } from '../components/worker/NotificationBell';
+import { useWorker } from '../context/WorkerContext';
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
-const NAV_ITEMS = [
+
+const BASE_NAV_ITEMS = [
   { name: 'Dashboard',      path: '/worker/dashboard',      icon: LayoutDashboard, badge: null },
   { name: 'Assigned Tasks', path: '/worker/tasks',          icon: ClipboardList,   badge: 3    },
   { name: 'Task Map',       path: '/worker/map',            icon: Map,             badge: null },
-  { name: 'Notifications',  path: '/worker/notifications',  icon: Bell,            badge: 2    },
+  { name: 'Notifications',  path: '/worker/notifications',  icon: Bell,            badge: null },
   { name: 'Profile',        path: '/worker/profile',        icon: User,            badge: null },
 ];
 
@@ -83,7 +86,7 @@ const SidebarItem = ({ item, collapsed, onClick }) => (
 // ─── Page title from route ────────────────────────────────────────────────────
 function usePageTitle() {
   const { pathname } = useLocation();
-  const match = NAV_ITEMS.find(i => pathname.startsWith(i.path));
+  const match = BASE_NAV_ITEMS.find(i => pathname.startsWith(i.path));
   if (pathname.includes('/tasks/')) return 'Task Details';
   return match?.name ?? 'Field Worker';
 }
@@ -97,6 +100,17 @@ export const WorkerLayout = () => {
   const navigate   = useNavigate();
   const pageTitle  = usePageTitle();
   const { currentUser, logout } = useAuth();
+  
+  // Use worker context
+  const { notifications, tasks } = useWorker();
+  const unreadNotifs = notifications.filter(n => !n.isRead).length;
+  const activeTasksCount = tasks.filter(t => t.status !== 'COMPLETED').length;
+
+  const NAV_ITEMS = BASE_NAV_ITEMS.map(item => {
+    if (item.name === 'Notifications') return { ...item, badge: unreadNotifs > 0 ? unreadNotifs : null };
+    if (item.name === 'Assigned Tasks') return { ...item, badge: activeTasksCount > 0 ? activeTasksCount : null };
+    return item;
+  });
   
   const workerData = {
     name: currentUser?.name || 'Worker',
@@ -306,18 +320,7 @@ export const WorkerLayout = () => {
           <div className="flex items-center gap-2 sm:gap-3">
 
             {/* Notification bell */}
-            <NavLink
-              to="/worker/notifications"
-              className={({ isActive }) =>
-                cn(
-                  'relative p-2 rounded-xl transition-colors',
-                  isActive ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-                )
-              }
-            >
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-1 ring-white" />
-            </NavLink>
+            <NotificationBell />
 
             {/* Status pill */}
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full">
