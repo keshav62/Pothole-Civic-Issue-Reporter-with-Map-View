@@ -1,62 +1,176 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// mockUsers.js – Combined mock user data for all roles
+// ─────────────────────────────────────────────────────────────────────────────
 import { USER_ROLES } from '../utils/constants';
 
-export const MOCK_USERS = [
+// ── Field-worker branch: simple users array ───────────────────────────────────
+export const mockUsers = [
   {
-    id: 'user-cit-001',
-    name: 'Demo Citizen',
-    email: 'citizen@example.com',
-    role: USER_ROLES.CITIZEN,
-    department: null,
-    phone: '+1 (555) 019-2834',
-    avatar: null,
-    address: '142 Maplewood Avenue, Ward 4',
+    id: "U-001",
+    name: "John Doe",
+    role: "citizen",
+    email: "john@example.com",
+    phone: "+1 234 567 8900",
   },
   {
-    id: 'user-adm-001',
-    name: 'Demo Admin',
-    email: 'admin@example.com',
-    role: USER_ROLES.ADMIN,
-    department: 'Central Administration',
-    phone: '+1 (555) 019-5521',
-    avatar: null,
-    address: 'Civic Center, Suite 500',
+    id: "U-002",
+    name: "Jane Smith",
+    role: "citizen",
+    email: "jane@example.com",
+    phone: "+1 234 567 8901",
   },
   {
-    id: 'user-dep-001',
-    name: 'Demo Department Admin',
-    email: 'department@example.com',
-    role: USER_ROLES.DEPARTMENT_ADMIN,
-    department: 'Roads & Infrastructure',
-    phone: '+1 (555) 019-7733',
-    avatar: null,
-    address: 'Public Works HQ, Ward 2',
-  },
-  {
-    id: 'user-off-001',
-    name: 'Demo Officer',
-    email: 'officer@example.com',
-    role: USER_ROLES.OFFICER,
-    department: 'Roads & Infrastructure',
-    phone: '+1 (555) 019-8844',
-    avatar: null,
-    address: 'Field Unit Station 3, Ward 4',
-  },
-  {
-    id: 'user-wrk-001',
-    name: 'Demo Worker',
-    email: 'worker@example.com',
-    role: USER_ROLES.WORKER,
-    department: 'Roads & Infrastructure - Maintenance Crew',
-    phone: '+1 (555) 019-9955',
-    avatar: null,
-    address: 'Maintenance Depot A, Sector 9',
+    id: "FW-101",
+    name: "Rajesh Kumar",
+    role: "worker",
+    email: "rajesh.worker@civicconnect.com",
+    phone: "+91 98765 43210",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh",
+    department: "Road Maintenance",
+    assignedWard: "Ward A",
+    completedTasksCount: 42,
+    activeTasksCount: 3,
   },
 ];
 
+/** Currently logged-in field worker (used across all worker pages) */
+export const currentWorker = mockUsers.find(u => u.id === "FW-101");
+
+// ── Main branch: structured multi-role mock users ─────────────────────────────
+export const MOCK_USERS = [
+  {
+    id: "USR-CIT-001",
+    name: "Demo Citizen",
+    email: "citizen@example.com",
+    role: "CITIZEN",
+    roleLabel: "Citizen",
+    phone: "+1 234 567 8900",
+    status: "ACTIVE",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80",
+    lastActive: "Just now"
+  },
+  {
+    id: "USR-001",
+    name: "Vikramaditya Roy",
+    email: "superadmin@civicconnect.gov.in",
+    role: "SUPER_ADMIN",
+    roleLabel: "Super Admin",
+    department: "Municipal Headquarters",
+    ward: "All Wards",
+    status: "ACTIVE",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80",
+    lastActive: "Just now"
+  },
+  {
+    id: "USR-002",
+    name: "Dr. Rajeshwar Rao",
+    email: "road.admin@civicconnect.gov.in",
+    role: "DEPARTMENT_ADMIN",
+    roleLabel: "Department Admin",
+    department: "Road Maintenance",
+    ward: "Ward 15 & Ward 8",
+    status: "ACTIVE",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80",
+    lastActive: "10 mins ago"
+  },
+  {
+    id: "USR-003",
+    name: "Kavita Deshmukh",
+    email: "sanitation.admin@civicconnect.gov.in",
+    role: "DEPARTMENT_ADMIN",
+    roleLabel: "Department Admin",
+    department: "Sanitation",
+    ward: "Ward 12",
+    status: "ACTIVE",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80",
+    lastActive: "25 mins ago"
+  },
+  {
+    id: "USR-004",
+    name: "Rahul Sharma",
+    email: "rahul.sharma@field.civicconnect.gov.in",
+    role: "FIELD_WORKER",
+    roleLabel: "Field Worker",
+    department: "Road Maintenance",
+    ward: "Ward 15",
+    phone: "+91 98765 43210",
+    status: "AVAILABLE",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80",
+    lastActive: "Active Now",
+    tasksActive: 2,
+    tasksCompleted: 87,
+    onTimeRate: "94%",
+    rating: 4.8
+  },
+  {
+    id: "USR-005",
+    name: "Amit Kumar",
+    email: "amit.kumar@field.civicconnect.gov.in",
+    role: "FIELD_WORKER",
+    roleLabel: "Field Worker",
+    department: "Road Maintenance",
+    ward: "Ward 8",
+    phone: "+91 98123 45678",
+    status: "BUSY",
+    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=250&q=80",
+    lastActive: "15 mins ago",
+    tasksActive: 4,
+    tasksCompleted: 64,
+    onTimeRate: "89%",
+    rating: 4.6
+  },
+  {
+    id: "USR-006",
+    name: "Vikas Singh",
+    email: "vikas.singh@field.civicconnect.gov.in",
+    role: "FIELD_WORKER",
+    roleLabel: "Field Worker",
+    department: "Sanitation",
+    ward: "Ward 12",
+    phone: "+91 97654 32109",
+    status: "AVAILABLE",
+    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=250&q=80",
+    lastActive: "5 mins ago",
+    tasksActive: 1,
+    tasksCompleted: 112,
+    onTimeRate: "97%",
+    rating: 4.9
+  },
+  {
+    id: "USR-007",
+    name: "Deepak Patel",
+    email: "deepak.patel@field.civicconnect.gov.in",
+    role: "FIELD_WORKER",
+    roleLabel: "Field Worker",
+    department: "Drainage",
+    ward: "Ward 4",
+    phone: "+91 99887 76655",
+    status: "BUSY",
+    avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=250&q=80",
+    lastActive: "1 hour ago",
+    tasksActive: 3,
+    tasksCompleted: 42,
+    onTimeRate: "91%",
+    rating: 4.7
+  },
+  {
+    id: "USR-008",
+    name: "Sanjay Singhania",
+    email: "sanjay.ward15@civicconnect.gov.in",
+    role: "WARD_OFFICER",
+    roleLabel: "Ward Officer",
+    department: "Ward Administration",
+    ward: "Ward 15",
+    status: "ACTIVE",
+    avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=250&q=80",
+    lastActive: "2 hours ago"
+  }
+];
+
 export const getMockUserByRole = (role) => {
-  return MOCK_USERS.find((u) => u.role === role) || MOCK_USERS[0];
+  return MOCK_USERS.find(u => u.role === role) || MOCK_USERS[0];
 };
 
 export const getMockUserByEmail = (email) => {
-  return MOCK_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  return MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
 };

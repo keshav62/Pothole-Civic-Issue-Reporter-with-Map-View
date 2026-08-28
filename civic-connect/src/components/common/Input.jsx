@@ -6,6 +6,7 @@ export const Input = forwardRef(
       label,
       error,
       helperText,
+      icon: Icon,
       leftIcon,
       rightIcon,
       type = 'text',
@@ -21,22 +22,23 @@ export const Input = forwardRef(
     ref
   ) => {
     const generatedId = useId();
-    const inputId = id || name || generatedId;
-
+    const inputId = id || name || (label ? label.toLowerCase().replace(/\s+/g, '-') : generatedId);
+    
+    const displayLeftIcon = leftIcon || (Icon && <Icon className="h-4 w-4" />);
 
     return (
       <div className={`w-full ${wrapperClassName}`}>
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-slate-700 mb-1.5">
+          <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
             {label}
             {required && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
 
         <div className="relative rounded-lg shadow-sm">
-          {leftIcon && (
+          {displayLeftIcon && (
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              {leftIcon}
+              {displayLeftIcon}
             </div>
           )}
 
@@ -49,7 +51,7 @@ export const Input = forwardRef(
             disabled={disabled}
             required={required}
             className={`block w-full rounded-lg text-sm text-slate-900 placeholder:text-slate-400 bg-white transition-colors duration-150 border focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed ${
-              leftIcon ? 'pl-10' : 'pl-3.5'
+              displayLeftIcon ? 'pl-10' : 'pl-3.5'
             } ${rightIcon ? 'pr-10' : 'pr-3.5'} py-2.5 ${
               error
                 ? 'border-red-400 focus:border-red-500 focus:ring-red-200 text-red-900 placeholder-red-300'
