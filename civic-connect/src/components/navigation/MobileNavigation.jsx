@@ -1,19 +1,37 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, MapPin, Bell, User } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, MapPin, Bell, User, FileText, AlertOctagon } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const MobileNavigation = () => {
   const { notifications } = useCivic();
-  const unreadCount = notifications.filter(n => !n.read && n.role === 'FIELD_WORKER').length;
+  const { role } = useAuth();
+  
+  if (role !== 'FIELD_WORKER' && role !== 'CITIZEN') {
+    return null;
+  }
 
-  const items = [
+  const unreadWorkerCount = notifications.filter(n => !n.read && n.role === 'FIELD_WORKER').length;
+  const unreadCitizenCount = notifications.filter(n => !n.read && n.role === 'CITIZEN').length; // Or logic for citizen specific
+
+  const workerItems = [
     { label: 'Dashboard', path: '/worker/dashboard', icon: LayoutDashboard },
     { label: 'Tasks', path: '/worker/tasks', icon: ClipboardList },
     { label: 'Map', path: '/worker/map', icon: MapPin },
-    { label: 'Alerts', path: '/worker/notifications', icon: Bell, badge: unreadCount },
+    { label: 'Alerts', path: '/worker/notifications', icon: Bell, badge: unreadWorkerCount },
     { label: 'Profile', path: '/worker/profile', icon: User }
   ];
+
+  const citizenItems = [
+    { label: 'Dashboard', path: '/citizen/dashboard', icon: LayoutDashboard },
+    { label: 'My Reports', path: '/citizen/reports', icon: FileText },
+    { label: 'Report', path: '/citizen/report', icon: AlertOctagon },
+    { label: 'Nearby', path: '/citizen/nearby', icon: MapPin },
+    { label: 'Profile', path: '/citizen/profile', icon: User }
+  ];
+
+  const items = role === 'CITIZEN' ? citizenItems : workerItems;
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900 border-t border-slate-800 text-slate-400 px-2 py-1 shadow-2xl">

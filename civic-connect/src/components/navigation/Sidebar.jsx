@@ -52,9 +52,18 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
     { label: 'Profile', path: '/worker/profile', icon: User }
   ];
 
+  const citizenNavItems = [
+    { label: 'Dashboard', path: '/citizen/dashboard', icon: LayoutDashboard },
+    { label: 'My Reports', path: '/citizen/reports', icon: FileText },
+    { label: 'Report Issue', path: '/citizen/report', icon: AlertOctagon },
+    { label: 'Nearby Issues', path: '/citizen/nearby', icon: MapPin },
+    { label: 'Profile', path: '/citizen/profile', icon: User }
+  ];
+
   const getNavItems = () => {
     if (role === 'SUPER_ADMIN') return adminNavItems;
     if (role === 'DEPARTMENT_ADMIN') return deptNavItems;
+    if (role === 'CITIZEN') return citizenNavItems;
     return workerNavItems;
   };
 
@@ -80,11 +89,11 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
       {/* Main Navigation Links */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          {role === 'SUPER_ADMIN' ? 'Headquarters Admin' : role === 'DEPARTMENT_ADMIN' ? 'Department Control' : 'Field Operations'}
+          {role === 'SUPER_ADMIN' ? 'Headquarters Admin' : role === 'DEPARTMENT_ADMIN' ? 'Department Control' : role === 'CITIZEN' ? 'Citizen Portal' : 'Field Operations'}
         </div>
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname.startsWith(item.path);
           return (
             <NavLink
               key={`${item.label}-${item.path}`}

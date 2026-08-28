@@ -39,6 +39,17 @@ export const currentWorker = mockUsers.find(u => u.id === "FW-101");
 // ── Main branch: structured multi-role mock users ─────────────────────────────
 export const MOCK_USERS = [
   {
+    id: "USR-CIT-001",
+    name: "Demo Citizen",
+    email: "citizen@example.com",
+    role: "CITIZEN",
+    roleLabel: "Citizen",
+    phone: "+1 234 567 8900",
+    status: "ACTIVE",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80",
+    lastActive: "Just now"
+  },
+  {
     id: "USR-001",
     name: "Vikramaditya Roy",
     email: "superadmin@civicconnect.gov.in",

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { GoogleAuthModal } from '../components/auth/GoogleAuthModal';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Building2, HardHat, ArrowRight, ShieldCheck, Mail, LogIn } from 'lucide-react';
+import { Shield, Building2, HardHat, ArrowRight, ShieldCheck, Mail, LogIn, User } from 'lucide-react';
 
 export const Login = () => {
   const { loginAs } = useAuth();
@@ -40,6 +40,16 @@ export const Login = () => {
       color: 'bg-amber-600',
       borderColor: 'hover:border-amber-500',
       path: '/worker/dashboard'
+    },
+    {
+      role: 'CITIZEN',
+      title: 'Citizen Portal',
+      subtitle: 'Public Issue Reporting & Tracking',
+      description: 'Report civic issues, track resolution progress, view nearby issues, and communicate with departments.',
+      icon: User,
+      color: 'bg-emerald-600',
+      borderColor: 'hover:border-emerald-500',
+      path: '/citizen/dashboard'
     }
   ];
 
@@ -115,7 +125,7 @@ export const Login = () => {
       </div>
 
       {/* Role Selection Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full">
         {roleCards.map((card) => {
           const Icon = card.icon;
           return (
