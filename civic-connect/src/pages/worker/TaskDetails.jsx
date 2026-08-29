@@ -88,40 +88,35 @@ export const TaskDetails = () => {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[400px]">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-sm font-bold text-slate-600">Loading Task Details...</p>
+      <div className="py-24 flex flex-col justify-center items-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+        <span className="mt-4 text-slate-500 font-medium">Loading task details...</span>
       </div>
     );
   }
 
   if (!task) {
     return (
-      <div className="p-8 max-w-xl mx-auto my-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto text-amber-600">
-          <AlertTriangle className="w-6 h-6" />
+      <div className="py-20 px-4 flex justify-center">
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 max-w-md text-center shadow-xs space-y-4">
+          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
+          <h3 className="text-xl font-bold text-slate-900">Task Details Unavailable</h3>
+          <p className="text-slate-500 text-sm">We couldn't locate details for task <span className="font-mono font-bold text-slate-700">{cleanId}</span>.</p>
+          <Button variant="primary" onClick={() => navigate('/worker/tasks')} fullWidth icon={ArrowLeft}>
+            Return to Task List
+          </Button>
         </div>
-        <h2 className="text-lg font-black text-slate-900">Task Not Found</h2>
-        <p className="text-xs text-slate-500">
-          We couldn't locate task <span className="font-mono font-bold text-slate-700">{cleanId}</span>. It may have been reassigned or deleted.
-        </p>
-        <Button variant="primary" icon={ArrowLeft} onClick={() => navigate('/worker/tasks')}>
-          Return to Assigned Tasks
-        </Button>
       </div>
     );
   }
 
-  const currentStatus = localStatus || task.status || 'REPORTED';
-  const displayId = task.issueId || task.id || (task._id ? String(task._id) : cleanId);
+  // Null-safe extracted variables
+  const displayId = task.issueId || task.id || (task._id ? String(task._id) : 'ISS-000');
+  const currentStatus = localStatus || task.status || 'ASSIGNED';
+  const taskAddress = typeof task.location === 'string'
+    ? task.location
+    : (task.address || task.location?.address || task.ward || 'Municipal Field Zone');
 
-  // Extract address safely
-  const taskAddress = task.address ||
-    (typeof task.location === 'string' ? task.location : task.location?.address) ||
-    task.ward ||
-    'Municipal Field Zone';
-
-  // Extract coordinates safely
   let lat = task.latitude ?? task.lat ?? task.location?.lat;
   let lng = task.longitude ?? task.lng ?? task.location?.lng;
   if (task.location?.coordinates && Array.isArray(task.location.coordinates) && task.location.coordinates.length >= 2) {
@@ -234,26 +229,26 @@ export const TaskDetails = () => {
             )}
           </div>
 
-          <ResolutionVerification task={task} />
+          <ResolutionVerification task={{ ...task, status: currentStatus }} />
         </div>
 
         {/* Right Column: Info Cards & Actions */}
         <div className="space-y-6">
           <AIAnalysisCard
             analysis={{
-              detectedCategory: task.category || 'Pothole / Road Repair',
+              detectedCategory: task.category || 'POTHOLE',
               confidence: 94,
-              severity: task.priority || 'HIGH',
-              recommendedDepartment: task.department?.name || 'Road Infrastructure',
+              severity: task.priority || 'MEDIUM',
+              recommendedDepartment: typeof task.department === 'string' ? task.department : task.department?.name || 'Roads & Infrastructure',
               recommendation: `Immediate repair recommended based on standard municipal field guidelines.`
             }}
           />
 
           <LocationCard
             address={taskAddress}
-            latitude={lat || 28.6280}
-            longitude={lng || 77.2160}
-            distance="2.4 km away"
+            latitude={lat}
+            longitude={lng}
+            distance="Nearby Field Location"
           />
 
           <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
@@ -263,12 +258,12 @@ export const TaskDetails = () => {
             <div className="space-y-2">
               <div>
                 <p className="text-[10px] text-slate-500 font-semibold">Reporter Name</p>
-                <p className="text-xs font-bold text-slate-900">{task.reportedBy?.name || task.citizenName || 'Verified Resident'}</p>
+                <p className="text-xs font-bold text-slate-900">{typeof task.reportedBy === 'string' ? task.reportedBy : task.reportedBy?.name || task.citizenName || 'Public Resident'}</p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-500 font-semibold">Reported Date</p>
+                <p className="text-[10px] text-slate-500 font-semibold">Assigned Date</p>
                 <p className="text-xs font-semibold text-slate-700">
-                  {task.createdAt || task.assignedDate ? new Date(task.createdAt || task.assignedDate).toLocaleDateString() : 'Recently'}
+                  {task.assignedDate ? new Date(task.assignedDate).toLocaleDateString() : task.createdAt ? new Date(task.createdAt).toLocaleDateString() : 'Today'}
                 </p>
               </div>
             </div>
@@ -299,13 +294,13 @@ export const TaskDetails = () => {
               </Button>
             )}
 
-            {(currentStatus === 'IN_PROGRESS' || currentStatus === 'OVERDUE') && (
+            {(currentStatus === 'IN_PROGRESS' || currentStatus === 'OVERDUE' || currentStatus === 'REOPENED') && (
               <Button variant="success" icon={UploadCloud} onClick={handleUploadProof} fullWidth className="sm:w-auto px-6">
                 Upload Proof & Complete Task
               </Button>
             )}
 
-            {(currentStatus === 'COMPLETED' || currentStatus === 'RESOLVED' || currentStatus === 'PENDING_CITIZEN_VERIFICATION') && (
+            {(currentStatus === 'COMPLETED' || currentStatus === 'RESOLVED' || currentStatus === 'PENDING_CITIZEN_VERIFICATION' || currentStatus === 'CITIZEN_VERIFIED') && (
               <Button variant="outline" icon={FileText} onClick={() => navigate('/worker/tasks')} fullWidth className="sm:w-auto px-6">
                 Return to Task List
               </Button>

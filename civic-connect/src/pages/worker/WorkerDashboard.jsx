@@ -5,8 +5,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../../context/AuthContext';
 import { useWorker } from '../../context/WorkerContext';
-import { useLocation } from '../../hooks/useLocation';
-import { calculateDistance, formatDistance, formatTimeAgo } from '../../utils/geo';
 import WorkerStatCard from '../../components/worker/WorkerStatCard';
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
@@ -144,9 +142,9 @@ const StatsRow = ({ stats }) => (
   </div>
 );
 
-const TodaysTasks = ({ tasks, userLocation }) => {
+const TodaysTasks = ({ tasks }) => {
   const navigate = useNavigate();
-  const active = (tasks || []).filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved' && t.status !== 'CLOSED');
+  const active = (tasks || []).filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved');
 
   return (
     <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
@@ -167,12 +165,12 @@ const TodaysTasks = ({ tasks, userLocation }) => {
           View all <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
-      <div className="p-3 sm:p-4 space-y-3">
+      <div className="p-3 sm:p-4 space-y-2.5">
         {active.length > 0 ? (
           active.slice(0, 5).map(task => {
             const taskId = task.issueId || task.id || (task._id ? String(task._id) : 'ISS-000');
+            const navigateId = task.issueId || task.id || task._id;
             const keyId = task._id || task.id || taskId;
-            const taskAddress = task.address || (typeof task.location === 'string' ? task.location : task.location?.address) || task.ward || 'Municipal Field Zone';
 
             let lat = task.latitude ?? task.lat ?? task.location?.lat;
             let lng = task.longitude ?? task.lng ?? task.location?.lng;
@@ -181,86 +179,41 @@ const TodaysTasks = ({ tasks, userLocation }) => {
               lat = task.location.coordinates[1];
             }
 
-            const refLat = userLocation?.lat != null ? userLocation.lat : 31.2540;
-            const refLng = userLocation?.lng != null ? userLocation.lng : 75.7050;
-            const distMeters = (lat != null && lng != null) ? calculateDistance(refLat, refLng, lat, lng) : 0;
-            const formattedDist = formatDistance(distMeters);
-            const formattedTime = formatTimeAgo(task.createdAt);
-
-            const prio = (task.priority || 'MEDIUM').toUpperCase();
-            let prioBg = 'bg-amber-100/70 text-amber-800 border-amber-200';
-            if (prio === 'CRITICAL') prioBg = 'bg-red-100 text-red-700 border-red-200';
-            else if (prio === 'HIGH') prioBg = 'bg-amber-100 text-amber-800 border-amber-200';
-            else if (prio === 'LOW') prioBg = 'bg-blue-100 text-blue-700 border-blue-200';
+            const taskAddress = typeof task.location === 'string' ? task.location : (task.address || task.location?.address || task.ward || 'Municipal Field Zone');
 
             return (
-              <article key={keyId} className="group rounded-2xl border border-slate-200/80 bg-white p-4 transition-all duration-200 hover:border-blue-300 hover:shadow-md">
-                <div className="space-y-3">
-
-                  {/* Top Bar: Priority + Category + ID + Live Distance + Time Ago */}
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${prioBg}`}>
-                        {prio}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 uppercase tracking-wider">
-                        {task.category || 'POTHOLE'}
-                      </span>
-                      <span className="font-mono text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                        {taskId}
-                      </span>
+              <article key={keyId} className="group rounded-xl border border-slate-200/80 bg-white p-4 transition-all duration-200 hover:border-slate-300 hover:shadow-2xs">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">{taskId}</span>
+                      <IssuePriority priority={task.priority} />
+                      <IssueStatus status={task.status} />
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
-                        {formattedDist} away
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-400">
-                        {formattedTime}
-                      </span>
+                    <h3 className="truncate text-xs sm:text-sm font-bold text-slate-900">{task.title || 'Civic Issue Task'}</h3>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                      <span className="flex min-w-0 items-center gap-1.5"><MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" /> <span className="truncate">{taskAddress}</span></span>
+                      <span className="flex items-center gap-1.5 font-medium text-amber-700"><Clock className="h-3.5 w-3.5" /> {task.slaHours ? `${Math.max(0, task.slaHours - task.elapsedHours)}h remaining` : 'Standard SLA'}</span>
                     </div>
                   </div>
-
-                  {/* Title & Description */}
-                  <div>
-                    <h3 className="text-base font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
-                      {task.title || 'Civic Issue Task'}
-                    </h3>
-                    {task.description && (
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                        {task.description}
-                      </p>
-                    )}
+                  <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-[224px]">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      icon={Navigation}
+                      onClick={() => window.open(`https://maps.google.com/?q=${lat || 31.2540},${lng || 75.7050}`, '_blank')}
+                    >
+                      Navigate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={Eye}
+                      onClick={() => navigate(`/worker/tasks/${navigateId}`)}
+                    >
+                      View Task
+                    </Button>
                   </div>
-
-                  {/* Address & Navigation Buttons */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
-                    <div className="flex items-start gap-1.5 text-xs text-slate-500 min-w-0">
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400 mt-0.5" />
-                      <span className="truncate">{taskAddress}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        icon={Navigation}
-                        onClick={() => window.open(`https://maps.google.com/?q=${lat || 31.254},${lng || 75.705}`, '_blank')}
-                      >
-                        Navigate
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        icon={Eye}
-                        onClick={() => navigate(`/worker/tasks/${taskId}`)}
-                      >
-                        View Task &rarr;
-                      </Button>
-                    </div>
-                  </div>
-
                 </div>
               </article>
             );
@@ -278,25 +231,15 @@ const TodaysTasks = ({ tasks, userLocation }) => {
 };
 
 const NearbyTasksMap = ({ tasks, worker }) => {
-  const activeTasks = (tasks || []).filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved' && t.status !== 'CLOSED');
-
-  const firstWithCoords = activeTasks.find(t => {
-    let lat = t.latitude ?? t.lat ?? t.location?.lat ?? t.location?.coordinates?.[1];
-    let lng = t.longitude ?? t.lng ?? t.location?.lng ?? t.location?.coordinates?.[0];
-    return lat != null && lng != null;
-  });
-
-  const center = firstWithCoords ? [
-    firstWithCoords.latitude ?? firstWithCoords.lat ?? firstWithCoords.location?.lat ?? firstWithCoords.location?.coordinates?.[1],
-    firstWithCoords.longitude ?? firstWithCoords.lng ?? firstWithCoords.location?.lng ?? firstWithCoords.location?.coordinates?.[0]
-  ] : [31.254, 75.705];
+  const activeTasks = tasks.filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved');
+  const center = [19.1145, 72.8710];
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col h-full">
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
         <div>
           <h2 className="text-sm font-bold text-slate-900">Nearby Tasks Map</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Real-time Location Dispatch</p>
+          <p className="text-xs text-slate-500 mt-0.5">{worker?.ward || 'Ward 12 - Andheri East'}</p>
         </div>
         <Link
           to="/worker/map"
@@ -309,7 +252,7 @@ const NearbyTasksMap = ({ tasks, worker }) => {
       <div className="flex-1 relative m-3 rounded-xl overflow-hidden min-h-[260px] border border-slate-200/80">
         <MapContainer
           center={center}
-          zoom={12}
+          zoom={13}
           scrollWheelZoom={false}
           style={{ height: '100%', width: '100%' }}
         >
@@ -319,43 +262,24 @@ const NearbyTasksMap = ({ tasks, worker }) => {
           />
 
           {activeTasks.map((task) => {
-            let lat = task.latitude ?? task.lat ?? task.location?.lat;
-            let lng = task.longitude ?? task.lng ?? task.location?.lng;
-            if (task.location?.coordinates && Array.isArray(task.location.coordinates) && task.location.coordinates.length >= 2) {
-              lng = task.location.coordinates[0];
-              lat = task.location.coordinates[1];
-            }
-
-            if (lat == null || lng == null) return null;
-
-            const prio = (task.priority || '').toUpperCase();
+            if (!task.latitude || !task.longitude) return null;
             let color = '#3b82f6';
-            if (prio === 'CRITICAL' || task.status === 'OVERDUE') color = '#ef4444';
-            else if (prio === 'HIGH') color = '#f59e0b';
-
-            const displayTag = task.issueId || task.id || (task._id ? String(task._id) : 'ISS');
-            const keyId = task._id || task.id || displayTag;
+            if (task.priority === 'CRITICAL' || task.status === 'OVERDUE') color = '#ef4444';
+            else if (task.priority === 'HIGH') color = '#f59e0b';
 
             const icon = L.divIcon({
-              className: 'custom-nearby-marker-tagged',
-              html: `
-                <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                  <div style="background-color: #0f172a; color: white; font-family: monospace; font-weight: 800; font-size: 9px; padding: 1px 5px; border-radius: 9999px; border: 1.5px solid ${color}; white-space: nowrap; margin-bottom: 2px;">
-                    ${displayTag}
-                  </div>
-                  <div style="background-color: ${color}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>
-                </div>
-              `,
-              iconSize: [60, 36],
-              iconAnchor: [30, 32]
+              className: 'custom-nearby-marker',
+              html: `<div style="background-color: ${color}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>`,
+              iconSize: [22, 22],
+              iconAnchor: [11, 11]
             });
 
             return (
-              <Marker key={keyId} position={[lat, lng]} icon={icon}>
+              <Marker key={task.id} position={[task.latitude, task.longitude]} icon={icon}>
                 <Popup className="custom-leaflet-popup">
                   <div className="p-1 text-xs font-sans">
                     <span className="font-bold text-slate-900 block">{task.title}</span>
-                    <span className="text-[10px] text-slate-500 block">{task.address || task.location?.address || 'Municipal Field Zone'}</span>
+                    <span className="text-[10px] text-slate-500 block">{task.location}</span>
                   </div>
                 </Popup>
               </Marker>
@@ -424,7 +348,6 @@ const RecentActivityFeed = ({ activities }) => (
 export const WorkerDashboard = () => {
   const { currentUser } = useAuth();
   const { tasks, recentActivity, profile } = useWorker();
-  const { coords } = useLocation();
 
   const worker = {
     ...profile,
@@ -445,7 +368,7 @@ export const WorkerDashboard = () => {
       <StatsRow stats={stats} />
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          <TodaysTasks tasks={tasks} userLocation={coords} />
+          <TodaysTasks tasks={tasks} />
         </div>
         <div>
           <NearbyTasksMap tasks={tasks} worker={worker} />
