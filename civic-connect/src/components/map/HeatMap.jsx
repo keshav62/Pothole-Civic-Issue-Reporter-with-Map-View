@@ -32,7 +32,7 @@ export const HeatMap = ({ issues = [], opacity = 0.45 }) => {
         const lng = issue.location?.lng ?? issue.longitude;
         if (!lat || !lng) return null;
 
-        const priority = issue.priority || 'MEDIUM';
+        const priority = (issue.priority || issue.severity || 'MEDIUM').toString().toUpperCase();
         const colorConfig = SEVERITY_COLORS[priority] || SEVERITY_COLORS.MEDIUM;
         const weight = SEVERITY_WEIGHTS[priority] || 0.5;
 

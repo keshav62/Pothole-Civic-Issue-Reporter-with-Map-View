@@ -252,6 +252,8 @@ export const AdminHeatmap = () => {
             userLocation={userLocationProp}
             showHeatmap={showHeatmap}
             flyToCoords={flyToCoords}
+            onLocateMe={handleLocateMe}
+            isLocating={gpsLoading}
           />
         </div>
 

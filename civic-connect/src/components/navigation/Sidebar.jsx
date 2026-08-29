@@ -27,7 +27,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
   const adminNavItems = [
     { label: 'Overview', path: '/admin/dashboard', icon: LayoutDashboard },
     { label: 'Issues', path: '/admin/issues', icon: FileText },
-    { label: 'City Map', path: '/admin/heatmap', icon: MapPin },
+    { label: 'City Map', path: '/admin/map', icon: MapPin },
     { label: 'Users', path: '/admin/users', icon: Users },
     { label: 'Departments', path: '/admin/departments', icon: Building2 },
     { label: 'Field Workers', path: '/admin/workers', icon: HardHat },

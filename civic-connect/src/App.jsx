@@ -103,6 +103,7 @@ export default function App() {
                 <Route path="workers" element={<FieldWorkerManagement />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="heatmap" element={<AdminHeatmap />} />
+                <Route path="map" element={<AdminHeatmap />} />
                 <Route path="escalations" element={<AdminEscalations />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>

@@ -65,7 +65,7 @@ export const DepartmentMap = () => {
   const handleLocateMe = useCallback(() => {
     getCurrentLocation();
     if (coords?.lat && coords?.lng) {
-      setFlyToCoords({ lat: coords.lat, lng: coords.lng, zoom: 15 });
+      setFlyToCoords({ lat: coords.lat, lng: coords.lng, zoom: 14 });
     }
   }, [getCurrentLocation, coords]);
 
@@ -471,6 +471,8 @@ export const DepartmentMap = () => {
             userLocation={userLocationProp}
             showHeatmap={showHeatmap}
             flyToCoords={flyToCoords}
+            onLocateMe={handleLocateMe}
+            isLocating={gpsLoading}
             emptyMessage={`No ${selectedCategory || selectedDept} issues found matching your filter criteria.`}
           />
 

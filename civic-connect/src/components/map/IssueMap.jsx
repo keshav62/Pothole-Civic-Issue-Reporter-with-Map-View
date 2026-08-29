@@ -6,20 +6,24 @@ import { IssueStatus } from '../issues/IssueStatus';
 import { IssuePriority } from '../issues/IssuePriority';
 import { Button } from '../common/Button';
 import { getDistanceKm } from '../../utils/geoUtils';
+import { HeatMap } from './HeatMap';
 
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, ArrowRight, Clock, AlertTriangle } from 'lucide-react';
+import { MapPin, Navigation, ArrowRight, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 
 // Custom DivIcon for Leaflet markers with status/priority colors
 const createCustomIcon = (priority, status, isSelected = false) => {
+  const prio = (priority || '').toString().toUpperCase();
+  const stat = (status || '').toString().toUpperCase();
+
   let color = '#3B82F6'; // Default Blue
-  if (priority === 'CRITICAL' || status === 'BREACHED') color = '#EF4444'; // Red
-  else if (priority === 'HIGH') color = '#F59E0B'; // Amber
-  else if (status === 'RESOLVED') color = '#10B981'; // Green
-  else if (priority === 'LOW') color = '#06B6D4'; // Cyan
+  if (prio === 'CRITICAL' || stat === 'BREACHED') color = '#EF4444'; // Red
+  else if (prio === 'HIGH') color = '#F59E0B'; // Amber
+  else if (stat === 'RESOLVED') color = '#10B981'; // Green
+  else if (prio === 'LOW') color = '#06B6D4'; // Cyan
 
   const size = isSelected ? 30 : 24;
-  const pulse = priority === 'CRITICAL' || isSelected;
+  const pulse = prio === 'CRITICAL' || isSelected;
 
   return L.divIcon({
     className: 'custom-map-marker',
@@ -109,6 +113,8 @@ export const IssueMap = ({
   selectedIssueId = null,
   onMarkerSelect = null,
   flyToCoords = null,
+  onLocateMe = null,
+  isLocating = false,
   emptyMessage = 'No civic issues match the selected category filter in this area.',
 }) => {
   const navigate = useNavigate();
@@ -234,6 +240,23 @@ export const IssueMap = ({
           );
         })}
       </MapContainer>
+
+      {/* Floating My Location Button Overlay */}
+      {onLocateMe && (
+        <button
+          onClick={onLocateMe}
+          disabled={isLocating}
+          title="Center Map on My Location"
+          className="absolute bottom-5 right-5 z-[450] bg-white hover:bg-slate-50 disabled:opacity-60 text-slate-800 hover:text-blue-600 px-3.5 py-2.5 rounded-2xl border border-slate-200 shadow-xl flex items-center gap-2 text-xs font-bold transition-all cursor-pointer"
+        >
+          {isLocating ? (
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+          ) : (
+            <Navigation className="w-4 h-4 text-blue-600 fill-blue-600" />
+          )}
+          <span>My Location</span>
+        </button>
+      )}
 
       {/* Floating empty state overlay if no issues */}
       {issues.length === 0 && (

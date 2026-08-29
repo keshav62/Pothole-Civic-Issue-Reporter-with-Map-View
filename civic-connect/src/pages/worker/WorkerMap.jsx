@@ -12,32 +12,43 @@ import { IssuePriority } from '../../components/issues/IssuePriority';
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { MapPin, Navigation, User, Crosshair, ArrowRight, Clock, Layers, Loader2, AlertCircle } from 'lucide-react';
 
-// Custom Marker Icons for Leaflet Tasks
+// Custom Marker Icons for Leaflet Tasks based strictly on Severity
 const createWorkerTaskIcon = (priority, status, isSelected = false) => {
-  let color = '#3b82f6'; // Blue
-  if (priority === 'CRITICAL' || status === 'OVERDUE') color = '#ef4444'; // Red
-  else if (priority === 'HIGH') color = '#f59e0b'; // Amber
-  else if (status === 'COMPLETED' || status === 'RESOLVED') color = '#10b981'; // Emerald
+  const prio = (priority || '').toString().toUpperCase();
+
+  let color = '#06b6d4'; // Default Cyan (LOW)
+  if (prio === 'CRITICAL') color = '#ef4444'; // Red
+  else if (prio === 'HIGH') color = '#f59e0b'; // Amber/Orange
+  else if (prio === 'MEDIUM') color = '#3b82f6'; // Blue
+  else if (prio === 'LOW') color = '#06b6d4'; // Cyan
 
   const size = isSelected ? 32 : 26;
   const borderWidth = isSelected ? 4 : 3;
+  const isPulse = prio === 'CRITICAL' || isSelected;
 
   return L.divIcon({
     className: 'custom-task-marker',
     html: `
-      <div style="
-        background-color: ${color};
-        width: ${size}px;
-        height: ${size}px;
-        border-radius: 50%;
-        border: ${borderWidth}px solid white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: transform 0.2s;
-      ">
-        <div style="width: 8px; height: 8px; background-color: white; border-radius: 50%;"></div>
+      <div style="position: relative; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center;">
+        ${isPulse ? `
+          <div style="position: absolute; inset: -4px; border-radius: 50%; background-color: ${color}; opacity: 0.4; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        ` : ''}
+        <div style="
+          background-color: ${color};
+          width: ${size}px;
+          height: ${size}px;
+          border-radius: 50%;
+          border: ${borderWidth}px solid white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s;
+          position: relative;
+          z-index: 2;
+        ">
+          <div style="width: 8px; height: 8px; background-color: white; border-radius: 50%;"></div>
+        </div>
       </div>
     `,
     iconSize: [size, size],
@@ -128,10 +139,13 @@ export const WorkerMap = () => {
   const filteredTasks = useMemo(() => {
     return tasksWithDistance
       .filter((task) => {
+        const prio = (task.priority || task.severity || '').toString().toUpperCase();
+        const stat = (task.status || '').toString().toUpperCase();
+
         if (filter === 'ALL') return true;
-        if (filter === 'HIGH_PRIORITY') return task.priority === 'HIGH' || task.priority === 'CRITICAL';
-        if (filter === 'OVERDUE') return task.status === 'OVERDUE';
-        if (filter === 'IN_PROGRESS') return task.status === 'IN_PROGRESS';
+        if (filter === 'HIGH_PRIORITY') return prio === 'HIGH' || prio === 'CRITICAL';
+        if (filter === 'OVERDUE') return stat === 'OVERDUE' || (task.dueDate && new Date(task.dueDate) < new Date());
+        if (filter === 'IN_PROGRESS') return stat === 'IN_PROGRESS' || stat === 'ACCEPTED' || stat === 'ASSIGNED';
         if (filter === 'NEARBY') {
           // If distance is calculated, filter tasks within 10 km, or return all if none within 10km
           return task.distance !== null ? task.distance <= 10 : true;
@@ -277,27 +291,46 @@ export const WorkerMap = () => {
                 }}
               >
                 <Popup className="custom-leaflet-popup">
-                  <div className="p-1 max-w-xs space-y-2 font-sans">
+                  <div className="p-2 max-w-xs space-y-2.5 font-sans">
+                    {/* Top Bar: ID + Severity Badge */}
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono font-bold text-xs text-blue-600">{task.id}</span>
-                      <IssuePriority priority={task.priority} />
+                      <span className="font-mono font-bold text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        {task.id}
+                      </span>
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold">
+                        <span className="text-slate-400 font-medium text-[10px]">Severity:</span>
+                        <IssuePriority priority={task.priority || task.severity} />
+                      </div>
                     </div>
 
-                    <h4 className="font-bold text-xs text-slate-900 leading-snug">{task.title}</h4>
-                    <p className="text-[11px] text-slate-600 truncate">{task.location}</p>
+                    {/* Title & Category */}
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                        {task.category || 'Civic Task'}
+                      </span>
+                      <h4 className="font-bold text-xs text-slate-900 leading-snug mt-0.5">{task.title}</h4>
+                    </div>
 
-                    {task.distance !== null && (
-                      <p className="text-[10px] text-blue-700 font-bold bg-blue-50 p-1 rounded border border-blue-100">
-                        📍 {task.distance} km from your current location
-                      </p>
-                    )}
+                    {/* Location & Live Distance */}
+                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 space-y-1">
+                      <p className="text-[11px] text-slate-600 line-clamp-2 leading-tight">📍 {task.location}</p>
+                      {task.distance !== null && (
+                        <p className="text-[10px] text-blue-700 font-bold bg-blue-100/80 px-1.5 py-0.5 rounded inline-block mt-0.5">
+                          📍 {task.distance} km from your current location
+                        </p>
+                      )}
+                    </div>
 
+                    {/* Status & CTA */}
                     <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
-                      <IssueStatus status={task.status} />
+                      <div className="flex items-center gap-1.5 text-[11px]">
+                        <span className="text-slate-400 font-medium text-[10px]">Status:</span>
+                        <IssueStatus status={task.status} />
+                      </div>
                       <Button
                         size="sm"
                         variant="primary"
-                        className="text-[10px] py-1 px-2 font-bold"
+                        className="text-[10px] py-1 px-2.5 font-bold"
                         onClick={() => navigate(`/worker/tasks/${task.id}`)}
                       >
                         View Task
