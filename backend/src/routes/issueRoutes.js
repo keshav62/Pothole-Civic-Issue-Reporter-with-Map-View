@@ -5,6 +5,8 @@ import {
   getIssueById,
   updateIssue,
   deleteIssue,
+  assignIssue,
+  verifyIssue,
 } from '../controllers/issueController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
@@ -35,5 +37,27 @@ router.patch('/:id', validateUpdateIssue, updateIssue);
 // DELETE /api/issues/:id — SUPER_ADMIN or the reporting CITIZEN (REPORTED only)
 // Coarse role guard here; fine-grained ownership check is inside the controller
 router.delete('/:id', authorizeRoles('SUPER_ADMIN', 'CITIZEN'), deleteIssue);
+
+// PATCH /api/issues/:id/assign
+// Assigns a verified FIELD_WORKER to the issue and transitions status to ASSIGNED.
+// Only SUPER_ADMIN and DEPARTMENT_ADMIN may call this.
+// Department-match enforcement is inside assignmentService — not here.
+router.patch(
+  '/:id/assign',
+  authorizeRoles('SUPER_ADMIN', 'DEPARTMENT_ADMIN'),
+  assignIssue
+);
+
+// POST /api/issues/:id/verify
+// Citizen confirms or rejects the completed repair.
+//   verified=true  → CITIZEN_VERIFIED → RESOLVED  (auto-closed)
+//   verified=false → REOPENED         (note required)
+// SUPER_ADMIN is also allowed so admins can unblock stuck issues.
+// Ownership check (reportedBy === req.user._id) is enforced inside the controller.
+router.post(
+  '/:id/verify',
+  authorizeRoles('CITIZEN', 'SUPER_ADMIN'),
+  verifyIssue
+);
 
 export default router;
