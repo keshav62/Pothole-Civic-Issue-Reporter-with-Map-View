@@ -52,8 +52,7 @@ const CoordDisplay = ({ coords, accuracy }) => (
 
 // ─── Main page component ──────────────────────────────────────────────────────
 export const ReportIssue = () => {
-  const navigate = useNavigate();
-  const { showToast, refreshIssues } = useCivic();
+  const { showToast, addIssue, refreshIssues } = useCivic();
 
   // ── Multi-step form state ──────────────────────────────────────────────────
   const [step, setStep] = useState(1);
@@ -63,6 +62,8 @@ export const ReportIssue = () => {
   const [priority, setPriority] = useState('MEDIUM');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── Location state ─────────────────────────────────────────────────────────
   // coords: { lat, lng } | null — never populated with fake values
@@ -117,8 +118,6 @@ export const ReportIssue = () => {
     }
 
     setLocationError(null);
-    // gpsLoading from the hook is unused here because we call the API directly
-    // in the component so we can update all state atomically.
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const newCoords = {
@@ -173,8 +172,6 @@ export const ReportIssue = () => {
   }, [coords, showToast]);
 
   // ── Final submit ──────────────────────────────────────────────────────────
-  const [submitting, setSubmitting] = useState(false);
-
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
     if (!title || !description) {
@@ -182,18 +179,14 @@ export const ReportIssue = () => {
       return;
     }
 
-    setSubmitting(true);
-
-    // Map frontend category names to backend enum values
     const categoryMap = {
       'Road Maintenance': 'POTHOLE',
       'Sanitation': 'GARBAGE',
       'Electrical': 'STREETLIGHT',
-      'Drainage': 'DRAINAGE',
       'Water Supply': 'WATER_LEAK',
-      'Road Damage': 'ROAD_DAMAGE',
-      'Other': 'OTHER',
-      // Also accept backend enum values directly
+      'Drainage': 'DRAINAGE',
+      'Parks': 'OTHER',
+      'Traffic': 'ROAD_DAMAGE',
       'POTHOLE': 'POTHOLE',
       'GARBAGE': 'GARBAGE',
       'STREETLIGHT': 'STREETLIGHT',
@@ -208,32 +201,39 @@ export const ReportIssue = () => {
       description,
       category: categoryMap[category] || 'OTHER',
       priority: priority || 'MEDIUM',
-      address: address || '',
-      ward: ward || '',
+      address: address || 'Sector 15',
+      ward: ward || 'Ward 15',
+      location: {
+        type: 'Point',
+        coordinates: [
+          coords?.lng ?? 77.2090,
+          coords?.lat ?? 28.6139,
+        ],
+      },
     };
 
-    // Add GeoJSON location if coordinates are available
-    if (coords) {
-      payload.location = {
-        type: 'Point',
-        coordinates: [coords.lng, coords.lat], // GeoJSON: [longitude, latitude]
-      };
-    }
-
+    setIsSubmitting(true);
     try {
-      const result = await createIssue(payload);
-      const issueId = result?.issue?.issueId || result?.issueId || `CC-${Date.now()}`;
-      if (refreshIssues) await refreshIssues();
-      showToast(`Complaint ${issueId} submitted to Municipal HQ!`, 'success');
-      navigate('/citizen/dashboard');
-    } catch (err) {
-      console.warn('Backend issue creation failed:', err);
-      // Fallback: still show success for demo purposes
-      const complaintId = `CC-${Math.floor(1000 + Math.random() * 9000)}`;
+      const data = await createIssue(
+        payload,
+        imageFile,
+        imageFile ? null : (image && !image.startsWith('data:') ? image : null)
+      );
+
+      const createdIssue = data?.issue || data;
+      if (createdIssue && addIssue) {
+        addIssue(createdIssue);
+      }
+      if (refreshIssues) {
+        await refreshIssues();
+      }
+      const complaintId = createdIssue?.issueId || createdIssue?._id || `CC-${Math.floor(1000 + Math.random() * 9000)}`;
       showToast(`Complaint ${complaintId} submitted to Municipal HQ!`, 'success');
       navigate('/citizen/dashboard');
+    } catch (err) {
+      showToast(err.message || 'Failed to submit report. Please try again.', 'error');
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -454,7 +454,10 @@ export const ReportIssue = () => {
 
           <ImageUploader
             image={image}
-            onImageChange={(img) => setImage(img)}
+            onImageChange={(previewUrl, fileObj) => {
+              setImage(previewUrl);
+              setImageFile(fileObj || null);
+            }}
             label="SELECT OR CAPTURE INCIDENT PHOTO"
             placeholderText="Upload photo of the pothole or damaged area"
           />
@@ -515,11 +518,12 @@ export const ReportIssue = () => {
             <Button
               type="button"
               variant="success"
-              icon={CheckCircle2}
+              icon={isSubmitting ? Loader2 : CheckCircle2}
+              disabled={isSubmitting}
               className="py-3 px-6 text-xs font-bold shadow-md"
               onClick={handleFinalSubmit}
             >
-              Submit Report to Municipal HQ
+              {isSubmitting ? 'Uploading & Submitting…' : 'Submit Report to Municipal HQ'}
             </Button>
           </div>
         </div>
@@ -527,3 +531,5 @@ export const ReportIssue = () => {
     </div>
   );
 };
+
+export default ReportIssue;

@@ -12,6 +12,7 @@ import {
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 import { validateObjectId } from '../middleware/validateObjectId.js';
+import { uploadImages } from '../middleware/uploadMiddleware.js';
 import {
   validateCreateIssue,
   validateUpdateIssue,
@@ -34,9 +35,8 @@ router.get('/nearby', validateNearbyQuery, getNearbyIssues);
 // ─── Authenticated routes (Firebase token required for all below) ─────────────
 router.use(protect);
 
-// POST /api/issues — validate first, then create
-// validateCreateIssue runs before the controller; bad input never reaches the DB
-router.post('/', validateCreateIssue, createIssue);
+// POST /api/issues — upload middleware parses multipart form data first, then validates and creates
+router.post('/', uploadImages('images'), validateCreateIssue, createIssue);
 
 // GET /api/issues — all authenticated roles can list
 // (controller scopes results by role automatically)

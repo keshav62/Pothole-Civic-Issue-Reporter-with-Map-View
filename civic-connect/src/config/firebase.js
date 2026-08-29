@@ -32,6 +32,11 @@ googleProvider.setCustomParameters({
 export const signInWithGooglePopup = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
+    if (result?.user) {
+      const idToken = await result.user.getIdToken();
+      localStorage.setItem('civic_connect_token', idToken);
+      localStorage.setItem('civicconnect_token', idToken);
+    }
     return {
       success: true,
       user: result.user

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCivic } from '../../context/CivicContext';
-import { useWorker } from '../../context/WorkerContext';
+import { apiFetch } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { AccountSettingsModal } from '../../components/common/AccountSettingsModal';
@@ -25,26 +25,56 @@ import {
 
 export const WorkerProfile = () => {
   const { logout, currentUser } = useAuth();
-  const { profile } = useWorker();
   const { showToast } = useCivic();
   const navigate = useNavigate();
 
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [workerData, setWorkerData] = useState(null);
 
-  // Merge worker data
-  const worker = {
-    ...profile,
-    name: currentUser?.name || profile?.name || 'Rahul Sharma',
-    email: currentUser?.email || profile?.email || 'rahul.sharma@civicconnect.gov.in',
-    avatar: currentUser?.avatar || profile?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
-    department: currentUser?.department || profile?.department || 'Road Maintenance',
-    ward: currentUser?.ward || profile?.ward || 'Ward 12 - Andheri East',
-    employeeId: profile?.id || 'FW-101'
-  };
+  useEffect(() => {
+    const fetchWorkerProfile = async () => {
+      try {
+        const response = await apiFetch('/api/workers/me');
+        setWorkerData(response.data);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch worker profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchWorkerProfile();
+  }, []);
 
   const handleLogout = async () => {
     if (logout) await logout();
     navigate('/');
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-slate-400">Loading worker profile...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-center text-red-500 bg-red-50/10 rounded-xl">Error: {error}</div>;
+  }
+
+  const workerUser = workerData?.user || {};
+  const stats = workerData?.stats || {};
+
+  // Define authoritative sources for data:
+  // Firebase (currentUser) is authoritative for Identity (name, email, avatar).
+  // MongoDB (workerUser) is authoritative for Business/Role data (department, ward, phone, isActive).
+  const worker = {
+    name: currentUser?.name || workerUser.name || 'N/A',
+    email: currentUser?.email || workerUser.email || 'N/A',
+    avatar: currentUser?.photoURL || workerUser.photoURL || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+    phone: workerUser.phone || 'Not Provided',
+    department: workerUser.department || 'N/A',
+    ward: workerUser.ward || 'N/A',
+    employeeId: workerUser.id || 'N/A',
+    isActive: workerUser.isActive ?? true
   };
 
   return (
@@ -68,11 +98,21 @@ export const WorkerProfile = () => {
                 <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                 <span>FIELD WORKER PROFILE</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug flex items-center gap-3">
                 {worker.name}
+                {worker.isActive ? (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" /> Active
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 bg-rose-400 rounded-full" /> Inactive
+                  </span>
+                )}
               </h1>
-              <p className="text-slate-400 font-mono text-xs mt-0.5">
-                {worker.department} • {worker.ward} (ID: {worker.employeeId})
+              <p className="text-slate-400 font-mono text-xs mt-1 space-y-1">
+                <span className="block">{worker.department} • {worker.ward} (ID: {worker.employeeId})</span>
+                <span className="block text-slate-500">{worker.email} • {worker.phone}</span>
               </p>
             </div>
           </div>
@@ -103,7 +143,7 @@ export const WorkerProfile = () => {
             <div className="w-10 h-10 bg-emerald-50 text-emerald-600 border border-emerald-200/80 rounded-xl flex items-center justify-center mb-2">
               <CheckCircle2 className="w-5 h-5" />
             </div>
-            <span className="text-3xl font-black text-slate-900 tracking-tight">142</span>
+            <span className="text-3xl font-black text-slate-900 tracking-tight">{stats.completedTasks || 0}</span>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">Tasks Completed</span>
           </div>
 
@@ -111,7 +151,7 @@ export const WorkerProfile = () => {
             <div className="w-10 h-10 bg-blue-50 text-blue-600 border border-blue-200/80 rounded-xl flex items-center justify-center mb-2">
               <Clock className="w-5 h-5" />
             </div>
-            <span className="text-3xl font-black text-blue-600 tracking-tight">3</span>
+            <span className="text-3xl font-black text-blue-600 tracking-tight">{stats.activeTasks || 0}</span>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">Active Tasks</span>
           </div>
 

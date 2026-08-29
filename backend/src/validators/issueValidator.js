@@ -132,6 +132,20 @@ const validateGeoJSONLocation = (location) => {
  * Responds 422 Unprocessable Entity on validation failure.
  */
 export const validateCreateIssue = (req, res, next) => {
+  // Support multipart/form-data where location is passed as a JSON string or lat/lng fields
+  if (typeof req.body.location === 'string') {
+    try {
+      req.body.location = JSON.parse(req.body.location);
+    } catch {
+      // invalid string will be caught by validateGeoJSONLocation below
+    }
+  } else if (!req.body.location && req.body.latitude !== undefined && req.body.longitude !== undefined) {
+    req.body.location = {
+      type: 'Point',
+      coordinates: [Number(req.body.longitude), Number(req.body.latitude)],
+    };
+  }
+
   const { title, description, category, priority, location, address, ward } = req.body;
   const errors = [];
 

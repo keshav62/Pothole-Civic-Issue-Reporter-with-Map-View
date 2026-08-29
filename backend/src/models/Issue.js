@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import './User.js';
+import './Department.js';
 
 // ─── Enums (exported so controllers/validators can reuse them) ───────────────
 
