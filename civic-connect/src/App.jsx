@@ -13,6 +13,7 @@ import { WorkerLayout } from './layouts/WorkerLayout';
 import { CitizenLayout } from './layouts/CitizenLayout';
 
 // Public & Auth Pages
+import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
 import { Unauthorized } from './pages/Unauthorized';
 import { NotFound } from './pages/NotFound';
@@ -48,6 +49,9 @@ import { UploadProof } from './pages/worker/UploadProof';
 
 // Citizen Pages
 import { CitizenDashboard } from './pages/citizen/CitizenDashboard';
+import { ReportIssue } from './pages/citizen/ReportIssue';
+import { MyReports } from './pages/citizen/MyReports';
+import { NearbyMap } from './pages/citizen/NearbyMap';
 
 // Protected Route Wrapper enforcing Role Based Access
 const ProtectedRoute = ({ allowedRoles, children }) => {
@@ -64,17 +68,6 @@ const ProtectedRoute = ({ allowedRoles, children }) => {
   return children;
 };
 
-// Root Redirect based on user role
-const RootRedirect = () => {
-  const { currentUser, role } = useAuth();
-  if (!currentUser) return <Navigate to="/login" replace />;
-  if (role === 'SUPER_ADMIN') return <Navigate to="/admin/dashboard" replace />;
-  if (role === 'DEPARTMENT_ADMIN') return <Navigate to="/department/dashboard" replace />;
-  if (role === 'FIELD_WORKER') return <Navigate to="/worker/dashboard" replace />;
-  if (role === 'CITIZEN') return <Navigate to="/citizen/dashboard" replace />;
-  return <Navigate to="/login" replace />;
-};
-
 export default function App() {
   return (
     <BrowserRouter>
@@ -82,10 +75,11 @@ export default function App() {
         <CivicProvider>
           <ToastProvider>
             <Routes>
+              {/* LANDING PAGE & AUTH */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/landing" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
-
-              <Route path="/" element={<RootRedirect />} />
 
               {/* SUPER ADMIN ROUTES */}
               <Route
@@ -153,14 +147,18 @@ export default function App() {
               <Route
                 path="/citizen"
                 element={
-                  <ProtectedRoute allowedRoles={['CITIZEN', 'SUPER_ADMIN']}>
+                  <ProtectedRoute allowedRoles={['CITIZEN', 'SUPER_ADMIN', 'DEPARTMENT_ADMIN']}>
                     <CitizenLayout />
                   </ProtectedRoute>
                 }
               >
                 <Route index element={<Navigate to="/citizen/dashboard" replace />} />
                 <Route path="dashboard" element={<CitizenDashboard />} />
+                <Route path="report" element={<ReportIssue />} />
+                <Route path="reports" element={<MyReports />} />
+                <Route path="nearby" element={<NearbyMap />} />
               </Route>
+
               {/* FALLBACK */}
               <Route path="*" element={<NotFound />} />
             </Routes>

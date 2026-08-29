@@ -11,18 +11,18 @@ export const UploadProof = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { tasks, submitProof } = useWorker();
-  
+
   // Find task from mock data
   const task = tasks.find(t => t.id === id) || tasks[0];
   const { showToast } = React.useContext(ToastContext);
-  
+
   const [afterImagePreview, setAfterImagePreview] = useState(null);
   const [repairNotes, setRepairNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   const fileInputRef = useRef(null);
 
   // Update clock every second for completion timestamp
@@ -55,7 +55,7 @@ export const UploadProof = () => {
     }
 
     setIsSubmitting(true);
-    
+
     // Simulate network delay
     setTimeout(() => {
       submitProof(task.id, afterImagePreview, repairNotes);
@@ -77,7 +77,7 @@ export const UploadProof = () => {
           <p className="text-emerald-700 font-medium mb-8">
             Task {task.id} has been marked as Completed. Your proof and notes have been securely saved to the department database.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
             <Button variant="outline" onClick={() => navigate(`/worker/tasks/${task.id}`)} className="bg-white hover:bg-emerald-50 border-emerald-200 text-emerald-800">
               View Task Details
@@ -94,7 +94,7 @@ export const UploadProof = () => {
   // UPLOAD FORM STATE
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6 pb-20">
-      
+
       {/* Topbar navigation */}
       <button
         onClick={() => navigate(-1)}
@@ -129,18 +129,18 @@ export const UploadProof = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        
+
         {/* 2 & 3 & 4. Before/After Grid */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            
+
             {/* Before Image */}
             <div className="space-y-2">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Before Repair</label>
               <div className="aspect-square sm:aspect-[4/3] bg-slate-100 rounded-xl overflow-hidden relative border border-slate-200">
-                <img 
-                  src={task.beforeImage || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80"} 
-                  alt="Before repair" 
+                <img
+                  src={task.beforeImage || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80"}
+                  alt="Before repair"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2 bg-slate-900/70 text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1.5">
@@ -155,9 +155,9 @@ export const UploadProof = () => {
                 <span>After Repair <span className="text-red-500">*</span></span>
                 {afterImagePreview && <span className="text-blue-600 cursor-pointer hover:underline" onClick={() => fileInputRef.current?.click()}>Change</span>}
               </label>
-              
+
               {!afterImagePreview ? (
-                <div 
+                <div
                   className={`aspect-square sm:aspect-[4/3] bg-slate-50 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-slate-100 ${error ? 'border-red-300' : 'border-slate-300'}`}
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -169,9 +169,9 @@ export const UploadProof = () => {
                 </div>
               ) : (
                 <div className="aspect-square sm:aspect-[4/3] bg-slate-100 rounded-xl overflow-hidden relative border border-blue-200 ring-2 ring-blue-500/20">
-                  <img 
-                    src={afterImagePreview} 
-                    alt="After repair" 
+                  <img
+                    src={afterImagePreview}
+                    alt="After repair"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
@@ -186,19 +186,19 @@ export const UploadProof = () => {
                   </button>
                 </div>
               )}
-              
-              <input 
-                type="file" 
-                accept="image/*" 
+
+              <input
+                type="file"
+                accept="image/*"
                 capture="environment"
-                className="hidden" 
+                className="hidden"
                 ref={fileInputRef}
                 onChange={handleImageChange}
               />
               {error && <p className="text-xs font-semibold text-red-500 mt-1">{error}</p>}
             </div>
           </div>
-          
+
           {/* Repair Notes */}
           <div className="space-y-2 pt-4 border-t border-slate-100">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Repair Notes (Optional)</label>
@@ -210,7 +210,7 @@ export const UploadProof = () => {
               onChange={(e) => setRepairNotes(e.target.value)}
             ></textarea>
           </div>
-          
+
           {/* Completion Timestamp */}
           <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
             <Clock className="w-4 h-4 text-slate-400" />
@@ -221,11 +221,11 @@ export const UploadProof = () => {
 
         {/* Submit Button - Mobile Friendly Fixed Bottom or inline on desktop */}
         <div className="fixed bottom-0 left-0 right-0 md:static md:bg-transparent bg-white border-t border-slate-200 md:border-t-0 p-4 md:p-0 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] md:shadow-none z-40">
-          <Button 
-            type="submit" 
-            variant="success" 
-            icon={UploadCloud} 
-            fullWidth 
+          <Button
+            type="submit"
+            variant="success"
+            icon={UploadCloud}
+            fullWidth
             disabled={isSubmitting}
             className="py-3.5 shadow-md text-base"
           >

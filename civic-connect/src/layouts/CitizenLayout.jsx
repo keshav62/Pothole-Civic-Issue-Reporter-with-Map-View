@@ -9,7 +9,7 @@ export const CitizenLayout = () => {
       {/* Topbar will contain the RoleSwitcher */}
       <Topbar toggleSidebar={() => {}} />
 
-      <main className="flex-1 p-4 sm:p-6 max-w-5xl w-full mx-auto">
+      <main className="app-page-enter flex-1 p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto">
         <Outlet />
       </main>
 

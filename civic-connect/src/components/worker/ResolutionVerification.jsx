@@ -16,7 +16,7 @@ export const ResolutionVerification = ({ task }) => {
           <h3 className="text-lg font-black text-slate-900">Resolution Submitted</h3>
           <p className="text-sm text-slate-500 mt-1">Review the provided repair evidence.</p>
         </div>
-        
+
         {/* Verification Status Badge */}
         {verificationStatus === 'PENDING' && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold animate-pulse">
@@ -36,7 +36,7 @@ export const ResolutionVerification = ({ task }) => {
       </div>
 
       <div className="p-5 sm:p-6 space-y-6">
-        
+
         {/* Before / After Images */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -44,8 +44,8 @@ export const ResolutionVerification = ({ task }) => {
               <Camera className="w-4 h-4 text-slate-400" /> Before Repair
             </div>
             <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
-              <img 
-                src={task.beforeImage || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80"} 
+              <img
+                src={task.beforeImage || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80"}
                 alt="Before"
                 className="w-full h-full object-cover"
               />
@@ -57,8 +57,8 @@ export const ResolutionVerification = ({ task }) => {
               <CheckCircle2 className="w-4 h-4" /> After Repair
             </div>
             <div className="aspect-video bg-emerald-50 rounded-xl overflow-hidden border border-emerald-200">
-              <img 
-                src={task.afterImage || "https://images.unsplash.com/photo-1595168058299-dcbcc461cb28?auto=format&fit=crop&w=800&q=80"} 
+              <img
+                src={task.afterImage || "https://images.unsplash.com/photo-1595168058299-dcbcc461cb28?auto=format&fit=crop&w=800&q=80"}
                 alt="After"
                 className="w-full h-full object-cover"
               />
@@ -70,16 +70,16 @@ export const ResolutionVerification = ({ task }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <User className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+              <User className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Resolved By</p>
                 <p className="text-sm font-semibold text-slate-900">{task.workerName || 'Rahul Sharma'}</p>
                 <p className="text-xs text-slate-500">Field Worker, {task.department}</p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+              <Calendar className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Completion Date</p>
                 <p className="text-sm font-semibold text-slate-900">{new Date().toLocaleString()}</p>
@@ -108,7 +108,7 @@ export const ResolutionVerification = ({ task }) => {
             </div>
           </div>
         )}
-        
+
         {/* Mock Action Buttons (For Demonstration) */}
         {verificationStatus === 'PENDING' && (
           <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">

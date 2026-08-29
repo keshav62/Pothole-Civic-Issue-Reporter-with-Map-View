@@ -26,7 +26,7 @@ import {
 export const TaskDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const { tasks, updateTaskStatus } = useWorker();
   const { showToast } = React.useContext(ToastContext);
 
@@ -58,25 +58,25 @@ export const TaskDetails = () => {
       showToast("Task accepted successfully!", "success");
     }
   };
-  
+
   const handleStart = () => {
     if (window.confirm("Are you at the location and ready to start the task?")) {
       updateTaskStatus(task.id, 'IN_PROGRESS');
       showToast("Task started. Timeline updated.", "success");
     }
   };
-  
+
   const handleUploadProof = () => {
     navigate(`/worker/tasks/${task.id}/upload`);
   };
-  
+
   const handleViewResolution = () => {
     showToast("Viewing resolution details...", "info");
   };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6 pb-20">
-      
+
       {/* Topbar navigation */}
       <button
         onClick={() => navigate(-1)}
@@ -110,16 +110,16 @@ export const TaskDetails = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
+
         {/* Left Column: Image, Desc, Timeline */}
         <div className="md:col-span-2 space-y-6">
-          
+
           {/* 2. Issue Image (Show Before & After if completed) */}
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <div className={`aspect-video sm:aspect-auto sm:h-full w-full bg-slate-100 relative ${task.afterImage ? 'border-b sm:border-b-0 sm:border-r border-slate-200' : 'sm:col-span-2 aspect-video'}`}>
-                <img 
-                  src={task.beforeImage || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80"} 
+                <img
+                  src={task.beforeImage || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80"}
                   alt="Before"
                   className="w-full h-full object-cover"
                 />
@@ -129,8 +129,8 @@ export const TaskDetails = () => {
               </div>
               {task.afterImage && (
                 <div className="aspect-video sm:aspect-auto sm:h-full w-full bg-emerald-50 relative">
-                  <img 
-                    src={task.afterImage} 
+                  <img
+                    src={task.afterImage}
                     alt="After"
                     className="w-full h-full object-cover"
                   />
@@ -173,17 +173,17 @@ export const TaskDetails = () => {
 
                     return (
                       <div key={step.label} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                        
+
                         {/* Icon */}
                         <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10 transition-colors ${
-                          isActive ? 'bg-blue-500 text-white' : 
+                          isActive ? 'bg-blue-500 text-white' :
                           isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
                         }`}>
-                          {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : 
-                           isActive ? <Clock className="w-4 h-4 animate-pulse" /> : 
+                          {isCompleted ? <CheckCircle2 className="w-4 h-4" /> :
+                           isActive ? <Clock className="w-4 h-4 animate-pulse" /> :
                            <div className="w-2 h-2 rounded-full bg-slate-400" />}
                         </div>
-                        
+
                         {/* Content */}
                         <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
                           <div className="flex items-center justify-between">
@@ -203,16 +203,16 @@ export const TaskDetails = () => {
                   })}
                 </div>
               </div>
-          
+
           <ResolutionVerification task={task} />
 
         </div>
 
         {/* Right Column: Info Cards & Actions */}
         <div className="space-y-6">
-          
+
           {/* AI Analysis (Mock) */}
-          <AIAnalysisCard 
+          <AIAnalysisCard
             analysis={{
               detectedCategory: task.category,
               confidence: 94,
@@ -223,7 +223,7 @@ export const TaskDetails = () => {
           />
 
           {/* 4. Location Card */}
-          <LocationCard 
+          <LocationCard
             address={task.location}
             latitude={task.latitude}
             longitude={task.longitude}
@@ -282,14 +282,14 @@ export const TaskDetails = () => {
             <p className="text-sm font-bold text-slate-900">Current Status: <span className="text-blue-600">{task.status.replace('_', ' ')}</span></p>
             <p className="text-xs text-slate-500">Perform the next required action to progress the task.</p>
           </div>
-          
+
           <div className="flex-1 sm:flex-none flex justify-end">
             {task.status === 'ASSIGNED' && (
               <Button variant="primary" icon={CheckCircle2} onClick={handleAccept} fullWidth className="sm:w-auto px-8">
                 Accept Task
               </Button>
             )}
-            
+
             {task.status === 'ACCEPTED' && (
               <Button variant="primary" icon={Clock} onClick={handleStart} fullWidth className="sm:w-auto px-8">
                 Start Task
@@ -316,7 +316,7 @@ export const TaskDetails = () => {
           </div>
         </div>
       </div>
-      
+
     </div>
   );
 };

@@ -17,8 +17,8 @@ export const Login = () => {
       subtitle: 'Municipal Headquarters Control & Governance',
       description: 'Manage entire city infrastructure, department metrics, user access, and citywide heatmap analytics.',
       icon: Shield,
-      color: 'bg-indigo-600',
-      borderColor: 'hover:border-indigo-500',
+      color: 'bg-blue-600',
+      borderColor: 'hover:border-blue-400',
       path: '/admin/dashboard'
     },
     {
@@ -28,7 +28,7 @@ export const Login = () => {
       description: 'Monitor division complaints, evaluate AI worker recommendations, and manage field task assignments.',
       icon: Building2,
       color: 'bg-blue-600',
-      borderColor: 'hover:border-blue-500',
+      borderColor: 'hover:border-blue-400',
       path: '/department/dashboard'
     },
     {
@@ -37,8 +37,8 @@ export const Login = () => {
       subtitle: 'Mobile-Optimized Field Resolution Workstation',
       description: 'View assigned tasks, navigate to complaint sites, track SLA countdowns, and upload before/after repair proof.',
       icon: HardHat,
-      color: 'bg-amber-600',
-      borderColor: 'hover:border-amber-500',
+      color: 'bg-blue-600',
+      borderColor: 'hover:border-blue-400',
       path: '/worker/dashboard'
     },
     {
@@ -47,8 +47,8 @@ export const Login = () => {
       subtitle: 'Public Issue Reporting & Tracking',
       description: 'Report civic issues, track resolution progress, view nearby issues, and communicate with departments.',
       icon: User,
-      color: 'bg-emerald-600',
-      borderColor: 'hover:border-emerald-500',
+      color: 'bg-blue-600',
+      borderColor: 'hover:border-blue-400',
       path: '/citizen/dashboard'
     }
   ];
@@ -64,9 +64,10 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4 sm:p-8">
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(37,99,235,.24),transparent_30rem)] pointer-events-none" />
       {/* Brand Header */}
-      <div className="text-center max-w-xl mx-auto mb-8 space-y-2">
+      <div className="relative text-center max-w-xl mx-auto mb-8 space-y-2">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 text-white text-3xl font-black shadow-xl shadow-blue-500/20 mb-1">
           C
         </div>
@@ -76,7 +77,7 @@ export const Login = () => {
       </div>
 
       {/* Gmail Authentication Section */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 mb-8">
+      <div className="relative bg-slate-900/90 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl shadow-blue-950/30 space-y-4 mb-8">
         <div className="text-center space-y-1">
           <h2 className="text-base font-bold text-white">Official Single Sign-On (SSO)</h2>
           <p className="text-xs text-slate-400">Log in or register with your Gmail / Google Workspace account</p>
@@ -125,7 +126,7 @@ export const Login = () => {
       </div>
 
       {/* Role Selection Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full">
+      <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full">
         {roleCards.map((card) => {
           const Icon = card.icon;
           return (
@@ -160,7 +161,7 @@ export const Login = () => {
       />
 
       {/* GovTech Footer */}
-      <div className="mt-10 text-center text-slate-500 text-xs flex items-center gap-2">
+      <div className="relative mt-10 text-center text-slate-500 text-xs flex items-center gap-2">
         <ShieldCheck className="w-4 h-4 text-emerald-500" />
         <span>Official Government Grade Enterprise System • Municipal Administration Authority Portal</span>
       </div>

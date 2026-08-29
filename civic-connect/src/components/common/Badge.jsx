@@ -18,7 +18,7 @@ const VARIANTS = {
 
   // Status
   REPORTED: 'bg-purple-100 text-purple-800 border-purple-200',
-  VERIFIED: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  VERIFIED: 'bg-blue-100 text-blue-800 border-blue-200',
   ASSIGNED: 'bg-sky-100 text-sky-800 border-sky-200',
   IN_PROGRESS: 'bg-blue-100 text-blue-800 border-blue-200 animate-pulse',
   RESOLVED: 'bg-emerald-100 text-emerald-800 border-emerald-200',

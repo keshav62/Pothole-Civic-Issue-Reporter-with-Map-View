@@ -45,7 +45,7 @@ const TaskCard = ({ task, compact = false }) => {
     <article
       className={cn(
         'group bg-white rounded-2xl border border-slate-100 shadow-sm',
-        'hover:shadow-md hover:border-indigo-200 transition-all duration-200',
+        'hover:shadow-md hover:border-blue-200 transition-all duration-200',
         compact ? 'p-4' : 'p-5'
       )}
     >
@@ -143,7 +143,7 @@ const TaskCard = ({ task, compact = false }) => {
               'inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-150',
               task.status === 'resolved'
                 ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-500/30'
+                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/30'
             )}
           >
             {task.status === 'resolved' ? 'View Details' : 'View Task'}
@@ -157,7 +157,7 @@ const TaskCard = ({ task, compact = false }) => {
         <div className="mt-3">
           <Link
             to={`/worker/tasks/${task.id}`}
-            className="flex items-center justify-center w-full py-1.5 text-xs font-semibold text-indigo-600 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors"
+            className="flex items-center justify-center w-full py-1.5 text-xs font-semibold text-blue-600 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
           >
             View Task
           </Link>

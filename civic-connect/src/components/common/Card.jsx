@@ -9,19 +9,19 @@ export const Card = ({
   ...props
 }) => {
   return (
-    <div
+    <section
       onClick={onClick}
-      className={`bg-white rounded-xl ${
+      className={`bg-white rounded-2xl ${
         bordered ? 'border border-slate-200' : ''
       } shadow-xs ${
         hoverable
-          ? 'transition-all duration-200 hover:shadow-md hover:border-slate-300 cursor-pointer'
+          ? 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/5 hover:border-slate-300 cursor-pointer'
           : ''
       } ${className}`}
       {...props}
     >
       {children}
-    </div>
+    </section>
   );
 };
 

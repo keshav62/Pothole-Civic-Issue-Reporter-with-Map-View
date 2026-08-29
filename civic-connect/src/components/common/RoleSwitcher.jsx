@@ -8,7 +8,7 @@ export const RoleSwitcher = () => {
   const navigate = useNavigate();
 
   const roles = [
-    { id: 'SUPER_ADMIN', label: 'Super Admin', path: '/admin/dashboard', icon: Shield, color: 'bg-indigo-600' },
+    { id: 'SUPER_ADMIN', label: 'Super Admin', path: '/admin/dashboard', icon: Shield, color: 'bg-blue-600' },
     { id: 'DEPARTMENT_ADMIN', label: 'Dept Admin', path: '/department/dashboard', icon: Building2, color: 'bg-blue-600' },
     { id: 'FIELD_WORKER', label: 'Field Worker', path: '/worker/dashboard', icon: HardHat, color: 'bg-amber-600' },
     { id: 'CITIZEN', label: 'Citizen', path: '/citizen/dashboard', icon: User, color: 'bg-emerald-600' }

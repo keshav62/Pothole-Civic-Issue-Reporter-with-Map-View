@@ -35,12 +35,12 @@ export const BeforeAfterUpload = ({ beforeImage, onSubmit, onSuccess }) => {
     }
 
     setIsSubmitting(true);
-    
+
     // Simulate network delay
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSuccess(true);
-      
+
       // Call parent handler to update global/parent state
       if (onSubmit) {
         onSubmit({
@@ -48,7 +48,7 @@ export const BeforeAfterUpload = ({ beforeImage, onSubmit, onSuccess }) => {
           repairNotes
         });
       }
-      
+
       if (onSuccess) {
         onSuccess();
       }
@@ -75,19 +75,19 @@ export const BeforeAfterUpload = ({ beforeImage, onSubmit, onSuccess }) => {
         <UploadCloud className="w-5 h-5 text-blue-600" />
         Upload Completion Proof
       </h3>
-      
+
       <form onSubmit={handleSubmit} className="space-y-6">
-        
+
         {/* Before & After Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          
+
           {/* Before Image */}
           <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Before Repair</label>
             <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden relative border border-slate-200">
-              <img 
-                src={beforeImage || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80"} 
-                alt="Before repair" 
+              <img
+                src={beforeImage || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80"}
+                alt="Before repair"
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-2 left-2 bg-slate-900/70 text-white text-[10px] font-bold px-2 py-0.5 rounded">
@@ -99,9 +99,9 @@ export const BeforeAfterUpload = ({ beforeImage, onSubmit, onSuccess }) => {
           {/* After Image Upload / Preview */}
           <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">After Repair <span className="text-red-500">*</span></label>
-            
+
             {!afterImagePreview ? (
-              <div 
+              <div
                 className={`aspect-video bg-slate-50 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-slate-100 ${error ? 'border-red-300' : 'border-slate-300'}`}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -113,9 +113,9 @@ export const BeforeAfterUpload = ({ beforeImage, onSubmit, onSuccess }) => {
               </div>
             ) : (
               <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden relative border border-blue-200 ring-2 ring-blue-500/20">
-                <img 
-                  src={afterImagePreview} 
-                  alt="After repair" 
+                <img
+                  src={afterImagePreview}
+                  alt="After repair"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
@@ -130,12 +130,12 @@ export const BeforeAfterUpload = ({ beforeImage, onSubmit, onSuccess }) => {
                 </button>
               </div>
             )}
-            
-            <input 
-              type="file" 
-              accept="image/*" 
+
+            <input
+              type="file"
+              accept="image/*"
               capture="environment"
-              className="hidden" 
+              className="hidden"
               ref={fileInputRef}
               onChange={handleImageChange}
             />
@@ -157,11 +157,11 @@ export const BeforeAfterUpload = ({ beforeImage, onSubmit, onSuccess }) => {
         </div>
 
         {/* Submit Button */}
-        <Button 
-          type="submit" 
-          variant="success" 
-          icon={CheckCircle2} 
-          fullWidth 
+        <Button
+          type="submit"
+          variant="success"
+          icon={CheckCircle2}
+          fullWidth
           disabled={isSubmitting}
           className="py-3 shadow-md"
         >

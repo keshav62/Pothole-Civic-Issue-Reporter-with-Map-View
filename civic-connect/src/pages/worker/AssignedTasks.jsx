@@ -20,7 +20,7 @@ export const AssignedTasks = () => {
     return tasks.filter((task) => {
       // Filter by Search Query
       const query = searchQuery.toLowerCase();
-      const matchesSearch = 
+      const matchesSearch =
         task.id.toLowerCase().includes(query) ||
         task.title.toLowerCase().includes(query) ||
         task.location.toLowerCase().includes(query) ||
@@ -38,7 +38,7 @@ export const AssignedTasks = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-      
+
       {/* 1. Page Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Assigned Tasks</h1>
@@ -47,7 +47,7 @@ export const AssignedTasks = () => {
 
       {/* 2 & 3. Search Bar and Filters */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
-        
+
         {/* Search */}
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -93,12 +93,12 @@ export const AssignedTasks = () => {
         {filteredTasks.length > 0 ? (
           filteredTasks.map((task) => (
             <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden group">
-              
+
               {/* Card Image (if exists) */}
               {task.beforeImage && (
                 <div className="h-48 w-full bg-slate-100 relative overflow-hidden">
-                  <img 
-                    src={task.beforeImage} 
+                  <img
+                    src={task.beforeImage}
                     alt={task.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -113,7 +113,7 @@ export const AssignedTasks = () => {
               )}
 
               <div className="p-5 flex flex-col flex-1">
-                
+
                 {/* Header (if no image) */}
                 {!task.beforeImage && (
                   <div className="flex justify-between items-start mb-3">
@@ -161,10 +161,10 @@ export const AssignedTasks = () => {
                 </div>
 
                 {/* Action */}
-                <Button 
-                  variant="primary" 
-                  fullWidth 
-                  icon={Eye} 
+                <Button
+                  variant="primary"
+                  fullWidth
+                  icon={Eye}
                   className="mt-auto shadow-sm"
                   onClick={() => navigate(`/worker/tasks/${task.id}`)}
                 >
@@ -184,8 +184,8 @@ export const AssignedTasks = () => {
               We couldn't find any tasks matching your current search and filter criteria. Try adjusting them.
             </p>
             {(searchQuery || statusFilter !== 'ALL') && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="mt-6"
                 onClick={() => {
                   setSearchQuery('');

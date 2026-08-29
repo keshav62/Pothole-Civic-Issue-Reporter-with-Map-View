@@ -184,7 +184,8 @@ export const GoogleAuthModal = ({ isOpen, onClose, defaultMode = 'SIGN_IN' }) =>
             options={[
               { value: 'SUPER_ADMIN', label: 'Super Admin (Headquarters Control)' },
               { value: 'DEPARTMENT_ADMIN', label: 'Department Admin (Division Control)' },
-              { value: 'FIELD_WORKER', label: 'Field Worker (Ground Operations)' }
+              { value: 'FIELD_WORKER', label: 'Field Worker (Ground Operations)' },
+              { value: 'CITIZEN', label: 'Citizen (Public Resident Portal)' }
             ]}
           />
 

@@ -73,7 +73,15 @@ export const IssueTable = ({ issues = [], onAssignClick, rolePrefix = '/admin' }
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
-            {issues.map((issue) => {
+            {issues.length === 0 ? (
+              <tr>
+                <td colSpan={10} className="py-12 text-center">
+                  <p className="text-xs font-bold text-slate-700">No civic issues found matching your current filters.</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Try resetting search keywords or status criteria.</p>
+                </td>
+              </tr>
+            ) : (
+              issues.map((issue) => {
               const isSelected = selectedIds.includes(issue.id);
               return (
                 <tr key={issue.id} className={`hover:bg-slate-50/80 transition-colors ${isSelected ? 'bg-blue-50/30' : ''}`}>
@@ -128,7 +136,8 @@ export const IssueTable = ({ issues = [], onAssignClick, rolePrefix = '/admin' }
                   </td>
                 </tr>
               );
-            })}
+            })
+            )}
           </tbody>
         </table>
       </div>

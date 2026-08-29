@@ -36,7 +36,7 @@ function getGreeting() {
 
 // ─── Activity type config ─────────────────────────────────────────────────────
 const ACTIVITY_CONFIG = {
-  assigned:       { icon: ClipboardList,  color: 'text-indigo-600', bg: 'bg-indigo-50', label: 'Task Assigned'   },
+  assigned:       { icon: ClipboardList,  color: 'text-blue-600', bg: 'bg-blue-50', label: 'Task Assigned'   },
   started:        { icon: Clock,          color: 'text-blue-600',   bg: 'bg-blue-50',   label: 'Task Started'    },
   proof_uploaded: { icon: UploadCloud,    color: 'text-amber-600',  bg: 'bg-amber-50',  label: 'Proof Uploaded'  },
   completed:      { icon: ClipboardCheck, color: 'text-emerald-600',bg: 'bg-emerald-50',label: 'Task Completed'  },
@@ -48,22 +48,22 @@ const ACTIVITY_CONFIG = {
 const GreetingBanner = ({ stats, worker }) => {
   const greeting = getGreeting();
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/20">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 p-6 sm:p-8 text-white shadow-xl shadow-blue-500/20">
       {/* decorative blobs */}
       <div className="absolute -top-10 -right-10 w-52 h-52 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-64 h-32 rounded-full bg-violet-500/20 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-64 h-32 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
 
       <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-indigo-300 text-sm font-medium">
+            <span className="text-blue-300 text-sm font-medium">
               {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug">
             {greeting.text}, {worker?.name?.split(' ')[0] || 'Worker'} {greeting.emoji}
           </h1>
-          <p className="mt-2 text-indigo-200 text-sm max-w-sm leading-relaxed">
+          <p className="mt-2 text-blue-200 text-sm max-w-sm leading-relaxed">
             You have{' '}
             <span className="text-white font-bold">{stats.assigned} pending</span> and{' '}
             <span className="text-white font-bold">{stats.inProgress} in-progress</span> task
@@ -76,13 +76,13 @@ const GreetingBanner = ({ stats, worker }) => {
           <div className="flex flex-wrap gap-3 mt-4">
             <Link
               to="/worker/tasks"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-indigo-700 text-xs font-bold rounded-xl hover:bg-indigo-50 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-blue-700 text-xs font-bold rounded-xl hover:bg-blue-50 transition-colors shadow-sm"
             >
               <ListTodo className="w-4 h-4" /> View All Tasks
             </Link>
             <Link
               to="/worker/map"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-500/40 border border-white/20 text-white text-xs font-bold rounded-xl hover:bg-indigo-500/60 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-500/40 border border-white/20 text-white text-xs font-bold rounded-xl hover:bg-blue-500/60 transition-colors"
             >
               Open Map View
             </Link>
@@ -92,8 +92,8 @@ const GreetingBanner = ({ stats, worker }) => {
         <div className="flex items-center gap-4 self-start sm:self-center">
           <div className="text-right hidden sm:block">
             <p className="font-bold text-lg leading-none">{worker?.name}</p>
-            <p className="text-indigo-300 text-xs mt-1">{worker?.department || 'Field Operations'}</p>
-            <p className="text-indigo-300 text-xs">{worker?.ward || 'All Wards'}</p>
+            <p className="text-blue-300 text-xs mt-1">{worker?.department || 'Field Operations'}</p>
+            <p className="text-blue-300 text-xs">{worker?.ward || 'All Wards'}</p>
             <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
               Available
@@ -102,7 +102,7 @@ const GreetingBanner = ({ stats, worker }) => {
           <img
             src={worker?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80'}
             alt={worker?.name}
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ring-4 ring-white/20 bg-indigo-500 object-cover shadow-lg flex-shrink-0"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ring-4 ring-white/20 bg-blue-500 object-cover shadow-lg flex-shrink-0"
           />
         </div>
       </div>
@@ -117,7 +117,7 @@ const StatsRow = ({ stats }) => (
       label="Today's Tasks"
       value={stats.total}
       icon="📋"
-      colorSet={{ bg: 'bg-indigo-100', text: 'text-indigo-700', ring: 'ring-indigo-100' }}
+      colorSet={{ bg: 'bg-blue-100', text: 'text-blue-700', ring: 'ring-blue-100' }}
       footnote={`${stats.resolved} resolved`}
     />
     <WorkerStatCard
@@ -156,7 +156,7 @@ const StatsRow = ({ stats }) => (
 const TodaysTasks = ({ tasks }) => {
   const navigate = useNavigate();
   const active = tasks.filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved');
-  
+
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -168,7 +168,7 @@ const TodaysTasks = ({ tasks }) => {
         </div>
         <Link
           to="/worker/tasks"
-          className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+          className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
         >
           View all <ArrowRight className="w-4 h-4" />
         </Link>
@@ -248,14 +248,14 @@ const NearbyTasksMap = ({ tasks, worker }) => {
         </div>
         <Link
           to="/worker/map"
-          className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+          className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700"
         >
           Full map <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
 
       {/* SVG map */}
-      <div className="flex-1 relative m-4 rounded-xl overflow-hidden min-h-[240px] bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 border border-slate-100">
+      <div className="flex-1 relative m-4 rounded-xl overflow-hidden min-h-[240px] bg-gradient-to-br from-slate-50 via-blue-50/30 to-blue-50/40 border border-slate-100">
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
           {/* Grid */}
           <defs>
@@ -300,7 +300,7 @@ const NearbyTasksMap = ({ tasks, worker }) => {
 
         {/* "You" label */}
         <div className="absolute" style={{ left: 'calc(50% + 14px)', top: 'calc(50% - 22px)' }}>
-          <span className="text-[10px] font-bold text-indigo-700 bg-white px-1.5 py-0.5 rounded-md border border-indigo-200 shadow-sm">
+          <span className="text-[10px] font-bold text-blue-700 bg-white px-1.5 py-0.5 rounded-md border border-blue-200 shadow-sm">
             You
           </span>
         </div>
@@ -309,7 +309,7 @@ const NearbyTasksMap = ({ tasks, worker }) => {
       {/* Legend */}
       <div className="px-5 pb-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500">
         {[
-          { color: 'bg-indigo-500', label: 'Your location' },
+          { color: 'bg-blue-500', label: 'Your location' },
           { color: 'bg-red-500',    label: 'High priority'  },
           { color: 'bg-amber-500',  label: 'Medium'         },
           { color: 'bg-blue-400',   label: 'Low'            },
@@ -357,7 +357,7 @@ const RecentActivityFeed = ({ activities }) => (
             {/* Link */}
             <Link
               to={`/worker/tasks/${item.taskId || item.issueId}`}
-              className="flex-shrink-0 self-center p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+              className="flex-shrink-0 self-center p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
               aria-label={`View task ${item.taskId || item.issueId}`}
             >
               <ChevronRight className="w-4 h-4" />

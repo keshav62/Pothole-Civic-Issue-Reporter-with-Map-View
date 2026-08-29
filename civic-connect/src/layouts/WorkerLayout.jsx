@@ -39,7 +39,7 @@ const SidebarItem = ({ item, collapsed, onClick }) => (
       cn(
         'group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
         isActive
-          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
           : 'text-slate-400 hover:bg-white/5 hover:text-white'
       )
     }
@@ -59,7 +59,7 @@ const SidebarItem = ({ item, collapsed, onClick }) => (
             {item.badge && (
               <span className={cn(
                 'ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold',
-                isActive ? 'bg-white text-indigo-600' : 'bg-indigo-500 text-white'
+                isActive ? 'bg-white text-blue-600' : 'bg-blue-500 text-white'
               )}>
                 {item.badge}
               </span>
@@ -72,7 +72,7 @@ const SidebarItem = ({ item, collapsed, onClick }) => (
           <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-xl border border-white/10">
             {item.name}
             {item.badge && (
-              <span className="ml-2 inline-flex items-center justify-center w-4 h-4 bg-indigo-500 rounded-full text-[9px] font-bold">
+              <span className="ml-2 inline-flex items-center justify-center w-4 h-4 bg-blue-500 rounded-full text-[9px] font-bold">
                 {item.badge}
               </span>
             )}
@@ -100,7 +100,7 @@ export const WorkerLayout = () => {
   const navigate   = useNavigate();
   const pageTitle  = usePageTitle();
   const { currentUser, logout } = useAuth();
-  
+
   // Use worker context
   const { notifications, tasks } = useWorker();
   const unreadNotifs = notifications.filter(n => !n.isRead).length;
@@ -111,7 +111,7 @@ export const WorkerLayout = () => {
     if (item.name === 'Assigned Tasks') return { ...item, badge: activeTasksCount > 0 ? activeTasksCount : null };
     return item;
   });
-  
+
   const workerData = {
     name: currentUser?.name || 'Worker',
     email: currentUser?.email || '',
@@ -155,7 +155,7 @@ export const WorkerLayout = () => {
       )}>
         {(!desktopCollapsed || isMobile) && (
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/30">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/30">
               <Shield className="w-4 h-4 text-white" />
             </div>
             <div className="min-w-0">
@@ -166,7 +166,7 @@ export const WorkerLayout = () => {
         )}
 
         {desktopCollapsed && !isMobile && (
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
             <Shield className="w-4 h-4 text-white" />
           </div>
         )}
@@ -197,7 +197,7 @@ export const WorkerLayout = () => {
               <img
                 src={workerData.avatar}
                 alt={workerData.name}
-                className="w-9 h-9 rounded-full bg-slate-700 object-cover ring-2 ring-indigo-500/50"
+                className="w-9 h-9 rounded-full bg-slate-700 object-cover ring-2 ring-blue-500/50"
               />
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
             </div>
@@ -218,7 +218,7 @@ export const WorkerLayout = () => {
       {desktopCollapsed && !isMobile && (
         <div className="flex justify-center mt-4 mb-2 flex-shrink-0">
           <div className="relative">
-            <img src={workerData.avatar} alt="Avatar" className="w-9 h-9 rounded-full ring-2 ring-indigo-500/50" />
+            <img src={workerData.avatar} alt="Avatar" className="w-9 h-9 rounded-full ring-2 ring-blue-500/50" />
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
           </div>
         </div>
@@ -266,7 +266,7 @@ export const WorkerLayout = () => {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <Toast />
-      
+
       {/* ── Desktop Sidebar ────────────────────────────────────────────── */}
       <aside
         className={cn(
@@ -338,7 +338,7 @@ export const WorkerLayout = () => {
                   <img
                     src={workerData.avatar}
                     alt={workerData.name}
-                    className="w-8 h-8 rounded-full bg-slate-200 object-cover ring-2 ring-indigo-500/30"
+                    className="w-8 h-8 rounded-full bg-slate-200 object-cover ring-2 ring-blue-500/30"
                   />
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
                 </div>
