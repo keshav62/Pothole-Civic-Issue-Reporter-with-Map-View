@@ -437,33 +437,3 @@ export const useCivic = () => {
   }
   return context;
 };
-toast,
-  showToast,
-  verifyIssue,
-  rejectIssue,
-  assignIssue,
-  updateIssuePriority,
-  updateIssueStatus,
-  updateIssueImages,
-  startTask,
-  completeTask,
-  escalateIssue,
-  addUser,
-  updateUserStatus,
-  addDepartment,
-  updateWorkerStatus,
-  markNotificationAsRead,
-  refreshIssues
-    }}>
-  { children }
-    </CivicContext.Provider >
-  );
-};
-
-export const useCivic = () => {
-  const context = useContext(CivicContext);
-  if (!context) {
-    throw new Error('useCivic must be used within a CivicProvider');
-  }
-  return context;
-};

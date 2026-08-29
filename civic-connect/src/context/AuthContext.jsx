@@ -43,7 +43,6 @@ export const AuthProvider = ({ children }) => {
       } else {
         sessionCreated.current = false;
       }
-      }
     });
     return () => unsubscribe();
   }, []);
