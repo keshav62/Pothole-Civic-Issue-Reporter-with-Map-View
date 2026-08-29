@@ -15,26 +15,34 @@ export const AssignedTasks = () => {
 
   const { tasks } = useWorker();
 
-  // Search and Filter Logic
+  // Search and Filter Logic (100% null-safe)
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      // Filter by Search Query
-      const query = searchQuery.toLowerCase();
-      const matchesSearch =
-        task.id.toLowerCase().includes(query) ||
-        task.title.toLowerCase().includes(query) ||
-        task.location.toLowerCase().includes(query) ||
-        task.category.toLowerCase().includes(query);
+    if (!tasks || !Array.isArray(tasks)) return [];
 
-      // Filter by Status
+    const q = (searchQuery || '').trim().toLowerCase();
+
+    return tasks.filter((task) => {
+      const taskId = String(task.issueId || task.id || task._id || '').toLowerCase();
+      const taskTitle = String(task.title || '').toLowerCase();
+      const taskCategory = String(task.category || '').toLowerCase();
+      const taskAddress = String(
+        task.address ||
+        (typeof task.location === 'string' ? task.location : task.location?.address) ||
+        task.ward ||
+        ''
+      ).toLowerCase();
+      const taskStatus = String(task.status || '').toUpperCase();
+
+      const matchesSearch = !q || taskId.includes(q) || taskTitle.includes(q) || taskCategory.includes(q) || taskAddress.includes(q);
+
       let matchesStatus = true;
       if (statusFilter !== 'ALL') {
-        matchesStatus = task.status === statusFilter;
+        matchesStatus = taskStatus === statusFilter.toUpperCase();
       }
 
       return matchesSearch && matchesStatus;
     });
-  }, [searchQuery, statusFilter]);
+  }, [tasks, searchQuery, statusFilter]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -91,88 +99,98 @@ export const AssignedTasks = () => {
       {/* 4. Task List/Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredTasks.length > 0 ? (
-          filteredTasks.map((task) => (
-            <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden group">
+          filteredTasks.map((task) => {
+            const displayId = task.issueId || task.id || (task._id ? String(task._id) : 'ISS-000');
+            const keyId = task._id || task.id || displayId;
+            const navigateId = task.issueId || task.id || task._id;
+            const taskAddress = typeof task.location === 'string'
+              ? task.location
+              : (task.address || task.location?.address || task.ward || 'Municipal Field Zone');
+            const beforeImg = task.beforeImage || task.images?.[0];
 
-              {/* Card Image (if exists) */}
-              {task.beforeImage && (
-                <div className="h-48 w-full bg-slate-100 relative overflow-hidden">
-                  <img
-                    src={task.beforeImage}
-                    alt={task.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
-                  <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
-                    <span className="bg-white/90 backdrop-blur text-slate-900 text-xs font-black px-2.5 py-1 rounded-md">
-                      {task.id}
-                    </span>
-                    <IssuePriority priority={task.priority} />
-                  </div>
-                </div>
-              )}
+            return (
+              <div key={keyId} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden group">
 
-              <div className="p-5 flex flex-col flex-1">
-
-                {/* Header (if no image) */}
-                {!task.beforeImage && (
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="bg-slate-100 text-slate-700 text-xs font-black px-2.5 py-1 rounded-md">
-                      {task.id}
-                    </span>
-                    <IssuePriority priority={task.priority} />
+                {/* Card Image (if exists) */}
+                {beforeImg && (
+                  <div className="h-48 w-full bg-slate-100 relative overflow-hidden">
+                    <img
+                      src={beforeImg}
+                      alt={task.title || 'Task image'}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
+                    <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
+                      <span className="bg-white/90 backdrop-blur text-slate-900 text-xs font-black px-2.5 py-1 rounded-md font-mono">
+                        {displayId}
+                      </span>
+                      <IssuePriority priority={task.priority} />
+                    </div>
                   </div>
                 )}
 
-                {/* Title & Category */}
-                <div className="mb-4">
-                  <div className="flex justify-between items-start gap-2 mb-1.5">
-                    <h3 className="text-base font-black text-slate-900 line-clamp-2 leading-tight">
-                      {task.title}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="neutral" className="text-[10px] uppercase tracking-wider">
-                      {task.category}
-                    </Badge>
-                    <IssueStatus status={task.status} />
-                  </div>
-                </div>
+                <div className="p-5 flex flex-col flex-1">
 
-                {/* Location */}
-                <div className="flex items-start gap-2 text-sm text-slate-600 mb-4 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                  <MapPin className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-                  <span className="font-medium leading-snug">{task.location}</span>
-                </div>
+                  {/* Header (if no image) */}
+                  {!beforeImg && (
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="bg-slate-100 text-slate-700 text-xs font-black px-2.5 py-1 rounded-md font-mono">
+                        {displayId}
+                      </span>
+                      <IssuePriority priority={task.priority} />
+                    </div>
+                  )}
 
-                {/* Dates */}
-                <div className="grid grid-cols-2 gap-3 mb-6 mt-auto text-xs">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Assigned</span>
-                    <span className="text-slate-700 font-semibold flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      {new Date(task.assignedDate).toLocaleDateString()}
-                    </span>
+                  {/* Title & Category */}
+                  <div className="mb-4">
+                    <div className="flex justify-between items-start gap-2 mb-1.5">
+                      <h3 className="text-base font-black text-slate-900 line-clamp-2 leading-tight">
+                        {task.title || 'Civic Task'}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="neutral" className="text-[10px] uppercase tracking-wider">
+                        {task.category || 'POTHOLE'}
+                      </Badge>
+                      <IssueStatus status={task.status} />
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Time Remaining</span>
-                    <SLAIndicator dueDate={task.dueDate} status={task.status} className="w-full justify-center" />
-                  </div>
-                </div>
 
-                {/* Action */}
-                <Button
-                  variant="primary"
-                  fullWidth
-                  icon={Eye}
-                  className="mt-auto shadow-sm"
-                  onClick={() => navigate(`/worker/tasks/${task.id}`)}
-                >
-                  View Details
-                </Button>
+                  {/* Location */}
+                  <div className="flex items-start gap-2 text-sm text-slate-600 mb-4 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    <MapPin className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                    <span className="font-medium leading-snug truncate">{taskAddress}</span>
+                  </div>
+
+                  {/* Dates */}
+                  <div className="grid grid-cols-2 gap-3 mb-6 mt-auto text-xs">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Assigned</span>
+                      <span className="text-slate-700 font-semibold flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        {task.assignedDate ? new Date(task.assignedDate).toLocaleDateString() : task.createdAt ? new Date(task.createdAt).toLocaleDateString() : 'Today'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Time Remaining</span>
+                      <SLAIndicator dueDate={task.dueDate} status={task.status} className="w-full justify-center" />
+                    </div>
+                  </div>
+
+                  {/* Action */}
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    icon={Eye}
+                    className="mt-auto shadow-sm"
+                    onClick={() => navigate(`/worker/tasks/${navigateId}`)}
+                  >
+                    View Details
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           /* 5. Empty State */
           <div className="col-span-full py-16 px-4 flex flex-col items-center justify-center bg-white rounded-2xl border border-slate-200 border-dashed text-center">

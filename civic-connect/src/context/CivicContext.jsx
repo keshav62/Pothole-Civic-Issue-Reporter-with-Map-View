@@ -32,6 +32,68 @@ export const CivicProvider = ({ children }) => {
     }
   }, []);
 
+  // Derive real-time notifications from live issues
+  const generateLiveNotifications = useCallback((issueList) => {
+    if (!issueList || !Array.isArray(issueList)) return [];
+
+    const liveNotifs = [];
+
+    issueList.forEach((issue) => {
+      const issueId = issue.issueId || (issue._id ? String(issue._id) : 'ISS-000');
+      const timeAgo = issue.createdAt ? new Date(issue.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently';
+
+      if (issue.status === 'REPORTED' || issue.status === 'PENDING') {
+        liveNotifs.push({
+          id: `NOTIF-NEW-${issue._id || issue.id}`,
+          title: `New Issue Reported: ${issue.title || 'Pothole Alert'}`,
+          message: `Location: ${issue.address || 'Municipal Zone'} (${issue.priority || 'MEDIUM'} Priority)`,
+          time: timeAgo,
+          read: false,
+          type: 'alert',
+          priority: issue.priority || 'MEDIUM',
+          role: 'CITIZEN',
+          issueId: issueId
+        });
+      } else if (issue.status === 'ASSIGNED') {
+        liveNotifs.push({
+          id: `NOTIF-ASSIGN-${issue._id || issue.id}`,
+          title: `Dispatch Assigned: ${issueId}`,
+          message: `Assigned to field team for ${issue.title || 'Civic Issue'}`,
+          time: timeAgo,
+          read: false,
+          type: 'info',
+          priority: issue.priority || 'MEDIUM',
+          role: 'FIELD_WORKER',
+          issueId: issueId
+        });
+      } else if (issue.status === 'IN_PROGRESS') {
+        liveNotifs.push({
+          id: `NOTIF-PROGRESS-${issue._id || issue.id}`,
+          title: `Repair In Progress: ${issueId}`,
+          message: `Field team actively working on ${issue.title || 'Civic Issue'}`,
+          time: timeAgo,
+          read: false,
+          type: 'status',
+          priority: issue.priority || 'MEDIUM',
+          issueId: issueId
+        });
+      } else if (issue.status === 'RESOLVED' || issue.status === 'COMPLETED' || issue.status === 'PENDING_CITIZEN_VERIFICATION') {
+        liveNotifs.push({
+          id: `NOTIF-RESOLVED-${issue._id || issue.id}`,
+          title: `Resolution Completed: ${issueId}`,
+          message: `Repair proof uploaded for ${issue.title || 'Civic Issue'}`,
+          time: timeAgo,
+          read: false,
+          type: 'success',
+          priority: issue.priority || 'MEDIUM',
+          issueId: issueId
+        });
+      }
+    });
+
+    return liveNotifs;
+  }, []);
+
   useEffect(() => {
     if (!currentUser) return;
     const loadIssues = async () => {
@@ -39,6 +101,10 @@ export const CivicProvider = ({ children }) => {
         const data = await issueService.fetchIssues({ limit: 100 });
         if (data?.issues?.length) {
           setIssues(data.issues);
+          const liveNotifs = generateLiveNotifications(data.issues);
+          if (liveNotifs.length > 0) {
+            setNotifications(liveNotifs);
+          }
         } else {
           setIssues(MOCK_ISSUES); // fallback
         }
@@ -49,7 +115,10 @@ export const CivicProvider = ({ children }) => {
     };
     loadIssues();
     loadUsersAndWorkers();
-  }, [currentUser, loadUsersAndWorkers]);
+
+    const interval = setInterval(loadIssues, 10000);
+    return () => clearInterval(interval);
+  }, [currentUser, loadUsersAndWorkers, generateLiveNotifications]);
 
   const refreshIssues = async () => {
     try {

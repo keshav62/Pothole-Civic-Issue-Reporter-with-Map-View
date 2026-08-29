@@ -144,7 +144,7 @@ const StatsRow = ({ stats }) => (
 
 const TodaysTasks = ({ tasks }) => {
   const navigate = useNavigate();
-  const active = tasks.filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved');
+  const active = (tasks || []).filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved');
 
   return (
     <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
@@ -167,42 +167,57 @@ const TodaysTasks = ({ tasks }) => {
       </div>
       <div className="p-3 sm:p-4 space-y-2.5">
         {active.length > 0 ? (
-          active.slice(0, 5).map(task => (
-            <article key={task.id} className="group rounded-xl border border-slate-200/80 bg-white p-4 transition-all duration-200 hover:border-slate-300 hover:shadow-2xs">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">{task.id}</span>
-                    <IssuePriority priority={task.priority} />
-                    <IssueStatus status={task.status} />
+          active.slice(0, 5).map(task => {
+            const taskId = task.issueId || task.id || (task._id ? String(task._id) : 'ISS-000');
+            const navigateId = task.issueId || task.id || task._id;
+            const keyId = task._id || task.id || taskId;
+
+            let lat = task.latitude ?? task.lat ?? task.location?.lat;
+            let lng = task.longitude ?? task.lng ?? task.location?.lng;
+            if (task.location?.coordinates && Array.isArray(task.location.coordinates) && task.location.coordinates.length >= 2) {
+              lng = task.location.coordinates[0];
+              lat = task.location.coordinates[1];
+            }
+
+            const taskAddress = typeof task.location === 'string' ? task.location : (task.address || task.location?.address || task.ward || 'Municipal Field Zone');
+
+            return (
+              <article key={keyId} className="group rounded-xl border border-slate-200/80 bg-white p-4 transition-all duration-200 hover:border-slate-300 hover:shadow-2xs">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">{taskId}</span>
+                      <IssuePriority priority={task.priority} />
+                      <IssueStatus status={task.status} />
+                    </div>
+                    <h3 className="truncate text-xs sm:text-sm font-bold text-slate-900">{task.title || 'Civic Issue Task'}</h3>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                      <span className="flex min-w-0 items-center gap-1.5"><MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" /> <span className="truncate">{taskAddress}</span></span>
+                      <span className="flex items-center gap-1.5 font-medium text-amber-700"><Clock className="h-3.5 w-3.5" /> {task.slaHours ? `${Math.max(0, task.slaHours - task.elapsedHours)}h remaining` : 'Standard SLA'}</span>
+                    </div>
                   </div>
-                  <h3 className="truncate text-xs sm:text-sm font-bold text-slate-900">{task.title}</h3>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                    <span className="flex min-w-0 items-center gap-1.5"><MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" /> <span className="truncate">{task.address || task.location?.address || 'Location pending'}</span></span>
-                    <span className="flex items-center gap-1.5 font-medium text-amber-700"><Clock className="h-3.5 w-3.5" /> {task.slaHours ? `${Math.max(0, task.slaHours - task.elapsedHours)}h remaining` : 'SLA pending'}</span>
+                  <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-[224px]">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      icon={Navigation}
+                      onClick={() => window.open(`https://maps.google.com/?q=${lat || 31.2540},${lng || 75.7050}`, '_blank')}
+                    >
+                      Navigate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={Eye}
+                      onClick={() => navigate(`/worker/tasks/${navigateId}`)}
+                    >
+                      View Task
+                    </Button>
                   </div>
                 </div>
-                <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-[224px]">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  icon={Navigation}
-                  onClick={() => window.open(`https://maps.google.com/?q=${task.latitude || task.location?.lat},${task.longitude || task.location?.lng}`, '_blank')}
-                >
-                  Navigate
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={Eye}
-                  onClick={() => navigate(`/worker/tasks/${task.id}`)}
-                >
-                  View Task
-                </Button>
-                </div>
-              </div>
-            </article>
-          ))
+              </article>
+            );
+          })
         ) : (
           <div className="py-14 flex flex-col items-center text-center">
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-3" />
