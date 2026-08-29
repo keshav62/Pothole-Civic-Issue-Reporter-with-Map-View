@@ -146,35 +146,39 @@ export const CitizenDashboard = () => {
           </div>
 
           <div className="space-y-3">
-            {recentReports.map((issue) => (
-              <div
-                key={issue.id}
-                onClick={() => navigate('/citizen/reports')}
-                className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-start gap-3.5 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-xs shrink-0 shadow-2xs">
-                    {issue.id.slice(-3)}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-xs text-blue-600">{issue.id}</span>
-                      <IssuePriority priority={issue.priority} />
+            {recentReports.map((issue) => {
+              const displayId = issue.issueId || issue.id || (issue._id ? String(issue._id) : 'ISS-000');
+              const keyId = issue._id || issue.id || issue.issueId || Math.random();
+              return (
+                <div
+                  key={keyId}
+                  onClick={() => navigate('/citizen/reports')}
+                  className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-3.5 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-xs shrink-0 shadow-2xs">
+                      {displayId.slice(-3)}
                     </div>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate mt-0.5">{issue.title}</h3>
-                    <p className="text-[11px] text-slate-500 truncate flex items-center gap-1 mt-1">
-                      <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span>{issue.address}</span>
-                    </p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-xs text-blue-600">{displayId}</span>
+                        <IssuePriority priority={issue.priority} />
+                      </div>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate mt-0.5">{issue.title}</h3>
+                      <p className="text-[11px] text-slate-500 truncate flex items-center gap-1 mt-1">
+                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span>{issue.address || issue.location?.address || 'Municipal Ward Area'}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                    <IssueStatus status={issue.status} />
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                  <IssueStatus status={issue.status} />
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

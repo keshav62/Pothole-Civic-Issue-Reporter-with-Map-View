@@ -53,7 +53,7 @@ const CoordDisplay = ({ coords, accuracy }) => (
 // ─── Main page component ──────────────────────────────────────────────────────
 export const ReportIssue = () => {
   const navigate = useNavigate();
-  const { showToast } = useCivic();
+  const { showToast, refreshIssues } = useCivic();
 
   // ── Multi-step form state ──────────────────────────────────────────────────
   const [step, setStep] = useState(1);
@@ -223,6 +223,7 @@ export const ReportIssue = () => {
     try {
       const result = await createIssue(payload);
       const issueId = result?.issue?.issueId || result?.issueId || `CC-${Date.now()}`;
+      if (refreshIssues) await refreshIssues();
       showToast(`Complaint ${issueId} submitted to Municipal HQ!`, 'success');
       navigate('/citizen/dashboard');
     } catch (err) {
