@@ -6,17 +6,17 @@ const requiredVars = [
   'CLOUDINARY_API_SECRET',
 ];
 
-for (const v of requiredVars) {
-  if (!process.env[v]) {
-    throw new Error(`Missing Cloudinary env var: ${v}`);
-  }
-}
+const missing = requiredVars.filter(v => !process.env[v]);
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure:     true,   // always use HTTPS URLs
-});
+if (missing.length > 0) {
+  console.warn(`⚠️  Cloudinary env vars missing (${missing.join(', ')}). Image uploads will be disabled.`);
+} else {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:    process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure:     true,
+  });
+}
 
 export default cloudinary;

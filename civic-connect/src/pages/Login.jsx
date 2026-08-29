@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCivic } from '../context/CivicContext';
 import { signInWithGooglePopup } from '../config/firebase';
+import authService from '../services/authService';
 import {
   Shield,
   Mail,
@@ -47,10 +48,23 @@ export const Login = () => {
 
     if (result.success && result.user) {
       const fbUser = result.user;
-      const user = loginWithGmail(fbUser.email, selectedRole, fbUser.displayName, fbUser.photoURL);
-      showToast(`Google SSO Authenticated: Welcome, ${user.name}!`, 'success');
-      const targetPath = rolePaths[selectedRole] || '/citizen/dashboard';
-      navigate(targetPath);
+      
+      // Try to create backend session
+      try {
+        const backendUser = await authService.createSession(fbUser);
+        // Use backend user's role for navigation, or selectedRole as fallback
+        const role = backendUser?.role || selectedRole;
+        loginWithGmail(fbUser.email, role, fbUser.displayName, fbUser.photoURL);
+        showToast(`Google SSO Authenticated: Welcome, ${fbUser.displayName || fbUser.email}!`, 'success');
+        const targetPath = rolePaths[role] || '/citizen/dashboard';
+        navigate(targetPath);
+      } catch (err) {
+        console.warn('Backend session failed, using local auth:', err);
+        const user = loginWithGmail(fbUser.email, selectedRole, fbUser.displayName, fbUser.photoURL);
+        showToast(`Google SSO Authenticated: Welcome, ${user.name}!`, 'success');
+        const targetPath = rolePaths[selectedRole] || '/citizen/dashboard';
+        navigate(targetPath);
+      }
     } else {
       const errMsg = result.error || 'Google Sign-In was cancelled or failed';
       setError(`Google Auth Error: ${errMsg}`);

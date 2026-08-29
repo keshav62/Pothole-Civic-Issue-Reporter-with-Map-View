@@ -34,7 +34,7 @@ export const protect = async (req, res, next) => {
     //    expiry, and audience. We never trust the client's own claims.
     let decodedToken;
     try {
-      decodedToken = await admin.auth().verifyIdToken(idToken);
+      decodedToken = await admin.verifyIdToken(idToken);
     } catch (firebaseError) {
       return res.status(401).json({
         success: false,

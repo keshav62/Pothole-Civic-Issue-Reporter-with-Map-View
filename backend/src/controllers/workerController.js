@@ -169,7 +169,7 @@ export const acceptTask = async (req, res, next) => {
       req.params.id,
       STATUS.ACCEPTED,
       req.user,
-      { note: req.body.note || '' }
+      { note: req.body?.note || '' }
     );
 
     return res.status(200).json({
@@ -197,7 +197,7 @@ export const startTask = async (req, res, next) => {
       req.params.id,
       STATUS.IN_PROGRESS,
       req.user,
-      { note: req.body.note || '' }
+      { note: req.body?.note || '' }
     );
 
     return res.status(200).json({
@@ -228,7 +228,7 @@ export const completeTask = async (req, res, next) => {
       req.params.id,
       STATUS.PENDING_CITIZEN_VERIFICATION,
       req.user,
-      { note: req.body.note || '' }
+      { note: req.body?.note || '' }
     );
 
     return res.status(200).json({

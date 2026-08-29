@@ -103,3 +103,101 @@ export const fetchNearbyIssues = async ({
   // The backend wraps all responses in { success, message, data }
   return json.data;
 };
+
+
+// ─── CRUD ────────────────────────────────────────────────────────────────────
+
+/**
+ * createIssue
+ * @param {Object} data - Contains title, description, category, priority, location, address, ward
+ */
+export const createIssue = async (data) => {
+  const json = await apiFetch('/api/issues', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  return json.data;
+};
+
+/**
+ * fetchIssues
+ * @param {Object} params - Filtering and pagination options
+ */
+export const fetchIssues = async ({ page, limit, status, category, priority, ward, search } = {}) => {
+  const params = new URLSearchParams();
+  
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (status) params.set('status', status);
+  if (category) params.set('category', category);
+  if (priority) params.set('priority', priority);
+  if (ward) params.set('ward', ward);
+  if (search) params.set('search', search);
+
+  const qs = params.toString();
+  const endpoint = qs ? `/api/issues?${qs}` : '/api/issues';
+  
+  const json = await apiFetch(endpoint);
+  return json.data;
+};
+
+/**
+ * fetchIssueById
+ * @param {string} id 
+ */
+export const fetchIssueById = async (id) => {
+  const json = await apiFetch(`/api/issues/${id}`);
+  return json.data;
+};
+
+/**
+ * updateIssue
+ * @param {string} id 
+ * @param {Object} data 
+ */
+export const updateIssue = async (id, data) => {
+  const json = await apiFetch(`/api/issues/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data)
+  });
+  return json.data;
+};
+
+/**
+ * deleteIssue
+ * @param {string} id 
+ */
+export const deleteIssue = async (id) => {
+  const json = await apiFetch(`/api/issues/${id}`, {
+    method: 'DELETE'
+  });
+  return json.data;
+};
+
+/**
+ * assignIssue
+ * @param {string} id 
+ * @param {string} workerId 
+ * @param {string} note 
+ */
+export const assignIssue = async (id, workerId, note) => {
+  const json = await apiFetch(`/api/issues/${id}/assign`, {
+    method: 'PATCH',
+    body: JSON.stringify({ workerId, note })
+  });
+  return json.data;
+};
+
+/**
+ * verifyIssue
+ * @param {string} id 
+ * @param {boolean} approved 
+ * @param {string} note 
+ */
+export const verifyIssue = async (id, approved, note) => {
+  const json = await apiFetch(`/api/issues/${id}/verify`, {
+    method: 'POST',
+    body: JSON.stringify({ approved, note })
+  });
+  return json.data;
+};

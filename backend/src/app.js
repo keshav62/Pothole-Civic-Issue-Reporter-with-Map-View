@@ -10,6 +10,9 @@ import issueRoutes from './routes/issueRoutes.js';
 import workerRoutes from './routes/workerRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import './models/Department.js';
+import './models/IssueHistory.js';
+import './models/Notification.js';
 
 dotenv.config();
 
@@ -94,6 +97,16 @@ app.use('/api/issues',        issueRoutes);
 app.use('/api/workers',       workerRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics',     analyticsRoutes);
+
+// ─── Root Route ───────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'CivicConnect Backend API Server is active.',
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+    documentation: 'Access the React UI at http://localhost:5173'
+  });
+});
 
 // ─── Error handling (must be last) ───────────────────────────────────────────
 app.use(notFound);

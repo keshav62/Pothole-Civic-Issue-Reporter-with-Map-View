@@ -199,12 +199,11 @@ issueSchema.index({ status: 1, priority: 1, createdAt: -1 });
 
 // ─── Pre-save hook: generate issueId ─────────────────────────────────────────
 
-issueSchema.pre('save', async function (next) {
+issueSchema.pre('save', async function () {
   if (!this.issueId) {
     const count = await mongoose.model('Issue').countDocuments();
     this.issueId = `ISS-${String(count + 1).padStart(4, '0')}`;
   }
-  next();
 });
 
 // ─── Model ───────────────────────────────────────────────────────────────────

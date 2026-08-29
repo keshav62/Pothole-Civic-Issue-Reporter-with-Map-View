@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCivic } from '../context/CivicContext';
 import { signInWithGooglePopup } from '../config/firebase';
+import authService from '../services/authService';
 import {
   Shield,
   User,
@@ -57,19 +58,41 @@ export const Signup = () => {
 
     if (result.success && result.user) {
       const fbUser = result.user;
-      const newUser = signupWithGmail({
-        name: fbUser.displayName || 'Google Resident',
-        email: fbUser.email,
-        phone: '+91 98765 43210',
-        role: formData.role,
-        department: formData.role === 'CITIZEN' ? 'Public Resident' : formData.department,
-        ward: formData.ward
-      });
-      showToast(`Google Account Registered: Welcome, ${newUser.name}!`, 'success');
-      if (newUser.role === 'SUPER_ADMIN') navigate('/admin/dashboard');
-      else if (newUser.role === 'DEPARTMENT_ADMIN') navigate('/department/dashboard');
-      else if (newUser.role === 'FIELD_WORKER') navigate('/worker/dashboard');
-      else navigate('/citizen/dashboard');
+      
+      try {
+        const backendUser = await authService.createSession(fbUser);
+        const role = backendUser?.role || formData.role;
+        const newUser = signupWithGmail({
+          name: fbUser.displayName || 'Google Resident',
+          email: fbUser.email,
+          phone: '+91 98765 43210',
+          role: role,
+          department: role === 'CITIZEN' ? 'Public Resident' : formData.department,
+          ward: formData.ward,
+          photoURL: fbUser.photoURL
+        });
+        showToast(`Google Account Registered: Welcome, ${newUser.name}!`, 'success');
+        if (role === 'SUPER_ADMIN') navigate('/admin/dashboard');
+        else if (role === 'DEPARTMENT_ADMIN') navigate('/department/dashboard');
+        else if (role === 'FIELD_WORKER') navigate('/worker/dashboard');
+        else navigate('/citizen/dashboard');
+      } catch (err) {
+        console.warn('Backend session failed, using local auth:', err);
+        const newUser = signupWithGmail({
+          name: fbUser.displayName || 'Google Resident',
+          email: fbUser.email,
+          phone: '+91 98765 43210',
+          role: formData.role,
+          department: formData.role === 'CITIZEN' ? 'Public Resident' : formData.department,
+          ward: formData.ward,
+          photoURL: fbUser.photoURL
+        });
+        showToast(`Google Account Registered: Welcome, ${newUser.name}!`, 'success');
+        if (newUser.role === 'SUPER_ADMIN') navigate('/admin/dashboard');
+        else if (newUser.role === 'DEPARTMENT_ADMIN') navigate('/department/dashboard');
+        else if (newUser.role === 'FIELD_WORKER') navigate('/worker/dashboard');
+        else navigate('/citizen/dashboard');
+      }
     } else {
       const errMsg = result.error || 'Google Sign-In failed or was cancelled';
       setError(`Google Auth Error: ${errMsg}`);

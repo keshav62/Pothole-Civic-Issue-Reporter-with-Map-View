@@ -31,7 +31,7 @@ export const session = async (req, res, next) => {
     // --- 2. Verify the Firebase ID token ---
     let decodedToken;
     try {
-      decodedToken = await admin.auth().verifyIdToken(idToken);
+      decodedToken = await admin.verifyIdToken(idToken);
     } catch {
       return res.status(401).json({
         success: false,

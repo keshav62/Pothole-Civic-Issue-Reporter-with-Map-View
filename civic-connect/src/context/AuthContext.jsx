@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { MOCK_USERS } from '../data/mockUsers';
 import { auth, firebaseSignOut } from '../config/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -10,18 +10,31 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const localUser = authService.getCurrentUser();
-      return localUser || MOCK_USERS[0];
+      return localUser || null;
     } catch {
-      return MOCK_USERS[0];
+      return null;
     }
   });
   const [loading, setLoading] = useState(false);
+  const sessionCreated = useRef(false);
 
   // Listen to Firebase auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         console.log("Firebase Auth User Detected:", firebaseUser.email);
+        if (!sessionCreated.current && !authService.getCurrentUser()) {
+          try {
+            sessionCreated.current = true;
+            const backendUser = await authService.createSession(firebaseUser);
+            setCurrentUser(backendUser);
+          } catch (error) {
+            console.error("Failed to create backend session:", error);
+            sessionCreated.current = false;
+          }
+        }
+      } else {
+        sessionCreated.current = false;
       }
     });
     return () => unsubscribe();
@@ -72,7 +85,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginWithGmail = (email, role = 'SUPER_ADMIN', customName = null, customPhoto = null) => {
+  const loginWithGmail = async (email, role = 'SUPER_ADMIN', customName = null, customPhoto = null) => {
+    if (auth.currentUser) {
+      try {
+        const user = await authService.createSession(auth.currentUser);
+        setCurrentUser(user);
+        sessionCreated.current = true;
+        return user;
+      } catch (error) {
+        console.error("Backend sync failed in loginWithGmail, falling back to mock:", error);
+      }
+    }
+
     const existing = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
 
     const roleMap = {
@@ -107,7 +131,18 @@ export const AuthProvider = ({ children }) => {
     return user;
   };
 
-  const signupWithGmail = ({ name, email, role, department, ward, phone, photoURL }) => {
+  const signupWithGmail = async ({ name, email, role, department, ward, phone, photoURL }) => {
+    if (auth.currentUser) {
+      try {
+        const user = await authService.createSession(auth.currentUser);
+        setCurrentUser(user);
+        sessionCreated.current = true;
+        return user;
+      } catch (error) {
+        console.error("Backend sync failed in signupWithGmail, falling back to mock:", error);
+      }
+    }
+
     const roleMap = {
       SUPER_ADMIN: 'Super Admin',
       DEPARTMENT_ADMIN: 'Department Admin',

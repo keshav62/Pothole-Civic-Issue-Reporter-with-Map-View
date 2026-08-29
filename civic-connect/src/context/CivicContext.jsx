@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useAuth } from './AuthContext';
+import * as issueService from '../services/issueService';
+import * as notificationService from '../services/notificationService';
 import { MOCK_ISSUES } from '../data/mockIssues';
 import { MOCK_USERS } from '../data/mockUsers';
 import { MOCK_DEPARTMENTS } from '../data/mockDepartments';
@@ -8,12 +11,43 @@ import { MOCK_NOTIFICATIONS } from '../data/mockNotifications';
 const CivicContext = createContext(null);
 
 export const CivicProvider = ({ children }) => {
-  const [issues, setIssues] = useState(MOCK_ISSUES);
+  const { currentUser } = useAuth();
+  
+  const [issues, setIssues] = useState([]);
   const [users, setUsers] = useState(MOCK_USERS);
   const [departments, setDepartments] = useState(MOCK_DEPARTMENTS);
   const [workers, setWorkers] = useState(MOCK_WORKERS);
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const loadIssues = async () => {
+      try {
+        const data = await issueService.fetchIssues({ limit: 100 });
+        if (data?.issues?.length) {
+          setIssues(data.issues);
+        } else {
+          setIssues(MOCK_ISSUES); // fallback
+        }
+      } catch (err) {
+        console.warn('Failed to fetch issues from API, using mock data:', err);
+        setIssues(MOCK_ISSUES);
+      }
+    };
+    loadIssues();
+  }, [currentUser]);
+
+  const refreshIssues = async () => {
+    try {
+      const data = await issueService.fetchIssues({ limit: 100 });
+      if (data?.issues?.length) {
+        setIssues(data.issues);
+      }
+    } catch (err) {
+      console.warn('Failed to refresh issues from API:', err);
+    }
+  };
 
   const showToast = (message, type = 'info') => {
     setToast({ visible: true, message, type });
@@ -32,11 +66,16 @@ export const CivicProvider = ({ children }) => {
     setNotifications(prev => [newNotif, ...prev]);
   };
 
-  const verifyIssue = (issueId) => {
+  const verifyIssue = async (issueId) => {
+    try {
+      await issueService.updateIssue(issueId, { status: 'VERIFIED' });
+    } catch (err) {
+      console.warn('API call failed, updating locally:', err);
+    }
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId) {
+      if (issue.id === issueId || issue._id === issueId) {
         const newTimeline = [
-          ...issue.timeline,
+          ...(issue.timeline || []),
           { status: 'VERIFIED', title: 'Issue Verified by Admin', date: new Date().toLocaleString(), actor: 'Admin' }
         ];
         return { ...issue, status: 'VERIFIED', timeline: newTimeline };
@@ -46,11 +85,16 @@ export const CivicProvider = ({ children }) => {
     showToast(`Issue ${issueId} verified successfully!`, 'success');
   };
 
-  const rejectIssue = (issueId, reason = 'Duplicate or Invalid') => {
+  const rejectIssue = async (issueId, reason = 'Duplicate or Invalid') => {
+    try {
+      await issueService.updateIssue(issueId, { status: 'REJECTED' });
+    } catch (err) {
+      console.warn('API call failed, updating locally:', err);
+    }
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId) {
+      if (issue.id === issueId || issue._id === issueId) {
         const newTimeline = [
-          ...issue.timeline,
+          ...(issue.timeline || []),
           { status: 'REJECTED', title: `Rejected: ${reason}`, date: new Date().toLocaleString(), actor: 'Admin' }
         ];
         return { ...issue, status: 'REJECTED', timeline: newTimeline };
@@ -60,14 +104,20 @@ export const CivicProvider = ({ children }) => {
     showToast(`Issue ${issueId} rejected`, 'warning');
   };
 
-  const assignIssue = (issueId, departmentName, workerId) => {
+  const assignIssue = async (issueId, departmentName, workerId) => {
+    try {
+      await issueService.assignIssue(issueId, workerId, 'Assigned via system');
+    } catch (err) {
+      console.warn('API call failed, updating locally:', err);
+    }
+
     const worker = workers.find(w => w.id === workerId);
     const workerName = worker ? worker.name : 'Unassigned';
 
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId) {
+      if (issue.id === issueId || issue._id === issueId) {
         const newTimeline = [
-          ...issue.timeline,
+          ...(issue.timeline || []),
           { status: 'ASSIGNED', title: `Assigned to ${workerName}`, date: new Date().toLocaleString(), actor: 'Dept Admin' }
         ];
         return {
@@ -104,15 +154,20 @@ export const CivicProvider = ({ children }) => {
   };
 
   const updateIssuePriority = (issueId, newPriority) => {
-    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, priority: newPriority } : i));
+    setIssues(prev => prev.map(i => (i.id === issueId || i._id === issueId) ? { ...i, priority: newPriority } : i));
     showToast(`Issue ${issueId} priority set to ${newPriority}`, 'info');
   };
 
-  const updateIssueStatus = (issueId, newStatus) => {
+  const updateIssueStatus = async (issueId, newStatus) => {
+    try {
+      await issueService.updateIssue(issueId, { status: newStatus });
+    } catch (err) {
+      console.warn('API call failed, updating locally:', err);
+    }
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId) {
+      if (issue.id === issueId || issue._id === issueId) {
         const newTimeline = [
-          ...issue.timeline,
+          ...(issue.timeline || []),
           { status: newStatus, title: `Status changed to ${newStatus}`, date: new Date().toLocaleString(), actor: 'System' }
         ];
         return { ...issue, status: newStatus, timeline: newTimeline };
@@ -124,12 +179,12 @@ export const CivicProvider = ({ children }) => {
 
   const updateIssueImages = (issueId, beforeImage, afterImage) => {
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId) {
+      if (issue.id === issueId || issue._id === issueId) {
         return {
           ...issue,
           images: {
-            before: beforeImage !== undefined ? beforeImage : issue.images.before,
-            after: afterImage !== undefined ? afterImage : issue.images.after
+            before: beforeImage !== undefined ? beforeImage : (issue.images?.before || null),
+            after: afterImage !== undefined ? afterImage : (issue.images?.after || null)
           }
         };
       }
@@ -137,11 +192,16 @@ export const CivicProvider = ({ children }) => {
     }));
   };
 
-  const startTask = (issueId) => {
+  const startTask = async (issueId) => {
+    try {
+      await issueService.updateIssue(issueId, { status: 'IN_PROGRESS' });
+    } catch (err) {
+      console.warn('API call failed, updating locally:', err);
+    }
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId) {
+      if (issue.id === issueId || issue._id === issueId) {
         const newTimeline = [
-          ...issue.timeline,
+          ...(issue.timeline || []),
           { status: 'IN_PROGRESS', title: 'Work Started by Worker', date: new Date().toLocaleString(), actor: issue.assignedWorker || 'Worker' }
         ];
         return { ...issue, status: 'IN_PROGRESS', timeline: newTimeline };
@@ -151,11 +211,16 @@ export const CivicProvider = ({ children }) => {
     showToast(`Started work on ${issueId}`, 'success');
   };
 
-  const completeTask = (issueId, beforeImage, afterImage, workNotes) => {
+  const completeTask = async (issueId, beforeImage, afterImage, workNotes) => {
+    try {
+      await issueService.updateIssue(issueId, { status: 'RESOLVED', workNotes });
+    } catch (err) {
+      console.warn('API call failed, updating locally:', err);
+    }
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId) {
+      if (issue.id === issueId || issue._id === issueId) {
         const newTimeline = [
-          ...issue.timeline,
+          ...(issue.timeline || []),
           { status: 'RESOLVED', title: 'Work Completed & Verified', date: new Date().toLocaleString(), actor: issue.assignedWorker || 'Worker' }
         ];
         return {
@@ -163,8 +228,8 @@ export const CivicProvider = ({ children }) => {
           status: 'RESOLVED',
           slaStatus: 'RESOLVED_ON_TIME',
           images: {
-            before: beforeImage !== undefined ? beforeImage : issue.images.before,
-            after: afterImage !== undefined ? afterImage : issue.images.after
+            before: beforeImage !== undefined ? beforeImage : (issue.images?.before || null),
+            after: afterImage !== undefined ? afterImage : (issue.images?.after || null)
           },
           workNotes: workNotes || 'Task completed as per standard municipal operating guidelines.',
           timeline: newTimeline
@@ -173,7 +238,7 @@ export const CivicProvider = ({ children }) => {
       return issue;
     }));
 
-    const targetIssue = issues.find(i => i.id === issueId);
+    const targetIssue = issues.find(i => i.id === issueId || i._id === issueId);
     if (targetIssue && targetIssue.workerId) {
       setWorkers(prev => prev.map(w => {
         if (w.id === targetIssue.workerId) {
@@ -193,7 +258,7 @@ export const CivicProvider = ({ children }) => {
 
   const escalateIssue = (issueId) => {
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId) {
+      if (issue.id === issueId || issue._id === issueId) {
         return { ...issue, priority: 'CRITICAL', slaStatus: 'BREACHED' };
       }
       return issue;
@@ -273,7 +338,8 @@ export const CivicProvider = ({ children }) => {
       updateUserStatus,
       addDepartment,
       updateWorkerStatus,
-      markNotificationAsRead
+      markNotificationAsRead,
+      refreshIssues
     }}>
       {children}
     </CivicContext.Provider>

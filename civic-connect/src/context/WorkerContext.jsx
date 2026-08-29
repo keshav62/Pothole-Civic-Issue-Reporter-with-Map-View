@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import * as workerService from '../services/workerService';
+import { useAuth } from './AuthContext';
 import {
   workerTasks as initialTasks,
   workerNotifications as initialNotifications,
@@ -17,10 +19,24 @@ export const useWorker = () => {
 };
 
 export const WorkerProvider = ({ children }) => {
+  const { currentUser } = useAuth();
   const [tasks, setTasks] = useState(initialTasks);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [recentActivity, setRecentActivity] = useState(initialActivity);
   const [profile, setProfile] = useState(initialProfile);
+
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'FIELD_WORKER') return;
+    const loadTasks = async () => {
+      try {
+        const data = await workerService.fetchWorkerTasks();
+        if (data?.tasks?.length) setTasks(data.tasks);
+      } catch (err) {
+        console.warn('Failed to fetch worker tasks, using mock data:', err);
+      }
+    };
+    loadTasks();
+  }, [currentUser]);
 
   // Helper to add activity
   const addActivity = (type, taskId, taskTitle, action) => {
@@ -50,7 +66,17 @@ export const WorkerProvider = ({ children }) => {
     setNotifications(prev => [newNotif, ...prev]);
   };
 
-  const updateTaskStatus = (taskId, newStatus) => {
+  const updateTaskStatus = async (taskId, newStatus) => {
+    try {
+      if (newStatus === 'ACCEPTED') {
+        await workerService.acceptTask(taskId);
+      } else if (newStatus === 'IN_PROGRESS') {
+        await workerService.startTask(taskId);
+      }
+    } catch (err) {
+      console.warn('API update task status failed:', err);
+    }
+
     setTasks(prevTasks => prevTasks.map(task => {
       if (task.id === taskId) {
 
@@ -67,7 +93,13 @@ export const WorkerProvider = ({ children }) => {
     }));
   };
 
-  const submitProof = (taskId, afterImage, repairNotes) => {
+  const submitProof = async (taskId, afterImage, repairNotes) => {
+    try {
+      await workerService.completeTask(taskId);
+    } catch (err) {
+      console.warn('API complete task failed:', err);
+    }
+
     setTasks(prevTasks => prevTasks.map(task => {
       if (task.id === taskId) {
 

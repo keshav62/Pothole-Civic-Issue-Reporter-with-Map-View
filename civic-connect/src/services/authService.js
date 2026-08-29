@@ -1,116 +1,98 @@
-import { STORAGE_KEYS, USER_ROLES } from '../utils/constants';
-import { MOCK_USERS, getMockUserByEmail } from '../data/mockUsers';
-
-const SIMULATED_DELAY_MS = 250;
-
-const delay = (ms = SIMULATED_DELAY_MS) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /**
- * Auth Service
- * Modular abstraction layer for all authentication operations.
- * Currently uses localStorage + Mock datasets; easily swappable with backend API client.
+ * authService.js
+ *
+ * Frontend service layer for authentication.
  */
-export const authService = {
+
+import { apiFetch } from './api.js';
+import { STORAGE_KEYS } from '../utils/constants';
+import { auth } from '../config/firebase';
+
+const authService = {
   /**
-   * Retrieve current user from local storage
+   * Retrieves the cached user from localStorage.
    */
   getCurrentUser() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
-      return stored ? JSON.parse(stored) : null;
-    } catch (err) {
-      console.error('Failed to parse current user from localStorage:', err);
+      const user = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+      return user ? JSON.parse(user) : null;
+    } catch (e) {
       return null;
     }
   },
 
   /**
-   * Authenticate user with email and password (or quick role select)
+   * Creates a session on the backend using the provided Firebase user.
+   *
+   * @param {Object} firebaseUser The Firebase user object
    */
-  async loginUser({ email, password: _password, role }) {
-    await delay();
+  async createSession(firebaseUser) {
+    try {
+      // Get the Firebase ID token (will be cached or refreshed automatically by Firebase)
+      const token = await firebaseUser.getIdToken();
+      
+      // Store token in case the fallback logic or other components look for it directly
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+      localStorage.setItem('civicconnect_token', token); // For prompt compatibility
 
-    // If role is passed directly (for demo switcher) or found by email
-    let matchedUser = null;
-
-    if (email) {
-      matchedUser = getMockUserByEmail(email);
-    }
-
-    if (!matchedUser && role) {
-      matchedUser = MOCK_USERS.find((u) => u.role === role);
-    }
-
-    if (!matchedUser) {
-      // Fallback: create dynamic session for any email entered with default CITIZEN or specified role
-      matchedUser = {
-        id: `user-${Date.now()}`,
-        name: email ? email.split('@')[0].replace('.', ' ') : 'Civic User',
-        email: email || 'user@example.com',
-        role: role || USER_ROLES.CITIZEN,
-        department: null,
+      // Call our backend API to create/verify session
+      // apiFetch automatically attaches the token
+      const json = await apiFetch('/api/auth/session', { method: 'POST' });
+      
+      const user = json.data.user;
+      localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
+      
+      return user;
+    } catch (error) {
+      console.warn('Backend session creation failed, using local fallback:', error);
+      
+      // Fallback local user creation
+      const fallbackUser = {
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        role: 'CITIZEN'
       };
+      
+      localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(fallbackUser));
+      return fallbackUser;
     }
-
-    // Do NOT store passwords
-    const safeUser = {
-      id: matchedUser.id,
-      name: matchedUser.name,
-      email: matchedUser.email,
-      role: matchedUser.role,
-      department: matchedUser.department || null,
-      phone: matchedUser.phone || null,
-      address: matchedUser.address || null,
-    };
-
-    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(safeUser));
-    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, `mock-jwt-${Date.now()}`);
-
-    return safeUser;
   },
 
   /**
-   * Register a new user
+   * Fetches the current user's profile from the backend API.
    */
-  async registerUser({ name, email, password: _password, role = USER_ROLES.CITIZEN, department = null, phone = null }) {
-    await delay();
-
-
-    if (!name || !email) {
-      throw new Error('Name and email are required for registration.');
-    }
-
-    const newUser = {
-      id: `user-${Date.now()}`,
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      role,
-      department: department || (role === USER_ROLES.CITIZEN ? null : 'General Operations'),
-      phone,
-    };
-
-    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(newUser));
-    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, `mock-jwt-${Date.now()}`);
-
-    return newUser;
+  async fetchProfile() {
+    const json = await apiFetch('/api/auth/me');
+    return json.data;
   },
 
   /**
-   * Logout user and clear tokens
+   * Logs in a user locally (fallback/demo path).
+   */
+  async loginUser({ email, password, role }) {
+    const user = { email, role: role || 'CITIZEN' };
+    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
+    return user;
+  },
+
+  /**
+   * Registers a user locally (fallback/demo path).
+   */
+  async registerUser({ name, email, password, role, department, phone }) {
+    const user = { name, email, role: role || 'CITIZEN', department, phone };
+    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
+    return user;
+  },
+
+  /**
+   * Logs the current user out.
    */
   async logoutUser() {
-    await delay(100);
     localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-    return true;
-  },
-
-  /**
-   * Get available demo mock users for fast role-testing
-   */
-  getMockUsers() {
-    return MOCK_USERS;
-  },
+    localStorage.removeItem('civicconnect_token');
+  }
 };
 
 export default authService;
