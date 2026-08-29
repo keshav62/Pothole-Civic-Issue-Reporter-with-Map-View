@@ -56,11 +56,13 @@ export const IssueMap = ({
         />
 
         {issues.map((issue) => {
-          if (!issue.latitude || !issue.longitude) return null;
+          const lat = issue.location?.lat ?? issue.latitude;
+          const lng = issue.location?.lng ?? issue.longitude;
+          if (!lat || !lng) return null;
           return (
             <Marker
               key={issue.id}
-              position={[issue.latitude, issue.longitude]}
+              position={[lat, lng]}
               icon={createCustomIcon(issue.priority, issue.status)}
             >
               <Popup className="custom-leaflet-popup">
