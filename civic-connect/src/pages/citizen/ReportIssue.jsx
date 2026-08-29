@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCivic } from '../../context/CivicContext';
+import { createIssueApi } from '../../services/issueService';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
@@ -52,7 +53,7 @@ const CoordDisplay = ({ coords, accuracy }) => (
 // ─── Main page component ──────────────────────────────────────────────────────
 export const ReportIssue = () => {
   const navigate = useNavigate();
-  const { showToast } = useCivic();
+  const { showToast, addIssue } = useCivic();
 
   // ── Multi-step form state ──────────────────────────────────────────────────
   const [step, setStep] = useState(1);
@@ -62,6 +63,8 @@ export const ReportIssue = () => {
   const [priority, setPriority] = useState('MEDIUM');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── Location state ─────────────────────────────────────────────────────────
   // coords: { lat, lng } | null — never populated with fake values
@@ -116,8 +119,6 @@ export const ReportIssue = () => {
     }
 
     setLocationError(null);
-    // gpsLoading from the hook is unused here because we call the API directly
-    // in the component so we can update all state atomically.
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const newCoords = {
@@ -172,24 +173,60 @@ export const ReportIssue = () => {
   }, [coords, showToast]);
 
   // ── Final submit ──────────────────────────────────────────────────────────
-  const handleFinalSubmit = (e) => {
+  const handleFinalSubmit = async (e) => {
     e.preventDefault();
     if (!title || !description) {
       showToast('Please provide a title and detailed description.', 'warning');
       return;
     }
 
-    // Data contract for future backend integration:
-    // const reportLocation = {
-    //   address,
-    //   latitude: coords?.lat ?? null,
-    //   longitude: coords?.lng ?? null,
-    //   accuracy: accuracy ?? null,
-    // };
+    const categoryMap = {
+      'Road Maintenance': 'POTHOLE',
+      'Sanitation': 'GARBAGE',
+      'Electrical': 'STREETLIGHT',
+      'Water Supply': 'WATER_LEAK',
+      'Drainage': 'DRAINAGE',
+      'Parks': 'OTHER',
+      'Traffic': 'ROAD_DAMAGE',
+    };
+    const backendCategory = categoryMap[category] || 'POTHOLE';
 
-    const complaintId = `CC-${Math.floor(1000 + Math.random() * 9000)}`;
-    showToast(`Complaint ${complaintId} submitted to Municipal HQ!`, 'success');
-    navigate('/citizen/dashboard');
+    const location = {
+      type: 'Point',
+      coordinates: [
+        coords?.lng ?? 77.2090,
+        coords?.lat ?? 28.6139,
+      ],
+    };
+
+    setIsSubmitting(true);
+    try {
+      const data = await createIssueApi(
+        {
+          title,
+          description,
+          category: backendCategory,
+          priority,
+          address: address || 'Sector 15',
+          ward,
+          location,
+        },
+        imageFile,
+        imageFile ? null : (image && !image.startsWith('data:') ? image : null)
+      );
+
+      const createdIssue = data?.issue;
+      if (createdIssue) {
+        addIssue(createdIssue);
+      }
+      const complaintId = createdIssue?.issueId || createdIssue?._id || `CC-${Math.floor(1000 + Math.random() * 9000)}`;
+      showToast(`Complaint ${complaintId} submitted to Municipal HQ!`, 'success');
+      navigate('/citizen/dashboard');
+    } catch (err) {
+      showToast(err.message || 'Failed to submit report. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -409,7 +446,10 @@ export const ReportIssue = () => {
 
           <ImageUploader
             image={image}
-            onImageChange={(img) => setImage(img)}
+            onImageChange={(previewUrl, fileObj) => {
+              setImage(previewUrl);
+              setImageFile(fileObj || null);
+            }}
             label="SELECT OR CAPTURE INCIDENT PHOTO"
             placeholderText="Upload photo of the pothole or damaged area"
           />
@@ -470,11 +510,12 @@ export const ReportIssue = () => {
             <Button
               type="button"
               variant="success"
-              icon={CheckCircle2}
+              icon={isSubmitting ? Loader2 : CheckCircle2}
+              disabled={isSubmitting}
               className="py-3 px-6 text-xs font-bold shadow-md"
               onClick={handleFinalSubmit}
             >
-              Submit Report to Municipal HQ
+              {isSubmitting ? 'Uploading & Submitting…' : 'Submit Report to Municipal HQ'}
             </Button>
           </div>
         </div>

@@ -19,9 +19,16 @@ export const AuthProvider = ({ children }) => {
 
   // Listen to Firebase auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         console.log("Firebase Auth User Detected:", firebaseUser.email);
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          localStorage.setItem('civic_connect_token', idToken);
+          localStorage.setItem('civicconnect_token', idToken);
+        } catch (err) {
+          console.error("Failed to fetch Firebase ID token:", err);
+        }
       }
     });
     return () => unsubscribe();

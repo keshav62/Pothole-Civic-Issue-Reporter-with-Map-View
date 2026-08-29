@@ -3,6 +3,7 @@ import { useCivic } from '../../context/CivicContext';
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
 import { IssueTimeline } from '../../components/issues/IssueTimeline';
+import { IssueImage, getIssueReportedImageUrl, getIssueAfterImageUrl } from '../../components/issues/IssueImage';
 import { Button } from '../../components/common/Button';
 import { MapPin, Calendar, ArrowLeft, Search, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -111,15 +112,15 @@ export const MyReports = () => {
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Reported Photo</span>
                   <div className="aspect-video rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
-                    <img src={issue.images.before} alt="Reported" className="w-full h-full object-cover" />
+                    <IssueImage src={getIssueReportedImageUrl(issue)} alt={issue.title} />
                   </div>
                 </div>
 
-                {issue.images.after && (
+                {getIssueAfterImageUrl(issue) && (
                   <div className="space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Verified Repair Proof</span>
                     <div className="aspect-video rounded-xl overflow-hidden border border-emerald-300 bg-slate-100">
-                      <img src={issue.images.after} alt="Resolved" className="w-full h-full object-cover" />
+                      <IssueImage src={getIssueAfterImageUrl(issue)} alt="Resolved repair proof" />
                     </div>
                   </div>
                 )}

@@ -1,9 +1,9 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import authRoutes from './routes/authRoutes.js';
 import issueRoutes from './routes/issueRoutes.js';
@@ -11,25 +11,39 @@ import workerRoutes from './routes/workerRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 
-dotenv.config();
-
 const app = express();
 
 // ─── Security headers (Helmet) ────────────────────────────────────────────────
-// Sets X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security,
-// Content-Security-Policy and more. Applied before all other middleware.
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-// VULN-05 fix: whitelist only the HTTP methods and headers actually used by
-// this API. Prevents unrecognised verbs (TRACE, CONNECT) and arbitrary custom
-// headers from being allowed from the permitted origin.
-app.use(cors({
-  origin:         process.env.FRONTEND_URL || 'http://localhost:5173',
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5176',
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
   credentials:    true,
-  methods:        ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+  methods:        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 
 // ─── Request body parsing ─────────────────────────────────────────────────────
 // VULN-02 fix: cap JSON body at 16 kb — sufficient for all real payloads

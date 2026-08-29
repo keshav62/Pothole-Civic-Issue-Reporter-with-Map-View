@@ -1,4 +1,6 @@
 import Issue from '../models/Issue.js';
+import User from '../models/User.js';
+import Department from '../models/Department.js';
 import IssueHistory, { HISTORY_ACTIONS } from '../models/IssueHistory.js';
 import { canTransition, getAvailableTransitions } from '../utils/issueStatus.js';
 import { STATUS } from '../utils/constants.js';

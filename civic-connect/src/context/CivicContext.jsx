@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MOCK_ISSUES } from '../data/mockIssues';
 import { MOCK_USERS } from '../data/mockUsers';
 import { MOCK_DEPARTMENTS } from '../data/mockDepartments';
 import { MOCK_WORKERS } from '../data/mockWorkers';
 import { MOCK_NOTIFICATIONS } from '../data/mockNotifications';
+import { fetchIssuesApi } from '../services/issueService';
 
 const CivicContext = createContext(null);
 
@@ -14,6 +15,46 @@ export const CivicProvider = ({ children }) => {
   const [workers, setWorkers] = useState(MOCK_WORKERS);
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+
+  // Fetch real issues from MongoDB on load and merge with mock state
+  useEffect(() => {
+    const loadRealIssues = async () => {
+      try {
+        const data = await fetchIssuesApi();
+        if (data?.issues && Array.isArray(data.issues)) {
+          const normalized = data.issues.map((issue) => ({
+            ...issue,
+            id: issue.issueId || issue._id,
+            timeline: issue.timeline && issue.timeline.length > 0 ? issue.timeline : [
+              { status: issue.status || 'REPORTED', title: 'Issue Reported', date: new Date(issue.createdAt).toLocaleString(), actor: 'Citizen' }
+            ]
+          }));
+          setIssues((prev) => {
+            const existingIds = new Set(prev.map((i) => i.id || i._id));
+            const newOnes = normalized.filter((i) => !existingIds.has(i.id) && !existingIds.has(i._id));
+            return [...newOnes, ...prev];
+          });
+        }
+      } catch {
+        // Fall back gracefully to mock state if unauthenticated or offline
+      }
+    };
+    loadRealIssues();
+  }, []);
+
+  const addIssue = (newIssue) => {
+    if (!newIssue) return;
+    const formatted = {
+      ...newIssue,
+      id: newIssue.issueId || newIssue._id || `ISS-${Date.now()}`,
+      ward: newIssue.ward || 'Ward 15',
+      address: newIssue.address || 'Sector 15',
+      timeline: newIssue.timeline && newIssue.timeline.length > 0 ? newIssue.timeline : [
+        { status: newIssue.status || 'REPORTED', title: 'Issue Submitted to HQ', date: new Date().toLocaleString(), actor: 'Citizen' }
+      ]
+    };
+    setIssues((prev) => [formatted, ...prev]);
+  };
 
   const showToast = (message, type = 'info') => {
     setToast({ visible: true, message, type });
@@ -254,6 +295,7 @@ export const CivicProvider = ({ children }) => {
   return (
     <CivicContext.Provider value={{
       issues,
+      addIssue,
       users,
       departments,
       workers,

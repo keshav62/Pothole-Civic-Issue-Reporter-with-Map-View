@@ -4,8 +4,8 @@
  * Base API configuration for CivicConnect frontend.
  *
  * - BASE_URL reads from the Vite env variable VITE_API_BASE_URL.
- *   Set it in .env.local for your environment, e.g.:
- *     VITE_API_BASE_URL=http://localhost:3000
+ *   Set it in .env for your environment, e.g.:
+ *     VITE_API_BASE_URL=http://localhost:5001
  *
  * - apiFetch is a thin wrapper around fetch() that:
  *     1. Prepends BASE_URL to any relative path.
@@ -16,8 +16,10 @@
  *     5. Throws a structured { status, message, errors } error on non-2xx.
  */
 
+import { auth } from '../config/firebase';
+
 export const BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
 
 /**
  * apiFetch
@@ -30,8 +32,21 @@ export const BASE_URL =
 export const apiFetch = async (path, options = {}) => {
   const url = `${BASE_URL}${path}`;
 
-  // Attach Firebase ID token when present (stored by authService after sign-in)
-  const token = localStorage.getItem('civicconnect_token');
+  // Dynamically retrieve fresh Firebase ID token if authenticated, else fallback to localStorage
+  let token = null;
+  try {
+    if (auth?.currentUser) {
+      token = await auth.currentUser.getIdToken();
+    }
+  } catch (err) {
+    console.warn('Could not get fresh token from auth.currentUser:', err);
+  }
+
+  if (!token) {
+    token =
+      localStorage.getItem('civic_connect_token') ||
+      localStorage.getItem('civicconnect_token');
+  }
 
   const headers = {
     ...(options.headers || {}),

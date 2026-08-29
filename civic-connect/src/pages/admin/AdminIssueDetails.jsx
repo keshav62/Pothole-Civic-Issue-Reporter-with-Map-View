@@ -5,7 +5,7 @@ import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
 import { IssueTimeline } from '../../components/issues/IssueTimeline';
 import { IssueMap } from '../../components/map/IssueMap';
-import { AssignWorkerModal } from '../../components/issues/AssignWorkerModal';
+import { AssignWorkerModal, getIssueReportedImageUrl, getIssueAfterImageUrl } from '../../components/issues/IssueImage';
 import { ImageUploader } from '../../components/common/ImageUploader';
 import { Button } from '../../components/common/Button';
 import { Select } from '../../components/common/Select';
@@ -29,10 +29,10 @@ export const AdminIssueDetails = () => {
   const { issues, verifyIssue, rejectIssue, escalateIssue, updateIssuePriority, updateIssueStatus, updateIssueImages } = useCivic();
   const [assignModalOpen, setAssignModalOpen] = useState(false);
 
-  const issue = issues.find(i => i.id === id) || issues[0];
+  const issue = issues.find(i => i.id === id || i._id === id || i.issueId === id) || issues[0];
 
-  const [beforeImage, setBeforeImage] = useState(issue?.images?.before || '');
-  const [afterImage, setAfterImage] = useState(issue?.images?.after || '');
+  const [beforeImage, setBeforeImage] = useState(getIssueReportedImageUrl(issue) || '');
+  const [afterImage, setAfterImage] = useState(getIssueAfterImageUrl(issue) || '');
 
   if (!issue) {
     return (
@@ -157,14 +157,14 @@ export const AdminIssueDetails = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ImageUploader
-                image={beforeImage || issue.images.before}
+                image={beforeImage || getIssueReportedImageUrl(issue) || ''}
                 onImageChange={(img) => handleImageUpdate('before', img)}
                 label="BEFORE REPAIR EVIDENCE"
                 placeholderText="Select or drag & drop before photo"
               />
 
               <ImageUploader
-                image={afterImage || issue.images.after}
+                image={afterImage || getIssueAfterImageUrl(issue) || ''}
                 onImageChange={(img) => handleImageUpdate('after', img)}
                 label="AFTER REPAIR EVIDENCE PROOF"
                 placeholderText="Select or drag & drop after repair photo"

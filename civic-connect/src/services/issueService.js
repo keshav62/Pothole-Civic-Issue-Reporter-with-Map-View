@@ -103,3 +103,59 @@ export const fetchNearbyIssues = async ({
   // The backend wraps all responses in { success, message, data }
   return json.data;
 };
+
+/**
+ * createIssueApi
+ *
+ * Sends issue data + optional image to POST /api/issues.
+ * Uses FormData if an image file (File object) is attached for Cloudinary upload.
+ */
+export const createIssueApi = async (issueData, imageFile = null, imageUrl = null) => {
+  if (imageFile instanceof File) {
+    const formData = new FormData();
+    formData.append('title', issueData.title);
+    formData.append('description', issueData.description);
+    formData.append('category', issueData.category);
+    if (issueData.priority) formData.append('priority', issueData.priority);
+    if (issueData.address) formData.append('address', issueData.address);
+    if (issueData.ward) formData.append('ward', issueData.ward);
+    if (issueData.location) {
+      formData.append('location', JSON.stringify(issueData.location));
+    }
+    formData.append('images', imageFile);
+
+    const json = await apiFetch('/api/issues', {
+      method: 'POST',
+      body: formData,
+    });
+    return json.data;
+  }
+
+  const body = {
+    ...issueData,
+    images: imageUrl ? [imageUrl] : [],
+  };
+
+  const json = await apiFetch('/api/issues', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return json.data;
+};
+
+/**
+ * fetchIssuesApi
+ * Calls GET /api/issues to fetch authenticated issues from MongoDB.
+ */
+export const fetchIssuesApi = async (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.status) query.set('status', params.status);
+  if (params.category) query.set('category', params.category);
+  if (params.priority) query.set('priority', params.priority);
+  if (params.ward) query.set('ward', params.ward);
+  if (params.search) query.set('search', params.search);
+
+  const path = `/api/issues${query.toString() ? `?${query.toString()}` : ''}`;
+  const json = await apiFetch(path);
+  return json.data;
+};
