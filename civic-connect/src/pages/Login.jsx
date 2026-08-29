@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCivic } from '../context/CivicContext';
-import { GoogleAuthModal } from '../components/auth/GoogleAuthModal';
+import { signInWithGooglePopup } from '../config/firebase';
 import {
   Shield,
   Mail,
@@ -11,30 +11,52 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
-  Sparkles
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 
 export const Login = () => {
-  const { loginAs } = useAuth();
+  const { loginAs, loginWithGmail } = useAuth();
   const { showToast } = useCivic();
   const navigate = useNavigate();
 
-  const [googleModalOpen, setGoogleModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Form State
+  // Form State - Default role is CITIZEN
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState('SUPER_ADMIN');
+  const [selectedRole, setSelectedRole] = useState('CITIZEN');
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const rolePaths = {
+    CITIZEN: '/citizen/dashboard',
     SUPER_ADMIN: '/admin/dashboard',
     DEPARTMENT_ADMIN: '/department/dashboard',
-    FIELD_WORKER: '/worker/dashboard',
-    CITIZEN: '/citizen/dashboard'
+    FIELD_WORKER: '/worker/dashboard'
+  };
+
+  // Google Single Sign-On Handler
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    showToast('Connecting to Google Single Sign-On...', 'info');
+
+    const result = await signInWithGooglePopup();
+
+    if (result.success && result.user) {
+      const fbUser = result.user;
+      const user = loginWithGmail(fbUser.email, selectedRole, fbUser.displayName, fbUser.photoURL);
+      showToast(`Google SSO Authenticated: Welcome, ${user.name}!`, 'success');
+      const targetPath = rolePaths[selectedRole] || '/citizen/dashboard';
+      navigate(targetPath);
+    } else {
+      const errMsg = result.error || 'Google Sign-In was cancelled or failed';
+      setError(`Google Auth Error: ${errMsg}`);
+      showToast(`Google authentication failed: ${errMsg}`, 'error');
+    }
+    setLoading(false);
   };
 
   const handleFormLogin = (e) => {
@@ -48,7 +70,7 @@ export const Login = () => {
     setTimeout(() => {
       loginAs(selectedRole);
       showToast(`Welcome back! Authenticated as ${selectedRole.replace('_', ' ')}`, 'success');
-      const targetPath = rolePaths[selectedRole] || '/admin/dashboard';
+      const targetPath = rolePaths[selectedRole] || '/citizen/dashboard';
       navigate(targetPath);
       setLoading(false);
     }, 400);
@@ -96,11 +118,12 @@ export const Login = () => {
             </p>
           </div>
 
-          {/* 1. Primary Gmail SSO Button */}
+          {/* 1. Google OAuth Button */}
           <button
             type="button"
-            onClick={() => setGoogleModalOpen(true)}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 font-bold px-4 py-3 rounded-xl shadow-md transition-all text-xs cursor-pointer border border-slate-200"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 font-bold px-4 py-3 rounded-xl shadow-md transition-all text-xs cursor-pointer border border-slate-200 disabled:opacity-50"
           >
             <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -108,7 +131,7 @@ export const Login = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
             </svg>
-            <span>Continue with Gmail / Google</span>
+            <span>{loading ? 'Authenticating with Google...' : 'Continue with Gmail / Google'}</span>
           </button>
 
           {/* Divider */}
@@ -122,8 +145,9 @@ export const Login = () => {
 
           {/* Error Banner */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-2.5 rounded-xl text-xs font-semibold">
-              {error}
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -140,7 +164,7 @@ export const Login = () => {
                   required
                   value={emailOrUsername}
                   onChange={(e) => setEmailOrUsername(e.target.value)}
-                  placeholder="admin@civicconnect.gov.in or username"
+                  placeholder="citizen@gmail.com or username"
                   className="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition-all"
                 />
               </div>
@@ -182,12 +206,12 @@ export const Login = () => {
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all cursor-pointer"
+                className="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all cursor-pointer font-medium"
               >
+                <option value="CITIZEN">Citizen (Public Resident Portal)</option>
                 <option value="SUPER_ADMIN">Super Admin (Headquarters Control)</option>
                 <option value="DEPARTMENT_ADMIN">Department Admin (Division Operations)</option>
                 <option value="FIELD_WORKER">Field Worker (Mobile Workstation)</option>
-                <option value="CITIZEN">Citizen (Public Resident Portal)</option>
               </select>
             </div>
 
@@ -228,13 +252,6 @@ export const Login = () => {
           </div>
         </div>
       </div>
-
-      {/* Google Auth Modal */}
-      <GoogleAuthModal
-        isOpen={googleModalOpen}
-        onClose={() => setGoogleModalOpen(false)}
-        defaultMode="SIGN_IN"
-      />
 
       {/* Security Footer */}
       <div className="relative text-center text-slate-500 text-xs flex items-center justify-center gap-2 pb-6">

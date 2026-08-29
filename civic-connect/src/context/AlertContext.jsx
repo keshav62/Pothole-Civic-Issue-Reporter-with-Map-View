@@ -212,7 +212,20 @@ export const AlertProvider = ({ children }) => {
 export const useRealtimeAlerts = () => {
   const context = useContext(AlertContext);
   if (!context) {
-    throw new Error('useRealtimeAlerts must be used within an AlertProvider');
+    return {
+      alerts: [],
+      unreadCount: 0,
+      hasNewCriticalAlert: false,
+      userLocation: { lat: 28.6280, lng: 77.2160, address: 'Sector 15, New Delhi' },
+      locationStatus: 'unavailable',
+      locationLastUpdated: new Date(),
+      requestLocationPermission: () => {},
+      settings: { radiusMeters: 2000 },
+      updateSettings: () => {},
+      markAsRead: () => {},
+      markAllAsRead: () => {},
+      requestBrowserNotificationPermission: async () => false
+    };
   }
   return context;
 };
