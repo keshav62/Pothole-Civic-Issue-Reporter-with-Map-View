@@ -28,8 +28,28 @@ app.use(helmet());
 // VULN-05 fix: whitelist only the HTTP methods and headers actually used by
 // this API. Prevents unrecognised verbs (TRACE, CONNECT) and arbitrary custom
 // headers from being allowed from the permitted origin.
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:5175',
+].filter(Boolean);
+
 app.use(cors({
-  origin:         process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow non-browser requests (Postman, curl, server-to-server) or listed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    // Allow any localhost dev port in non-production environments
+    if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS origin not allowed: ${origin}`));
+  },
   credentials:    true,
   methods:        ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

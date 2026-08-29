@@ -18,13 +18,10 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
  * @throws {{ status: number, message: string, errors?: Array }}
  */
 export const apiFetch = async (path, options = {}) => {
-  let token = null;
+  let token = options.customToken || null;
 
   // Wait for Firebase to restore session from IndexedDB if this is a hard refresh
   await auth.authStateReady();
-
-  // Prefer the explicitly provided customToken (used for dev mock fallbacks during login/signup)
-  let token = options.customToken || null;
 
   // 1. Get a live, cryptographically secure Firebase ID token
   if (!token && auth.currentUser) {
