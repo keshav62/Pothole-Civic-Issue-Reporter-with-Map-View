@@ -3,7 +3,64 @@ import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { useCivic } from '../../context/CivicContext';
-import { UserCheck, Star, MapPin, Clock, Award, ShieldAlert } from 'lucide-react';
+import { UserCheck, Star, MapPin, Clock, Award, ShieldAlert, Image as ImageIcon } from 'lucide-react';
+
+/**
+ * getIssueReportedImageUrl
+ * Extracts the primary reported image URL across MongoDB schema array,
+ * Cloudinary HTTPS URLs, and mock issue data shapes.
+ */
+export const getIssueReportedImageUrl = (issue) => {
+  if (!issue) return null;
+  if (Array.isArray(issue.images) && issue.images.length > 0) return issue.images[0];
+  if (typeof issue.images === 'string') return issue.images;
+  if (issue.images?.before) return Array.isArray(issue.images.before) ? issue.images.before[0] : issue.images.before;
+  if (Array.isArray(issue.beforeImages) && issue.beforeImages.length > 0) return issue.beforeImages[0];
+  return null;
+};
+
+/**
+ * getIssueAfterImageUrl
+ * Extracts the resolved/after repair proof image URL.
+ */
+export const getIssueAfterImageUrl = (issue) => {
+  if (!issue) return null;
+  if (Array.isArray(issue.afterImages) && issue.afterImages.length > 0) return issue.afterImages[0];
+  if (issue.images?.after) return Array.isArray(issue.images.after) ? issue.images.after[0] : issue.images.after;
+  return null;
+};
+
+/**
+ * IssueImage
+ * Renders Cloudinary HTTPS URLs or mock images with clean fallback states.
+ */
+export const IssueImage = ({
+  src,
+  alt = 'Civic issue evidence photo',
+  className = 'w-full h-full object-cover',
+  fallbackText = 'No image evidence'
+}) => {
+  const [hasError, setHasError] = useState(false);
+
+  if (!src || hasError) {
+    return (
+      <div className="w-full h-full min-h-[100px] bg-slate-100/80 flex flex-col items-center justify-center p-3 text-slate-400 text-xs text-center border border-slate-200/60 rounded-xl space-y-1">
+        <ImageIcon className="w-5 h-5 text-slate-300" />
+        <span className="font-medium text-[11px] text-slate-500">{fallbackText}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setHasError(true)}
+      className={className}
+      loading="lazy"
+    />
+  );
+};
 
 export const AssignWorkerModal = ({ isOpen, onClose, issue }) => {
   const { workers, assignIssue, showToast } = useCivic();

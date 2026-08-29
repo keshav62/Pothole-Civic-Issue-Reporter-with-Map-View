@@ -4,9 +4,13 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../../context/AuthContext';
+<<<<<<< HEAD
 import { useWorker } from '../../context/WorkerContext';
 import { useLocation } from '../../hooks/useLocation';
 import { calculateDistance, formatDistance, formatTimeAgo } from '../../utils/geo';
+=======
+import { apiFetch } from '../../services/api';
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 import WorkerStatCard from '../../components/worker/WorkerStatCard';
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
@@ -61,7 +65,7 @@ const GreetingBanner = ({ stats, worker }) => {
             {greeting.text}, {worker?.name?.split(' ')[0] || 'Worker'} {greeting.emoji}
           </h1>
           <p className="text-slate-400 font-medium text-xs sm:text-sm max-w-xl mt-1.5 leading-relaxed">
-            You have <span className="text-white font-bold">{stats.assigned} pending</span> and{' '}
+            You have <span className="text-white font-bold">{stats.assigned} pending assignment</span> and{' '}
             <span className="text-white font-bold">{stats.inProgress} in-progress</span> tasks today.
             {stats.overdue > 0 && <span className="text-red-400 font-bold"> ({stats.overdue} overdue!)</span>}
           </p>
@@ -139,14 +143,19 @@ const StatsRow = ({ stats }) => (
       icon="🚨"
       colorSet={{ bg: 'bg-red-100', text: 'text-red-700', ring: 'ring-red-100' }}
       footnote="Needs attention"
-      pulse
+      pulse={stats.overdue > 0}
     />
   </div>
 );
 
 const TodaysTasks = ({ tasks, userLocation }) => {
   const navigate = useNavigate();
+<<<<<<< HEAD
   const active = (tasks || []).filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved' && t.status !== 'CLOSED');
+=======
+  // Filter for active tasks (not resolved or citizen verified)
+  const active = tasks.filter(t => !['RESOLVED', 'CITIZEN_VERIFIED'].includes(t.status));
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
   return (
     <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
@@ -169,6 +178,7 @@ const TodaysTasks = ({ tasks, userLocation }) => {
       </div>
       <div className="p-3 sm:p-4 space-y-3">
         {active.length > 0 ? (
+<<<<<<< HEAD
           active.slice(0, 5).map(task => {
             const taskId = task.issueId || task.id || (task._id ? String(task._id) : 'ISS-000');
             const keyId = task._id || task.id || taskId;
@@ -231,6 +241,30 @@ const TodaysTasks = ({ tasks, userLocation }) => {
                       <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
                         {task.description}
                       </p>
+=======
+          active.slice(0, 5).map(task => (
+            <article key={task.id} className="group rounded-xl border border-slate-200/80 bg-white p-4 transition-all duration-200 hover:border-slate-300 hover:shadow-2xs">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                      {task.issueId || task._id.substring(0, 8).toUpperCase()}
+                    </span>
+                    <IssuePriority priority={task.priority} />
+                    <IssueStatus status={task.status} />
+                  </div>
+                  <h3 className="truncate text-xs sm:text-sm font-bold text-slate-900">{task.title}</h3>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" /> 
+                      <span className="truncate">{task.address || 'Location pending'}</span>
+                    </span>
+                    {task.dueDate && (
+                      <span className="flex items-center gap-1.5 font-medium text-amber-700">
+                        <Clock className="h-3.5 w-3.5" /> 
+                        {new Date(task.dueDate) < new Date() ? 'Overdue' : new Date(task.dueDate).toLocaleDateString()}
+                      </span>
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
                     )}
                   </div>
 
@@ -262,9 +296,33 @@ const TodaysTasks = ({ tasks, userLocation }) => {
                   </div>
 
                 </div>
+<<<<<<< HEAD
               </article>
             );
           })
+=======
+                <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-[224px]">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={Navigation}
+                  onClick={() => window.open(`https://maps.google.com/?q=${task.location?.coordinates?.[1]},${task.location?.coordinates?.[0]}`, '_blank')}
+                >
+                  Navigate
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={Eye}
+                  onClick={() => navigate(`/worker/tasks/${task._id}`)}
+                >
+                  View Task
+                </Button>
+                </div>
+              </div>
+            </article>
+          ))
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
         ) : (
           <div className="py-14 flex flex-col items-center text-center">
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-3" />
@@ -278,6 +336,7 @@ const TodaysTasks = ({ tasks, userLocation }) => {
 };
 
 const NearbyTasksMap = ({ tasks, worker }) => {
+<<<<<<< HEAD
   const activeTasks = (tasks || []).filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved' && t.status !== 'CLOSED');
 
   const firstWithCoords = activeTasks.find(t => {
@@ -290,6 +349,10 @@ const NearbyTasksMap = ({ tasks, worker }) => {
     firstWithCoords.latitude ?? firstWithCoords.lat ?? firstWithCoords.location?.lat ?? firstWithCoords.location?.coordinates?.[1],
     firstWithCoords.longitude ?? firstWithCoords.lng ?? firstWithCoords.location?.lng ?? firstWithCoords.location?.coordinates?.[0]
   ] : [31.254, 75.705];
+=======
+  const activeTasks = tasks.filter(t => !['RESOLVED', 'CITIZEN_VERIFIED'].includes(t.status));
+  const center = [19.1145, 72.8710]; // Default center
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col h-full">
@@ -319,6 +382,7 @@ const NearbyTasksMap = ({ tasks, worker }) => {
           />
 
           {activeTasks.map((task) => {
+<<<<<<< HEAD
             let lat = task.latitude ?? task.lat ?? task.location?.lat;
             let lng = task.longitude ?? task.lng ?? task.location?.lng;
             if (task.location?.coordinates && Array.isArray(task.location.coordinates) && task.location.coordinates.length >= 2) {
@@ -335,6 +399,14 @@ const NearbyTasksMap = ({ tasks, worker }) => {
 
             const displayTag = task.issueId || task.id || (task._id ? String(task._id) : 'ISS');
             const keyId = task._id || task.id || displayTag;
+=======
+            const lat = task.location?.coordinates?.[1];
+            const lng = task.location?.coordinates?.[0];
+            if (!lat || !lng) return null;
+            let color = '#3b82f6';
+            if (task.priority === 'CRITICAL' || (task.dueDate && new Date(task.dueDate) < new Date())) color = '#ef4444';
+            else if (task.priority === 'HIGH') color = '#f59e0b';
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
             const icon = L.divIcon({
               className: 'custom-nearby-marker-tagged',
@@ -351,11 +423,19 @@ const NearbyTasksMap = ({ tasks, worker }) => {
             });
 
             return (
+<<<<<<< HEAD
               <Marker key={keyId} position={[lat, lng]} icon={icon}>
                 <Popup className="custom-leaflet-popup">
                   <div className="p-1 text-xs font-sans">
                     <span className="font-bold text-slate-900 block">{task.title}</span>
                     <span className="text-[10px] text-slate-500 block">{task.address || task.location?.address || 'Municipal Field Zone'}</span>
+=======
+              <Marker key={task._id} position={[lat, lng]} icon={icon}>
+                <Popup className="custom-leaflet-popup">
+                  <div className="p-1 text-xs font-sans">
+                    <span className="font-bold text-slate-900 block">{task.title}</span>
+                    <span className="text-[10px] text-slate-500 block">{task.address}</span>
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
                   </div>
                 </Popup>
               </Marker>
@@ -423,21 +503,74 @@ const RecentActivityFeed = ({ activities }) => (
 
 export const WorkerDashboard = () => {
   const { currentUser } = useAuth();
+<<<<<<< HEAD
   const { tasks, recentActivity, profile } = useWorker();
   const { coords } = useLocation();
+=======
+  
+  const [profile, setProfile] = React.useState(null);
+  const [stats, setStats] = React.useState(null);
+  const [tasks, setTasks] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [profileRes, tasksRes] = await Promise.all([
+          apiFetch('/api/workers/me'),
+          apiFetch('/api/workers/me/tasks?limit=50')
+        ]);
+        
+        setProfile(profileRes.data.user);
+        setStats(profileRes.data.stats);
+        setTasks(tasksRes.data.tasks);
+      } catch (err) {
+        setError(err.message || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-24 flex flex-col justify-center items-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+        <span className="mt-4 text-slate-500 font-medium">Loading dashboard...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-24 px-4 flex justify-center">
+        <div className="bg-red-50/50 rounded-2xl border border-red-100 p-8 max-w-md text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-red-700 mb-2">Error Loading Dashboard</h3>
+          <p className="text-red-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
   const worker = {
     ...profile,
-    name: currentUser?.name || profile.name
+    name: currentUser?.name || profile?.name
   };
 
-  const stats = useMemo(() => ({
-    total:      tasks.length,
-    assigned:   tasks.filter(t => t.status === 'ASSIGNED' || t.status === 'assigned').length,
-    inProgress: tasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'in-progress').length,
-    resolved:   tasks.filter(t => t.status === 'RESOLVED' || t.status === 'resolved').length,
-    overdue:    tasks.filter(t => t.slaStatus === 'BREACHED' || (t.slaHours && t.elapsedHours >= t.slaHours)).length,
-  }), [tasks]);
+  // Create a mock recent activity derived from active tasks for demonstration
+  // In a full implementation, you would fetch a unified activity feed from the backend
+  const recentActivity = tasks.slice(0, 5).map((t, idx) => ({
+    id: t._id,
+    type: t.status === 'ASSIGNED' ? 'assigned' : t.status === 'IN_PROGRESS' ? 'started' : t.status === 'PENDING_CITIZEN_VERIFICATION' ? 'proof_uploaded' : 'completed',
+    taskTitle: t.title,
+    timeAgo: new Date(t.createdAt).toLocaleDateString(),
+    issueId: t._id
+  }));
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200">

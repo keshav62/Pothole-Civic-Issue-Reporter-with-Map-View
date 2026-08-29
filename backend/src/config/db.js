@@ -7,7 +7,7 @@ export const connectDB = async () => {
     }
 
     const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`MongoDB Connected: Host: ${conn.connection.host} | Database Name: ${conn.connection.name}`);
 
     // Clean up stale legacy indexes (e.g. clerkId_1) if present in MongoDB collection
     try {

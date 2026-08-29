@@ -23,14 +23,28 @@ const workerTaskFilter = (user) => ({ assignedWorker: user._id });
  */
 export const getWorkerProfile = async (req, res, next) => {
   try {
-    const [activeCount, completedCount] = await Promise.all([
-      Issue.countDocuments({
-        assignedWorker: req.user._id,
+    const workerId = req.user._id;
+    const now = new Date();
+
+    const [
+      totalTasks,
+      assignedTasks,
+      acceptedTasks,
+      inProgressTasks,
+      pendingVerificationTasks,
+      resolvedTasks,
+      overdueTasks
+    ] = await Promise.all([
+      Issue.countDocuments({ assignedWorker: workerId }),
+      Issue.countDocuments({ assignedWorker: workerId, status: STATUS.ASSIGNED }),
+      Issue.countDocuments({ assignedWorker: workerId, status: STATUS.ACCEPTED }),
+      Issue.countDocuments({ assignedWorker: workerId, status: STATUS.IN_PROGRESS }),
+      Issue.countDocuments({ assignedWorker: workerId, status: STATUS.PENDING_CITIZEN_VERIFICATION }),
+      Issue.countDocuments({ assignedWorker: workerId, status: { $in: [STATUS.CITIZEN_VERIFIED, STATUS.RESOLVED] } }),
+      Issue.countDocuments({ 
+        assignedWorker: workerId, 
         status: { $in: [STATUS.ASSIGNED, STATUS.ACCEPTED, STATUS.IN_PROGRESS] },
-      }),
-      Issue.countDocuments({
-        assignedWorker: req.user._id,
-        status: { $in: [STATUS.PENDING_CITIZEN_VERIFICATION, STATUS.CITIZEN_VERIFIED, STATUS.RESOLVED] },
+        dueDate: { $lt: now } 
       }),
     ]);
 
@@ -51,8 +65,13 @@ export const getWorkerProfile = async (req, res, next) => {
           createdAt:   req.user.createdAt,
         },
         stats: {
-          activeTasks:    activeCount,
-          completedTasks: completedCount,
+          total: totalTasks,
+          assigned: assignedTasks,
+          accepted: acceptedTasks,
+          inProgress: inProgressTasks,
+          pendingVerification: pendingVerificationTasks,
+          resolved: resolvedTasks,
+          overdue: overdueTasks,
         },
       },
     });
@@ -317,23 +336,14 @@ export const submitProof = async (req, res, next) => {
       });
     }
 
-    // 2. Upload images to Cloudinary in parallel.
+    // 2. Upload images to Cloudinary sequentially to avoid Mongoose VersionError race conditions.
     //    imageService functions handle ownership checks internally as well.
-    const uploadPromises = [];
-
     if (beforeFiles.length > 0) {
-      uploadPromises.push(
-        uploadBeforeImages(issueId, beforeFiles, req.user)
-      );
+      await uploadBeforeImages(issueId, beforeFiles, req.user);
     }
     if (afterFiles.length > 0) {
-      uploadPromises.push(
-        uploadAfterImages(issueId, afterFiles, req.user)
-      );
+      await uploadAfterImages(issueId, afterFiles, req.user);
     }
-
-    // Wait for all uploads to finish before touching the status
-    await Promise.all(uploadPromises);
 
     // 3. Transition status: IN_PROGRESS → PENDING_CITIZEN_VERIFICATION.
     //    transitionIssueStatus enforces the FSM, writes to DB, and

@@ -1,8 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+<<<<<<< HEAD
 import { useWorker } from '../../context/WorkerContext';
 import { useLocation } from '../../hooks/useLocation';
 import { calculateDistance, formatDistance, formatTimeAgo } from '../../utils/geo';
+=======
+import { apiFetch } from '../../services/api';
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
 import { SLAIndicator } from '../../components/worker/SLAIndicator';
@@ -15,11 +19,45 @@ export const AssignedTasks = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+<<<<<<< HEAD
   const { tasks } = useWorker();
   const { coords } = useLocation();
+=======
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const response = await apiFetch('/api/workers/me/tasks');
+        const formattedTasks = (response.data.tasks || []).map(issue => ({
+          id: issue._id,
+          displayId: issue.issueId || issue._id.substring(0, 8).toUpperCase(),
+          title: issue.title,
+          location: issue.address || 'Location not specified',
+          category: issue.category,
+          status: issue.status,
+          priority: issue.priority,
+          assignedDate: issue.createdAt,
+          dueDate: issue.dueDate || new Date(new Date(issue.createdAt).getTime() + 86400000).toISOString(),
+          beforeImage: issue.images?.[0] || null
+        }));
+        setTasks(formattedTasks);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch tasks');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, []);
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
   // Search and Filter Logic (100% null-safe)
   const filteredTasks = useMemo(() => {
+<<<<<<< HEAD
     if (!tasks || !Array.isArray(tasks)) return [];
 
     const q = (searchQuery || '').trim().toLowerCase();
@@ -37,6 +75,16 @@ export const AssignedTasks = () => {
       const taskStatus = String(task.status || '').toUpperCase();
 
       const matchesSearch = !q || taskId.includes(q) || taskTitle.includes(q) || taskCategory.includes(q) || taskAddress.includes(q);
+=======
+    return tasks.filter((task) => {
+      // Filter by Search Query
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        task.displayId.toLowerCase().includes(query) ||
+        task.title.toLowerCase().includes(query) ||
+        task.location.toLowerCase().includes(query) ||
+        task.category.toLowerCase().includes(query);
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
       let matchesStatus = true;
       if (statusFilter !== 'ALL') {
@@ -100,6 +148,7 @@ export const AssignedTasks = () => {
       </div>
 
       {/* 4. Task List/Grid */}
+<<<<<<< HEAD
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredTasks.length > 0 ? (
           filteredTasks.map((task) => {
@@ -115,6 +164,43 @@ export const AssignedTasks = () => {
               lng = task.location.coordinates[0];
               lat = task.location.coordinates[1];
             }
+=======
+      {loading ? (
+        <div className="py-16 flex justify-center items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-slate-500 font-medium">Loading your assigned tasks...</span>
+        </div>
+      ) : error ? (
+        <div className="py-12 px-4 bg-red-50/50 rounded-2xl border border-red-100 flex flex-col items-center text-center">
+          <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
+          <h3 className="text-lg font-bold text-red-700">Failed to load tasks</h3>
+          <p className="text-red-500 text-sm mt-1">{error}</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredTasks.length > 0 ? (
+            filteredTasks.map((task) => (
+              <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden group">
+
+              {/* Card Image (if exists) */}
+              {task.beforeImage && (
+                <div className="h-48 w-full bg-slate-100 relative overflow-hidden">
+                  <img
+                    src={task.beforeImage}
+                    alt={task.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
+                  <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
+                    <span className="bg-white/90 backdrop-blur text-slate-900 text-xs font-black px-2.5 py-1 rounded-md">
+                      {task.displayId}
+                    </span>
+                    <IssuePriority priority={task.priority} />
+                  </div>
+                </div>
+              )}
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
             const refLat = coords?.lat != null ? coords.lat : 31.2540;
             const refLng = coords?.lng != null ? coords.lng : 75.7050;
@@ -122,6 +208,7 @@ export const AssignedTasks = () => {
             const formattedDist = formatDistance(distMeters);
             const formattedTime = formatTimeAgo(task.createdAt);
 
+<<<<<<< HEAD
             const prio = (task.priority || 'MEDIUM').toUpperCase();
             let prioBg = 'bg-amber-100/70 text-amber-800 border-amber-200';
             if (prio === 'CRITICAL') prioBg = 'bg-red-100 text-red-700 border-red-200';
@@ -148,6 +235,15 @@ export const AssignedTasks = () => {
                         {prio}
                       </span>
                     </div>
+=======
+                {/* Header (if no image) */}
+                {!task.beforeImage && (
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="bg-slate-100 text-slate-700 text-xs font-black px-2.5 py-1 rounded-md">
+                      {task.displayId}
+                    </span>
+                    <IssuePriority priority={task.priority} />
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
                   </div>
                 )}
 
@@ -247,8 +343,9 @@ export const AssignedTasks = () => {
               </Button>
             )}
           </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

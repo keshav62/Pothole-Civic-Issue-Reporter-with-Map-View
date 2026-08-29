@@ -6,12 +6,13 @@ import * as notificationService from '../services/notificationService';
 import { MOCK_ISSUES } from '../data/mockIssues';
 import { MOCK_DEPARTMENTS } from '../data/mockDepartments';
 import { MOCK_NOTIFICATIONS } from '../data/mockNotifications';
+import { fetchIssuesApi } from '../services/issueService';
 
 const CivicContext = createContext(null);
 
 export const CivicProvider = ({ children }) => {
   const { currentUser } = useAuth();
-  
+
   const [issues, setIssues] = useState([]);
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState(MOCK_DEPARTMENTS);
@@ -64,7 +65,6 @@ export const CivicProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (!currentUser) return;
     const loadIssues = async () => {
       try {
         const data = await issueService.fetchIssues({ limit: 100 });
@@ -77,11 +77,18 @@ export const CivicProvider = ({ children }) => {
       }
     };
     loadIssues();
+<<<<<<< HEAD
     loadUsersAndWorkers();
 
     const interval = setInterval(loadIssues, 10000);
     return () => clearInterval(interval);
   }, [currentUser, loadUsersAndWorkers, generateLiveNotifications]);
+=======
+    if (currentUser) {
+      loadUsersAndWorkers();
+    }
+  }, [currentUser, loadUsersAndWorkers]);
+>>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
   const refreshIssues = async () => {
     try {
@@ -93,6 +100,20 @@ export const CivicProvider = ({ children }) => {
     } catch (err) {
       console.warn('Failed to refresh issues from API:', err);
     }
+  };
+
+  const addIssue = (newIssue) => {
+    if (!newIssue) return;
+    const formatted = {
+      ...newIssue,
+      id: newIssue.issueId || newIssue._id || `ISS-${Date.now()}`,
+      ward: newIssue.ward || 'Ward 15',
+      address: newIssue.address || 'Sector 15',
+      timeline: newIssue.timeline && newIssue.timeline.length > 0 ? newIssue.timeline : [
+        { status: newIssue.status || 'REPORTED', title: 'Issue Submitted to HQ', date: new Date().toLocaleString(), actor: 'Citizen' }
+      ]
+    };
+    setIssues((prev) => [formatted, ...prev]);
   };
 
   const showToast = (message, type = 'info') => {
@@ -381,6 +402,7 @@ export const CivicProvider = ({ children }) => {
   return (
     <CivicContext.Provider value={{
       issues,
+      addIssue,
       users,
       departments,
       workers,
@@ -405,6 +427,36 @@ export const CivicProvider = ({ children }) => {
     }}>
       {children}
     </CivicContext.Provider>
+  );
+};
+
+export const useCivic = () => {
+  const context = useContext(CivicContext);
+  if (!context) {
+    throw new Error('useCivic must be used within a CivicProvider');
+  }
+  return context;
+};
+toast,
+  showToast,
+  verifyIssue,
+  rejectIssue,
+  assignIssue,
+  updateIssuePriority,
+  updateIssueStatus,
+  updateIssueImages,
+  startTask,
+  completeTask,
+  escalateIssue,
+  addUser,
+  updateUserStatus,
+  addDepartment,
+  updateWorkerStatus,
+  markNotificationAsRead,
+  refreshIssues
+    }}>
+  { children }
+    </CivicContext.Provider >
   );
 };
 

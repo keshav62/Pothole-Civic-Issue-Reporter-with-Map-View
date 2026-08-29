@@ -50,7 +50,8 @@ const authService = {
 
     const options = {
       method: 'POST',
-      body: JSON.stringify(bodyPayload)
+      body: JSON.stringify(bodyPayload),
+      customToken: token
     };
 
     try {

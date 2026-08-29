@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useWorker } from '../../context/WorkerContext';
+import { apiFetch } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { IssuePriority } from '../../components/issues/IssuePriority';
@@ -10,12 +10,12 @@ import { ToastContext } from '../../context/ToastContext';
 export const UploadProof = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { tasks, submitProof } = useWorker();
-
-  // Find task from mock data
-  const task = tasks.find(t => t.id === id) || tasks[0];
   const { showToast } = React.useContext(ToastContext);
 
+  const [task, setTask] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  const [afterImageFile, setAfterImageFile] = useState(null);
   const [afterImagePreview, setAfterImagePreview] = useState(null);
   const [repairNotes, setRepairNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,44 +25,83 @@ export const UploadProof = () => {
 
   const fileInputRef = useRef(null);
 
+  // Fetch real task data
+  useEffect(() => {
+    const fetchTask = async () => {
+      try {
+        const response = await apiFetch(`/api/workers/me/tasks/${id}`);
+        const issue = response.data.task;
+        setTask({
+          id: issue._id,
+          displayId: issue.issueId || issue._id.substring(0, 8).toUpperCase(),
+          title: issue.title,
+          category: issue.category,
+          status: issue.status,
+          priority: issue.priority,
+          beforeImage: issue.beforeImages?.[0] || issue.images?.[0] || null,
+        });
+      } catch (err) {
+        setError(err.message || 'Failed to load task details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTask();
+  }, [id]);
+
   // Update clock every second for completion timestamp
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  if (!task) return null;
-
   const handleImageChange = (e) => {
     setError('');
     const file = e.target.files?.[0];
     if (file) {
+      setAfterImageFile(file);
       const imageUrl = URL.createObjectURL(file);
       setAfterImagePreview(imageUrl);
     }
   };
 
   const handleRemoveImage = () => {
+    setAfterImageFile(null);
     setAfterImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!afterImagePreview) {
+    if (!afterImageFile) {
       setError('Please select or capture an After Repair image to proceed.');
       return;
     }
 
     setIsSubmitting(true);
+    setError('');
 
-    // Simulate network delay
-    setTimeout(() => {
-      submitProof(task.id, afterImagePreview, repairNotes);
+    try {
+      const formData = new FormData();
+      // EXACT field name expected by backend multer configuration
+      formData.append('afterImages', afterImageFile);
+      
+      if (repairNotes.trim()) {
+        formData.append('repairNote', repairNotes.trim());
+      }
+
+      await apiFetch(`/api/workers/tasks/${id}/proof`, {
+        method: 'POST',
+        body: formData,
+      });
+
       showToast("Resolution proof submitted successfully!", "success");
-      setIsSubmitting(false);
       setIsSuccess(true);
-    }, 1000);
+    } catch (err) {
+      setError(err.message || "Failed to submit proof");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // SUCCESS STATE
@@ -75,11 +114,11 @@ export const UploadProof = () => {
           </div>
           <h2 className="text-2xl font-black text-emerald-900 mb-2">Resolution Submitted</h2>
           <p className="text-emerald-700 font-medium mb-8">
-            Task {task.id} has been marked as Completed. Your proof and notes have been securely saved to the department database.
+            Task {task?.displayId || id} has been marked as Completed. Your proof and notes have been securely saved to the department database.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-            <Button variant="outline" onClick={() => navigate(`/worker/tasks/${task.id}`)} className="bg-white hover:bg-emerald-50 border-emerald-200 text-emerald-800">
+            <Button variant="outline" onClick={() => navigate(`/worker/tasks/${id}`)} className="bg-white hover:bg-emerald-50 border-emerald-200 text-emerald-800">
               View Task Details
             </Button>
             <Button variant="success" icon={CheckCircle2} onClick={() => navigate('/worker/tasks')}>
@@ -87,6 +126,16 @@ export const UploadProof = () => {
             </Button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // LOADING STATE
+  if (loading) {
+    return (
+      <div className="py-24 flex flex-col justify-center items-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+        <span className="mt-4 text-slate-500 font-medium">Loading upload form...</span>
       </div>
     );
   }
@@ -113,7 +162,7 @@ export const UploadProof = () => {
         <div>
           <div className="flex items-center gap-3 mb-1.5">
             <span className="bg-slate-100 text-slate-800 text-xs font-black px-2.5 py-1 rounded-md">
-              {task.id}
+              {task.displayId}
             </span>
             <Badge variant="neutral" className="uppercase tracking-wider text-[10px]">
               {task.category}

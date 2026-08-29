@@ -90,13 +90,13 @@ export const fetchNearbyIssues = async ({
   // Build query string — only append optional params when they have a value
   const params = new URLSearchParams();
 
-  params.set('lat',    String(lat));
-  params.set('lng',    String(lng));
+  params.set('lat', String(lat));
+  params.set('lng', String(lng));
   params.set('radius', String(radius));
 
-  if (status)   params.set('status',   status);
+  if (status) params.set('status', status);
   if (category) params.set('category', category);
-  if (limit)    params.set('limit',    String(limit));
+  if (limit) params.set('limit', String(limit));
 
   const json = await apiFetch(`/api/issues/nearby?${params.toString()}`);
 
@@ -104,20 +104,48 @@ export const fetchNearbyIssues = async ({
   return json.data;
 };
 
-
 // ─── CRUD ────────────────────────────────────────────────────────────────────
 
 /**
  * createIssue
  * @param {Object} data - Contains title, description, category, priority, location, address, ward
+ * @param {File} [imageFile] - Optional photo File object for FormData upload
+ * @param {string} [imageUrl] - Optional photo URL string
  */
-export const createIssue = async (data) => {
+export const createIssue = async (data, imageFile = null, imageUrl = null) => {
+  if (imageFile instanceof File) {
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('description', data.description);
+    formData.append('category', data.category);
+    if (data.priority) formData.append('priority', data.priority);
+    if (data.address) formData.append('address', data.address);
+    if (data.ward) formData.append('ward', data.ward);
+    if (data.location) {
+      formData.append('location', JSON.stringify(data.location));
+    }
+    formData.append('images', imageFile);
+
+    const json = await apiFetch('/api/issues', {
+      method: 'POST',
+      body: formData,
+    });
+    return json.data;
+  }
+
+  const body = {
+    ...data,
+    ...(imageUrl ? { images: [imageUrl] } : {}),
+  };
+
   const json = await apiFetch('/api/issues', {
     method: 'POST',
-    body: JSON.stringify(data)
+    body: JSON.stringify(body),
   });
   return json.data;
 };
+
+export const createIssueApi = createIssue;
 
 /**
  * fetchIssues
@@ -125,7 +153,7 @@ export const createIssue = async (data) => {
  */
 export const fetchIssues = async ({ page, limit, status, category, priority, ward, search } = {}) => {
   const params = new URLSearchParams();
-  
+
   if (page) params.set('page', String(page));
   if (limit) params.set('limit', String(limit));
   if (status) params.set('status', status);
@@ -136,14 +164,16 @@ export const fetchIssues = async ({ page, limit, status, category, priority, war
 
   const qs = params.toString();
   const endpoint = qs ? `/api/issues?${qs}` : '/api/issues';
-  
+
   const json = await apiFetch(endpoint);
   return json.data;
 };
 
+export const fetchIssuesApi = fetchIssues;
+
 /**
  * fetchIssueById
- * @param {string} id 
+ * @param {string} id
  */
 export const fetchIssueById = async (id) => {
   const json = await apiFetch(`/api/issues/${id}`);
@@ -152,8 +182,8 @@ export const fetchIssueById = async (id) => {
 
 /**
  * updateIssue
- * @param {string} id 
- * @param {Object} data 
+ * @param {string} id
+ * @param {Object} data
  */
 export const updateIssue = async (id, data) => {
   const json = await apiFetch(`/api/issues/${id}`, {
@@ -165,7 +195,7 @@ export const updateIssue = async (id, data) => {
 
 /**
  * deleteIssue
- * @param {string} id 
+ * @param {string} id
  */
 export const deleteIssue = async (id) => {
   const json = await apiFetch(`/api/issues/${id}`, {
@@ -176,9 +206,9 @@ export const deleteIssue = async (id) => {
 
 /**
  * assignIssue
- * @param {string} id 
- * @param {string} workerId 
- * @param {string} note 
+ * @param {string} id
+ * @param {string} workerId
+ * @param {string} note
  */
 export const assignIssue = async (id, workerId, note) => {
   const json = await apiFetch(`/api/issues/${id}/assign`, {
@@ -190,9 +220,9 @@ export const assignIssue = async (id, workerId, note) => {
 
 /**
  * verifyIssue
- * @param {string} id 
- * @param {boolean} approved 
- * @param {string} note 
+ * @param {string} id
+ * @param {boolean} approved
+ * @param {string} note
  */
 export const verifyIssue = async (id, approved, note) => {
   const json = await apiFetch(`/api/issues/${id}/verify`, {
