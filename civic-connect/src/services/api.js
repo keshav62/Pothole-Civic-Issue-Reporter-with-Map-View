@@ -20,7 +20,10 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 export const apiFetch = async (path, options = {}) => {
   let token = null;
 
-  // 1. Try to get a live Firebase ID token
+  // Wait for Firebase to restore session from IndexedDB if this is a hard refresh
+  await auth.authStateReady();
+
+  // 1. Get a live, cryptographically secure Firebase ID token
   if (auth.currentUser) {
     try {
       token = await auth.currentUser.getIdToken();
@@ -29,14 +32,8 @@ export const apiFetch = async (path, options = {}) => {
     }
   }
 
-  // 2. Fall back to localStorage token or dev fallback token
   if (!token) {
-    token = localStorage.getItem('civicconnect_token') || localStorage.getItem('civic_connect_token');
-  }
-
-  // Fallback to dev token if none exists so request never fails 401 authorization
-  if (!token) {
-    token = 'mock-id-token-email';
+    throw { status: 401, message: 'Unauthorized: No valid authentication token found.' };
   }
 
   const headers = new Headers(options.headers || {});

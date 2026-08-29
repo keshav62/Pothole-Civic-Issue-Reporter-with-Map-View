@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, Navigation } from 'lucide-react';
 import { Button } from '../common/Button';
+import { TaskMap } from '../../pages/worker/TaskMap';
 
 export const LocationCard = ({ address, latitude, longitude, distance = "2.4 km away" }) => {
   const handleNavigate = () => {
@@ -10,20 +11,8 @@ export const LocationCard = ({ address, latitude, longitude, distance = "2.4 km 
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col">
-      <div className="h-32 bg-slate-100 relative">
-        {/* Map Placeholder */}
-        <img
-          src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=400"
-          alt="Map"
-          className="w-full h-full object-cover opacity-80"
-        />
-        <div className="absolute inset-0 bg-blue-900/10 mix-blend-multiply"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="relative">
-            <MapPin className="w-8 h-8 text-red-500 drop-shadow-md" />
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-1 bg-black/30 rounded-[100%] blur-[1px]"></span>
-          </div>
-        </div>
+      <div className="h-48 relative overflow-hidden bg-slate-100 z-0">
+        <TaskMap latitude={latitude} longitude={longitude} address={address} />
       </div>
 
       <div className="p-4 sm:p-5 flex flex-col gap-4">

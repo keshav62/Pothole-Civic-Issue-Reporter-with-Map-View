@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWorker } from '../../context/WorkerContext';
+import { apiFetch } from '../../services/api';
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
 import { SLAIndicator } from '../../components/worker/SLAIndicator';
@@ -13,7 +13,36 @@ export const AssignedTasks = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  const { tasks } = useWorker();
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const response = await apiFetch('/api/workers/me/tasks');
+        const formattedTasks = (response.data.tasks || []).map(issue => ({
+          id: issue._id,
+          displayId: issue.issueId || issue._id.substring(0, 8).toUpperCase(),
+          title: issue.title,
+          location: issue.address || 'Location not specified',
+          category: issue.category,
+          status: issue.status,
+          priority: issue.priority,
+          assignedDate: issue.createdAt,
+          dueDate: issue.dueDate || new Date(new Date(issue.createdAt).getTime() + 86400000).toISOString(),
+          beforeImage: issue.images?.[0] || null
+        }));
+        setTasks(formattedTasks);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch tasks');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, []);
 
   // Search and Filter Logic
   const filteredTasks = useMemo(() => {
@@ -21,7 +50,7 @@ export const AssignedTasks = () => {
       // Filter by Search Query
       const query = searchQuery.toLowerCase();
       const matchesSearch =
-        task.id.toLowerCase().includes(query) ||
+        task.displayId.toLowerCase().includes(query) ||
         task.title.toLowerCase().includes(query) ||
         task.location.toLowerCase().includes(query) ||
         task.category.toLowerCase().includes(query);
@@ -89,10 +118,23 @@ export const AssignedTasks = () => {
       </div>
 
       {/* 4. Task List/Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredTasks.length > 0 ? (
-          filteredTasks.map((task) => (
-            <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden group">
+      {loading ? (
+        <div className="py-16 flex justify-center items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-slate-500 font-medium">Loading your assigned tasks...</span>
+        </div>
+      ) : error ? (
+        <div className="py-12 px-4 bg-red-50/50 rounded-2xl border border-red-100 flex flex-col items-center text-center">
+          <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
+          <h3 className="text-lg font-bold text-red-700">Failed to load tasks</h3>
+          <p className="text-red-500 text-sm mt-1">{error}</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredTasks.length > 0 ? (
+            filteredTasks.map((task) => (
+              <div key={task.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden group">
 
               {/* Card Image (if exists) */}
               {task.beforeImage && (
@@ -105,7 +147,7 @@ export const AssignedTasks = () => {
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
                   <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
                     <span className="bg-white/90 backdrop-blur text-slate-900 text-xs font-black px-2.5 py-1 rounded-md">
-                      {task.id}
+                      {task.displayId}
                     </span>
                     <IssuePriority priority={task.priority} />
                   </div>
@@ -118,7 +160,7 @@ export const AssignedTasks = () => {
                 {!task.beforeImage && (
                   <div className="flex justify-between items-start mb-3">
                     <span className="bg-slate-100 text-slate-700 text-xs font-black px-2.5 py-1 rounded-md">
-                      {task.id}
+                      {task.displayId}
                     </span>
                     <IssuePriority priority={task.priority} />
                   </div>
@@ -196,8 +238,9 @@ export const AssignedTasks = () => {
               </Button>
             )}
           </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
