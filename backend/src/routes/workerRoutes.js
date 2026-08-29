@@ -10,6 +10,7 @@ import {
 } from '../controllers/workerController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
+import { validateObjectId } from '../middleware/validateObjectId.js';
 import multer from 'multer';
 
 const router = Router();
@@ -53,7 +54,7 @@ router.get('/me/tasks', getWorkerTasks);
 
 // GET /api/workers/me/tasks/:id
 // Returns full task detail + timeline. Returns 404 if not assigned to this worker.
-router.get('/me/tasks/:id', getWorkerTaskById);
+router.get('/me/tasks/:id', validateObjectId, getWorkerTaskById);
 
 // ── Workflow transitions ──────────────────────────────────────────────────────
 // All three PATCH handlers delegate to transitionIssueStatus in issueService.
@@ -64,15 +65,15 @@ router.get('/me/tasks/:id', getWorkerTaskById);
 
 // PATCH /api/workers/tasks/:id/accept
 // ASSIGNED → ACCEPTED
-router.patch('/tasks/:id/accept', acceptTask);
+router.patch('/tasks/:id/accept', validateObjectId, acceptTask);
 
 // PATCH /api/workers/tasks/:id/start
 // ACCEPTED → IN_PROGRESS
-router.patch('/tasks/:id/start', startTask);
+router.patch('/tasks/:id/start', validateObjectId, startTask);
 
 // PATCH /api/workers/tasks/:id/complete
 // IN_PROGRESS → PENDING_CITIZEN_VERIFICATION
-router.patch('/tasks/:id/complete', completeTask);
+router.patch('/tasks/:id/complete', validateObjectId, completeTask);
 
 // POST /api/workers/tasks/:id/proof
 // Upload before/after images and repair note as resolution evidence.
@@ -80,6 +81,7 @@ router.patch('/tasks/:id/complete', completeTask);
 // multer fields() parses multipart/form-data with both image arrays in one request.
 router.post(
   '/tasks/:id/proof',
+  validateObjectId,
   (req, res, next) => {
     proofUpload(req, res, (err) => {
       if (!err) return next();

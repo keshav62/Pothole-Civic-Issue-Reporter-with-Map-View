@@ -2,6 +2,7 @@ import Issue from '../models/Issue.js';
 import IssueHistory, { HISTORY_ACTIONS } from '../models/IssueHistory.js';
 import { canTransition, getAvailableTransitions } from '../utils/issueStatus.js';
 import { STATUS } from '../utils/constants.js';
+import { dispatchNotification } from './notificationService.js';
 
 // ─── Internal helper ──────────────────────────────────────────────────────────
 
@@ -156,6 +157,12 @@ export const transitionIssueStatus = async (issueId, targetStatus, user, extra =
     performedBy: user,
     note:        extra.note ?? '',
   });
+
+  // 10. Dispatch in-app notification — fire-and-forget, never throws.
+  //     `updated` is the populated document; its reportedBy / assignedWorker
+  //     fields are already resolved objects, so notificationService needs
+  //     no extra DB queries.
+  await dispatchNotification(targetStatus, updated, user);
 
   return updated;
 };

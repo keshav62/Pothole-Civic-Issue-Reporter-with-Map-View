@@ -1,4 +1,4 @@
-import Issue, { ISSUE_STATUSES } from '../models/Issue.js';
+import Issue, { ISSUE_STATUSES, ISSUE_CATEGORIES } from '../models/Issue.js';
 import { recordIssueCreated, transitionIssueStatus } from '../services/issueService.js';
 import { assignWorkerToIssue } from '../services/assignmentService.js';
 
@@ -443,5 +443,185 @@ export const verifyIssue = async (req, res, next) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+// ─── GET /api/issues/nearby (PUBLIC — no auth required) ───────────────────────
+
+/**
+ * getNearbyIssues
+ *
+ * Public endpoint — no req.user is set here.
+ *
+ * Uses MongoDB $geoNear aggregation stage which:
+ *   - leverages the 2dsphere index on Issue.location (Issue.js ln 194)
+ *   - returns results sorted by ascending distance automatically
+ *   - injects a `distanceMeters` field on each document natively
+ *
+ * Query parameters (validated upstream by validateNearbyQuery):
+ *   lat      {number}  required  −90–90
+ *   lng      {number}  required  −180–180
+ *   radius   {integer} required  1–50000 metres
+ *   status   {string}  optional  comma-separated ISSUE_STATUSES; defaults to active statuses
+ *   category {string}  optional  single ISSUE_CATEGORIES value
+ *   limit    {integer} optional  1–100, default 50
+ *
+ * Response shape is Leaflet-ready — each issue carries a `leaflet` sub-object
+ * with pre-swapped { lat, lng } so React-Leaflet <Marker position> needs zero
+ * coordinate juggling:
+ *
+ *   <Marker position={[issue.leaflet.lat, issue.leaflet.lng]} />
+ */
+export const getNearbyIssues = async (req, res, next) => {
+  try {
+    const {
+      lat,
+      lng,
+      radius,
+      status,
+      category,
+      limit = 50,
+    } = req.query;
+
+    const latNum    = Number(lat);
+    const lngNum    = Number(lng);
+    const radiusNum = Number(radius);
+    const limitNum  = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+
+    // ── Build $match filter for optional status / category ────────────────────
+    const matchFilter = {};
+
+    if (status && status.trim()) {
+      // Accept comma-separated list, e.g. "REPORTED,VERIFIED,ASSIGNED"
+      const statusList = status
+        .split(',')
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean);
+
+      const invalidStatuses = statusList.filter((s) => !ISSUE_STATUSES.includes(s));
+      if (invalidStatuses.length > 0) {
+        return res.status(422).json({
+          success: false,
+          message: 'Validation failed',
+          errors: [{
+            field: 'status',
+            message: `Invalid status value(s): ${invalidStatuses.join(', ')}. ` +
+                     `Valid values: ${ISSUE_STATUSES.join(', ')}`,
+          }],
+        });
+      }
+
+      matchFilter.status = { $in: statusList };
+    } else {
+      // Default: exclude resolved / rejected issues so the public map shows
+      // only civic problems still requiring citizen or worker attention.
+      matchFilter.status = { $nin: ['RESOLVED', 'REJECTED', 'CITIZEN_VERIFIED'] };
+    }
+
+    if (category && category.trim()) {
+      const upperCat = category.trim().toUpperCase();
+      if (!ISSUE_CATEGORIES.includes(upperCat)) {
+        return res.status(422).json({
+          success: false,
+          message: 'Validation failed',
+          errors: [{ field: 'category', message: `Invalid category: ${category}` }],
+        });
+      }
+      matchFilter.category = upperCat;
+    }
+
+    // ── Fields projected in the public response ───────────────────────────────
+    //
+    // Fields intentionally EXCLUDED (never exposed to anonymous callers):
+    //   reportedBy     — personal PII (name, email, photoURL)
+    //   assignedWorker — personal PII (name, email, phone)
+    //   department     — internal routing details
+    //   aiAnalysis     — internal AI data
+    //   beforeImages   — worker evidence, not public interest
+    //   afterImages    — worker evidence, not public interest
+    const PUBLIC_PROJECTION = {
+      issueId:   1,
+      title:     1,
+      description: 1,
+      category:  1,
+      priority:  1,
+      status:    1,
+      location:  1,   // GeoJSON Point — { type: "Point", coordinates: [lng, lat] }
+      address:   1,
+      ward:      1,
+      // Return only the first image as a thumbnail URL; avoids large array payload
+      images:    { $slice: ['$images', 1] },
+      createdAt: 1,
+      updatedAt: 1,
+      // distanceMeters is injected by $geoNear; kept via the pipeline $project below
+    };
+
+    // ── $geoNear aggregation pipeline ─────────────────────────────────────────
+    //
+    // Rules:
+    //   - $geoNear MUST be the very first stage in the pipeline.
+    //   - `spherical: true` is required for a 2dsphere index.
+    //   - `query` is applied before distance filtering — this is the efficient path.
+    //   - Results are automatically sorted ascending by distanceField.
+    const pipeline = [
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [lngNum, latNum],   // GeoJSON: longitude FIRST
+          },
+          distanceField: 'distanceMeters',   // name of the injected distance field
+          maxDistance:   radiusNum,           // hard cutoff in metres
+          spherical:     true,               // must be true for 2dsphere index
+          query:         matchFilter,        // status/category pre-filter
+        },
+      },
+      {
+        $project: {
+          ...PUBLIC_PROJECTION,
+          distanceMeters: 1,   // preserve the injected field
+        },
+      },
+      { $limit: limitNum },
+    ];
+
+    const rawIssues = await Issue.aggregate(pipeline);
+
+    // ── Transform: add `leaflet` convenience object ───────────────────────────
+    //
+    // GeoJSON coordinates are [longitude, latitude] (longitude first).
+    // React-Leaflet <Marker position={[lat, lng]}> expects latitude first.
+    //
+    // The `leaflet` sub-object pre-swaps the order so components can write:
+    //   <Marker position={[issue.leaflet.lat, issue.leaflet.lng]} />
+    // without any manual coordinate juggling in JSX.
+    const issues = rawIssues.map((issue) => {
+      const [issueLng, issueLat] = issue.location?.coordinates ?? [0, 0];
+      return {
+        ...issue,
+        // `thumbnail` is the first image URL (or null) — convenience field
+        thumbnail: issue.images?.[0] ?? null,
+        // Pre-swapped coordinates for React-Leaflet
+        leaflet: {
+          lat: issueLat,
+          lng: issueLng,
+        },
+        // Round to integer metres for cleaner JSON payloads
+        distanceMeters: Math.round(issue.distanceMeters),
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Nearby issues fetched successfully',
+      data: {
+        center:       { lat: latNum, lng: lngNum },
+        radiusMeters: radiusNum,
+        total:        issues.length,
+        issues,
+      },
+    });
+  } catch (error) {
+    next(error);
   }
 };
