@@ -35,10 +35,20 @@ export const AssignWorkerModal = ({ isOpen, onClose, issue }) => {
       title={`Assign Field Worker — ${issue.id}`}
       subtitle={`${issue.category} • ${issue.ward} (${issue.department})`}
       maxWidth="max-w-2xl"
+      footer={
+        <div className="flex items-center justify-end gap-3 w-full">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" icon={UserCheck} onClick={handleAssign}>
+            Confirm Assignment
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-4">
         {/* Issue Overview Card */}
-        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs">
+        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs">
           <p className="font-bold text-slate-900">{issue.title}</p>
           <div className="flex items-center gap-3 text-slate-500 mt-1">
             <span>Location: <strong className="text-slate-700">{issue.address}</strong></span>
@@ -48,16 +58,16 @@ export const AssignWorkerModal = ({ isOpen, onClose, issue }) => {
 
         {/* Worker Recommendation Alert */}
         {recommendedWorker && (
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
             <Award className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-emerald-900">Recommended Worker</span>
                 <span className="text-[10px] bg-emerald-200 text-emerald-900 font-bold px-2 py-0.5 rounded-full">
                   AI Match 98%
                 </span>
               </div>
-              <p className="text-xs text-emerald-800 font-semibold mt-1">{recommendedWorker.name}</p>
+              <p className="text-xs text-emerald-800 font-bold mt-1">{recommendedWorker.name}</p>
               <p className="text-[11px] text-emerald-700 mt-0.5">
                 Reason: Closest available worker ({recommendedWorker.distanceKm} km), lowest workload ({recommendedWorker.activeTasks} active tasks), {recommendedWorker.onTimeRate} on-time rate.
               </p>
@@ -71,7 +81,7 @@ export const AssignWorkerModal = ({ isOpen, onClose, issue }) => {
             Select Field Worker:
           </label>
 
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
             {relevantWorkers.map((worker) => {
               const isSelected = selectedWorkerId === worker.id;
               const isRecommended = recommendedWorker?.id === worker.id;
@@ -82,7 +92,7 @@ export const AssignWorkerModal = ({ isOpen, onClose, issue }) => {
                   onClick={() => setSelectedWorkerId(worker.id)}
                   className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                     isSelected
-                      ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20'
+                      ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 shadow-2xs'
                       : isRecommended
                       ? 'border-emerald-300 bg-white hover:bg-emerald-50/40'
                       : 'border-slate-200 bg-white hover:bg-slate-50'
@@ -92,19 +102,19 @@ export const AssignWorkerModal = ({ isOpen, onClose, issue }) => {
                     <img
                       src={worker.avatar}
                       alt={worker.name}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-200"
+                      className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-200 shrink-0"
                     />
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-bold text-slate-900">{worker.name}</h4>
+                        <h4 className="text-xs font-bold text-slate-900 truncate">{worker.name}</h4>
                         {isRecommended && (
-                          <span className="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded shrink-0">
                             RECOMMENDED
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-0.5">
+                      <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-0.5 flex-wrap">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3 text-slate-400" />
                           {worker.activeTasks} active tasks
@@ -121,7 +131,7 @@ export const AssignWorkerModal = ({ isOpen, onClose, issue }) => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <Badge variant={worker.status}>{worker.status}</Badge>
                     <input
                       type="radio"
@@ -135,16 +145,6 @@ export const AssignWorkerModal = ({ isOpen, onClose, issue }) => {
               );
             })}
           </div>
-        </div>
-
-        {/* Modal Actions */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" icon={UserCheck} onClick={handleAssign}>
-            Confirm Assignment
-          </Button>
         </div>
       </div>
     </Modal>

@@ -3,8 +3,9 @@ import { useAuth } from '../../context/AuthContext';
 import { RoleSwitcher } from '../common/RoleSwitcher';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { CommandPalette } from '../common/CommandPalette';
+import { AccountSettingsModal } from '../common/AccountSettingsModal';
 import { Menu, Search, User, LogOut, ShieldCheck, ChevronDown, Radio } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 export const Topbar = ({ toggleSidebar }) => {
   const { currentUser, logout, role } = useAuth();
@@ -12,6 +13,7 @@ export const Topbar = ({ toggleSidebar }) => {
   const location = useLocation();
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
 
   // Global listener for command palette trigger
   useEffect(() => {
@@ -34,17 +36,25 @@ export const Topbar = ({ toggleSidebar }) => {
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-bold tracking-wider uppercase whitespace-nowrap">
+            <Link
+              to="/"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-bold tracking-wider uppercase whitespace-nowrap hover:bg-emerald-100/80 transition-colors cursor-pointer"
+              title="Go to Landing Page"
+            >
               <Radio className="w-3 h-3 text-emerald-600 animate-pulse shrink-0" />
               <span>LIVE MUNICIPAL NETWORK</span>
-            </div>
+            </Link>
 
-            <div className="sm:hidden">
-              <h2 className="text-xs font-black text-slate-900 leading-none">CivicConnect</h2>
+            <Link
+              to="/"
+              className="sm:hidden group cursor-pointer"
+              title="Go to Landing Page"
+            >
+              <h2 className="text-xs font-black text-slate-900 leading-none group-hover:text-blue-600 transition-colors">CivicConnect</h2>
               <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">
                 {role === 'SUPER_ADMIN' ? 'HQ CONTROL' : role === 'DEPARTMENT_ADMIN' ? 'DIVISION' : role === 'FIELD_WORKER' ? 'FIELD' : 'CITIZEN'}
               </span>
-            </div>
+            </Link>
           </div>
         </div>
 
@@ -122,9 +132,7 @@ export const Topbar = ({ toggleSidebar }) => {
                   <button
                     onClick={() => {
                       setProfileDropdown(false);
-                      if (role === 'FIELD_WORKER') navigate('/worker/profile');
-                      else if (role === 'CITIZEN') navigate('/citizen/dashboard');
-                      else navigate('/admin/settings');
+                      setAccountModalOpen(true);
                     }}
                     className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer"
                   >
@@ -155,6 +163,12 @@ export const Topbar = ({ toggleSidebar }) => {
       <CommandPalette
         isOpen={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
+      />
+
+      {/* Account Settings & Security Modal */}
+      <AccountSettingsModal
+        isOpen={accountModalOpen}
+        onClose={() => setAccountModalOpen(false)}
       />
     </>
   );

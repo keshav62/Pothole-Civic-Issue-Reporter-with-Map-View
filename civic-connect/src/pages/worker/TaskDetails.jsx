@@ -9,6 +9,7 @@ import { AIAnalysisCard } from '../../components/worker/AIAnalysisCard';
 import { ResolutionVerification } from '../../components/worker/ResolutionVerification';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
+import { SafeImage } from '../../components/common/SafeImage';
 import { ToastContext } from '../../context/ToastContext';
 import {
   MapPin,
@@ -34,21 +35,6 @@ export const TaskDetails = () => {
   const task = tasks.find(t => t.id === id) || tasks[0];
 
   if (!task) return null;
-
-  // Timeline definition
-  const timelineSteps = [
-    { label: 'Reported', status: 'REPORTED', date: task.assignedDate },
-    { label: 'Verified', status: 'VERIFIED', date: task.assignedDate },
-    { label: 'Assigned', status: 'ASSIGNED', date: task.assignedDate },
-    { label: 'Accepted', status: 'ACCEPTED', date: task.status === 'ACCEPTED' || task.status === 'IN_PROGRESS' || task.status === 'COMPLETED' ? new Date().toISOString() : null },
-    { label: 'In Progress', status: 'IN_PROGRESS', date: task.status === 'IN_PROGRESS' || task.status === 'COMPLETED' ? new Date().toISOString() : null },
-    { label: 'Completed', status: 'COMPLETED', date: task.status === 'COMPLETED' ? new Date().toISOString() : null }
-  ];
-
-  let activeStepIndex = 2; // ASSIGNED
-  if (task.status === 'ACCEPTED') activeStepIndex = 3;
-  if (task.status === 'IN_PROGRESS') activeStepIndex = 4;
-  if (task.status === 'COMPLETED') activeStepIndex = 5;
 
   const handleAccept = () => {
     updateTaskStatus(task.id, 'ACCEPTED');
@@ -101,35 +87,36 @@ export const TaskDetails = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Column: Image, Desc, Timeline */}
         <div className="md:col-span-2 space-y-6">
-          {/* 2. Issue Image */}
+          {/* 2. Issue Image Showcase */}
           <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs">
             <div className="grid grid-cols-1 sm:grid-cols-2">
-              <div className={`aspect-video sm:aspect-auto sm:h-full w-full bg-slate-100 relative ${task.afterImage ? 'border-b sm:border-b-0 sm:border-r border-slate-200' : 'sm:col-span-2 aspect-video'}`}>
-                <img
-                  src={task.beforeImage || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80"}
+              <div className={`aspect-video sm:h-56 w-full bg-slate-900 relative ${task.afterImage ? 'border-b sm:border-b-0 sm:border-r border-slate-200' : 'sm:col-span-2'}`}>
+                <SafeImage
+                  src={task.beforeImage}
                   alt="Before Repair"
-                  className="w-full h-full object-cover"
+                  fallbackText="Reported Photo Evidence"
                 />
-                <div className="absolute top-3 left-3 bg-slate-950/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-md">
-                  <FileText className="w-3 h-3" /> Reported Photo Evidence
+                <div className="absolute top-3 left-3 bg-slate-950/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-md border border-slate-700 z-10">
+                  <FileText className="w-3 h-3 text-blue-400" /> Reported Photo Evidence
                 </div>
               </div>
+
               {task.afterImage && (
-                <div className="aspect-video sm:aspect-auto sm:h-full w-full bg-emerald-50 relative">
-                  <img
+                <div className="aspect-video sm:h-56 w-full bg-emerald-950 relative">
+                  <SafeImage
                     src={task.afterImage}
                     alt="After Repair"
-                    className="w-full h-full object-cover"
+                    fallbackText="Verified Work Proof"
                   />
-                  <div className="absolute top-3 left-3 bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-md">
-                    <CheckCircle2 className="w-3 h-3" /> Verified Work Proof
+                  <div className="absolute top-3 left-3 bg-emerald-800 text-white text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-md border border-emerald-600 z-10">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-300" /> Verified Work Proof
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* 3. Description & Notes */}
+          {/* 3. Description & Context */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
             <div>
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description & Context</h3>
