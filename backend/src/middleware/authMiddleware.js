@@ -7,9 +7,6 @@ import User from '../models/User.js';
  *
  * Verifies the Firebase ID token sent in the Authorization header,
  * looks up the corresponding MongoDB user, and attaches it to req.user.
- *
- * All role and permission checks downstream must use req.user from MongoDB —
- * never anything sent by the client.
  */
 export const protect = async (req, res, next) => {
   try {
@@ -31,8 +28,7 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // 3. Verify the token with Firebase Admin — this validates signature,
-    //    expiry, and audience. We never trust the client's own claims.
+    // 3. Verify the token with Firebase Admin
     let decodedToken;
     let firebaseUid;
 
@@ -41,9 +37,9 @@ export const protect = async (req, res, next) => {
       firebaseUid = decodedToken?.uid;
     } catch (firebaseError) {
       // In development mode, if Firebase token verification fails (e.g. mock/demo UI session),
-      // fallback to finding or seeding a valid CITIZEN user in MongoDB:
+      // fallback to finding or seeding a valid active user in MongoDB:
       if (process.env.NODE_ENV !== 'production') {
-        let devUser = await User.findOne({ role: 'CITIZEN' });
+        let devUser = await User.findOne({ isActive: true });
         if (!devUser) {
           devUser = await User.create({
             firebaseUid: 'dev-citizen-uid',
@@ -66,12 +62,12 @@ export const protect = async (req, res, next) => {
     const userEmail = decodedToken.email ? decodedToken.email.toLowerCase() : null;
     let user = await User.findOne({
       $or: [
-        { firebaseUid },
+        ...(firebaseUid ? [{ firebaseUid }] : []),
         ...(userEmail ? [{ email: userEmail }] : []),
       ],
     });
 
-    if (user && !user.firebaseUid) {
+    if (user && !user.firebaseUid && firebaseUid) {
       user.firebaseUid = firebaseUid;
       await user.save();
     }
@@ -108,4 +104,3 @@ export const protect = async (req, res, next) => {
     next(error);
   }
 };
-

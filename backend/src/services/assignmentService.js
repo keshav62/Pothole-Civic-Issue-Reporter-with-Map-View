@@ -1,5 +1,7 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Issue from '../models/Issue.js';
+import Department from '../models/Department.js';
 import { transitionIssueStatus } from './issueService.js';
 import { STATUS } from '../utils/constants.js';
 
@@ -75,8 +77,6 @@ export const assignWorkerToIssue = async (issueId, workerId, adminUser, note = '
   }
 
   // ── 3. Department match — never trusted from the frontend ──────────────────
-  // DEPARTMENT_ADMIN can only assign workers from their own department.
-  // SUPER_ADMIN may assign any worker to any issue.
   if (adminUser.role === 'DEPARTMENT_ADMIN') {
     const adminDeptId  = adminUser.department?.toString();
     const workerDeptId = worker.department?.toString();
@@ -88,7 +88,6 @@ export const assignWorkerToIssue = async (issueId, workerId, adminUser, note = '
       throw err;
     }
 
-    // The worker must belong to the same department as the admin
     if (workerDeptId !== adminDeptId) {
       const err = new Error(
         `Worker '${worker.name}' does not belong to your department and cannot be assigned by you.`
@@ -97,7 +96,6 @@ export const assignWorkerToIssue = async (issueId, workerId, adminUser, note = '
       throw err;
     }
 
-    // If the issue is already linked to a department, it must match the admin's dept
     if (issueDeptId && issueDeptId !== adminDeptId) {
       const err = new Error(
         `This issue is assigned to a different department. You do not have permission to reassign it.`
@@ -107,16 +105,29 @@ export const assignWorkerToIssue = async (issueId, workerId, adminUser, note = '
     }
   }
 
+  // Look up department ObjectId if worker.department is string
+  let targetDeptId = issue.department;
+  if (worker.department) {
+    if (mongoose.Types.ObjectId.isValid(worker.department)) {
+      targetDeptId = worker.department;
+    } else {
+      const deptDoc = await Department.findOne({
+        $or: [{ name: worker.department }, { code: worker.department }]
+      });
+      if (deptDoc) {
+        targetDeptId = deptDoc._id;
+      }
+    }
+  }
+
   // ── 4. Delegate the status transition to the FSM ───────────────────────────
-  // transitionIssueStatus enforces the TRANSITION_MAP, writes to the DB,
-  // and records the WORKER_ASSIGNED history entry atomically.
   const updated = await transitionIssueStatus(
     issueId,
     STATUS.ASSIGNED,
     adminUser,
     {
       assignedWorker: worker._id,
-      department:     worker.department ?? issue.department,
+      department:     targetDeptId,
       note,
     }
   );

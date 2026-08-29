@@ -33,12 +33,14 @@ export const UserManagement = () => {
     { id: 'FIELD_WORKER', label: 'Field Workers' }
   ];
 
-  const filteredUsers = users.filter(u => {
+  const filteredUsers = (users || []).filter(u => {
+    if (!u) return false;
     const matchesTab = activeTab === 'ALL' || u.role === activeTab;
-    const matchesSearch =
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.department.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = (searchQuery || '').toLowerCase();
+    const name = (u.name || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    const dept = (u.department || '').toLowerCase();
+    const matchesSearch = !q || name.includes(q) || email.includes(q) || dept.includes(q);
     return matchesTab && matchesSearch;
   });
 

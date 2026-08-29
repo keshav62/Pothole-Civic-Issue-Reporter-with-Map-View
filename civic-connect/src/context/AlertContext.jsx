@@ -5,8 +5,7 @@ import {
   calculateDistance,
   formatDistance,
   formatTimeAgo,
-  getSeverityScore,
-  isIssueAlertEligible
+  getSeverityScore
 } from '../utils/geo';
 
 const AlertContext = createContext(null);
@@ -15,7 +14,7 @@ const SETTINGS_STORAGE_KEY = 'civic_connect_alert_settings_v1';
 const READ_ALERTS_STORAGE_KEY = 'civic_connect_read_alerts_v1';
 
 const DEFAULT_SETTINGS = {
-  radiusMeters: 2000, // Default 2 km
+  radiusMeters: 50000, // 50 km default radius so all reported issues nearby trigger alerts
   categories: {
     'Pothole': true,
     'Water Leakage': true,
@@ -93,38 +92,52 @@ export const AlertProvider = ({ children }) => {
     return false;
   }, []);
 
-  // Compute Nearby Alerts dynamically
+  // Compute Nearby Alerts dynamically from live MongoDB issues and user location
   const alerts = useMemo(() => {
-    if (!issues || !Array.isArray(issues) || !userLocation || userLocation.lat == null) {
+    if (!issues || !Array.isArray(issues)) {
       return [];
     }
+
+    // Default reference location (Municipal HQ Sector 15 / Delhi or User GPS)
+    const refLat = userLocation?.lat != null ? userLocation.lat : 28.6280;
+    const refLng = userLocation?.lng != null ? userLocation.lng : 77.2160;
 
     const computedList = [];
 
     issues.forEach(issue => {
-      const issueLat = issue.latitude || issue.location?.lat;
-      const issueLng = issue.longitude || issue.location?.lng;
+      // Safely extract coordinates from GeoJSON location, leaflet object, or direct properties
+      let issueLat = issue.latitude ?? issue.location?.lat ?? issue.leaflet?.lat;
+      let issueLng = issue.longitude ?? issue.location?.lng ?? issue.leaflet?.lng;
 
-      if (!issueLat || !issueLng) return;
+      if (issue.location?.coordinates && Array.isArray(issue.location.coordinates) && issue.location.coordinates.length >= 2) {
+        issueLng = issue.location.coordinates[0];
+        issueLat = issue.location.coordinates[1];
+      }
 
-      const distanceMeters = calculateDistance(userLocation.lat, userLocation.lng, issueLat, issueLng);
+      if (issueLat == null || issueLng == null) return;
+
+      const distanceMeters = calculateDistance(refLat, refLng, issueLat, issueLng);
       
-      // Check alert eligibility based on status, distance, settings
-      if (isIssueAlertEligible(issue, distanceMeters, settings.radiusMeters)) {
+      // Filter out resolved, rejected or closed issues
+      const status = (issue.status || '').toUpperCase();
+      if (status === 'RESOLVED' || status === 'REJECTED' || status === 'CLOSED') {
+        return;
+      }
+
+      const maxRadius = settings.radiusMeters || 50000;
+      if (distanceMeters <= maxRadius) {
         const severityKey = (issue.priority || 'MEDIUM').toUpperCase();
-        
-        // Filter by settings if configured
         if (settings.severities && settings.severities[severityKey] === false) return;
 
-        const alertId = `ALT-${issue.id}-${severityKey}`;
+        const alertId = `ALT-${issue._id || issue.id}-${severityKey}`;
         const isRead = readAlertIds.includes(alertId);
 
         computedList.push({
           alertId,
-          issueId: issue.id,
-          title: issue.title,
+          issueId: issue.id || issue._id || `CC-${Date.now()}`,
+          title: issue.title || 'Civic Issue Alert',
           category: issue.category || 'General',
-          description: issue.description,
+          description: issue.description || '',
           priority: issue.priority || 'MEDIUM',
           status: issue.status || 'REPORTED',
           address: issue.address || issue.location?.address || 'Nearby Municipal Area',
@@ -132,8 +145,8 @@ export const AlertProvider = ({ children }) => {
           longitude: issueLng,
           distanceMeters,
           formattedDistance: formatDistance(distanceMeters),
-          reportedDate: issue.reportedDate || issue.createdAt || new Date().toISOString(),
-          formattedTimeAgo: formatTimeAgo(issue.reportedDate || issue.createdAt),
+          reportedDate: issue.createdAt || issue.reportedDate || new Date().toISOString(),
+          formattedTimeAgo: formatTimeAgo(issue.createdAt || issue.reportedDate),
           isRead,
           severityScore: getSeverityScore(issue.priority),
           issueObj: issue
@@ -220,7 +233,7 @@ export const useRealtimeAlerts = () => {
       locationStatus: 'unavailable',
       locationLastUpdated: new Date(),
       requestLocationPermission: () => {},
-      settings: { radiusMeters: 2000 },
+      settings: { radiusMeters: 50000 },
       updateSettings: () => {},
       markAsRead: () => {},
       markAllAsRead: () => {},

@@ -71,15 +71,26 @@ export const NearbyMap = () => {
 
   // Enrich issues with distance from user's current GPS location
   const issuesWithDistance = useMemo(() => {
-    return issues.map((issue) => {
-      const lat = issue.location?.lat ?? issue.latitude;
-      const lng = issue.location?.lng ?? issue.longitude;
+    return (issues || []).map((issue) => {
+      let lat = issue.lat ?? issue.latitude ?? issue.location?.lat ?? issue.leaflet?.lat;
+      let lng = issue.lng ?? issue.longitude ?? issue.location?.lng ?? issue.leaflet?.lng;
+
+      if (issue.location?.coordinates && Array.isArray(issue.location.coordinates) && issue.location.coordinates.length >= 2) {
+        lng = issue.location.coordinates[0];
+        lat = issue.location.coordinates[1];
+      }
+
       const distance =
-        coords?.lat && coords?.lng && lat && lng
+        coords?.lat && coords?.lng && lat != null && lng != null
           ? getDistanceKm(coords.lat, coords.lng, lat, lng)
           : null;
+
+      const issueId = issue.id || issue.issueId || (issue._id ? String(issue._id) : `CC-${Math.random()}`);
+
       return {
         ...issue,
+        id: issueId,
+        _id: issue._id || issueId,
         lat,
         lng,
         distance,
@@ -95,8 +106,8 @@ export const NearbyMap = () => {
         const mCat =
           !selectedCategory ||
           selectedCategory === 'ALL' ||
-          issue.category?.toLowerCase() === selectedCategory.toLowerCase() ||
-          issue.category?.toLowerCase().includes(selectedCategory.toLowerCase());
+          (issue.category || '').toLowerCase() === selectedCategory.toLowerCase() ||
+          (issue.category || '').toLowerCase().includes(selectedCategory.toLowerCase());
 
         // 2. Radius match (only active when distance is known)
         let mRadius = true;
@@ -106,13 +117,13 @@ export const NearbyMap = () => {
         }
 
         // 3. Search query match
-        const q = searchQuery.trim().toLowerCase();
+        const q = (searchQuery || '').trim().toLowerCase();
         const mSearch =
           !q ||
-          issue.title?.toLowerCase().includes(q) ||
-          issue.description?.toLowerCase().includes(q) ||
-          issue.address?.toLowerCase().includes(q) ||
-          issue.ward?.toLowerCase().includes(q);
+          (issue.title || '').toLowerCase().includes(q) ||
+          (issue.description || '').toLowerCase().includes(q) ||
+          (issue.address || '').toLowerCase().includes(q) ||
+          (issue.ward || '').toLowerCase().includes(q);
 
         // 4. Status match
         const mStatus =
@@ -128,7 +139,9 @@ export const NearbyMap = () => {
         if (a.distance !== null && b.distance !== null) {
           return a.distance - b.distance;
         }
-        return b.id.localeCompare(a.id);
+        const idA = String(a.id || a._id || '');
+        const idB = String(b.id || b._id || '');
+        return idB.localeCompare(idA);
       });
   }, [issuesWithDistance, selectedCategory, selectedRadius, searchQuery, statusFilter]);
 

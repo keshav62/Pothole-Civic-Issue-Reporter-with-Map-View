@@ -377,17 +377,18 @@ export const assignIssue = async (req, res, next) => {
  */
 export const verifyIssue = async (req, res, next) => {
   try {
-    const { verified, note } = req.body;
+    const { note } = req.body || {};
+    const rawVal = req.body?.verified !== undefined ? req.body?.verified : req.body?.approved;
 
     // 1. validated: boolean required
-    if (verified === undefined || verified === null) {
+    if (rawVal === undefined || rawVal === null) {
       return res.status(400).json({
         success: false,
-        message: '"verified" field is required (true or false)',
+        message: '"verified" or "approved" field is required (true or false)',
       });
     }
 
-    const isVerified = Boolean(verified);
+    const isVerified = Boolean(rawVal);
 
     // 2. Rejection note is mandatory so admins know why it was reopened
     if (!isVerified && !note?.trim()) {

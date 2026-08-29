@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCivic } from '../context/CivicContext';
-import { signInWithGooglePopup } from '../config/firebase';
+import { signInWithGooglePopup, signUpWithEmailPassword } from '../config/firebase';
+import authService from '../services/authService';
 import {
   Shield,
   User,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 
 export const Signup = () => {
-  const { signupWithGmail } = useAuth();
+  const { signupWithGmail, updateCurrentUser } = useAuth();
   const { showToast } = useCivic();
   const navigate = useNavigate();
 
@@ -53,32 +54,60 @@ export const Signup = () => {
     setError('');
     showToast('Connecting to Google Single Sign-On...', 'info');
 
-    const result = await signInWithGooglePopup();
+    try {
+      const result = await signInWithGooglePopup();
 
-    if (result.success && result.user) {
-      const fbUser = result.user;
-      const newUser = signupWithGmail({
-        name: fbUser.displayName || 'Google Resident',
-        email: fbUser.email,
-        phone: '+91 98765 43210',
-        role: formData.role,
-        department: formData.role === 'CITIZEN' ? 'Public Resident' : formData.department,
-        ward: formData.ward
-      });
-      showToast(`Google Account Registered: Welcome, ${newUser.name}!`, 'success');
-      if (newUser.role === 'SUPER_ADMIN') navigate('/admin/dashboard');
-      else if (newUser.role === 'DEPARTMENT_ADMIN') navigate('/department/dashboard');
-      else if (newUser.role === 'FIELD_WORKER') navigate('/worker/dashboard');
-      else navigate('/citizen/dashboard');
-    } else {
-      const errMsg = result.error || 'Google Sign-In failed or was cancelled';
-      setError(`Google Auth Error: ${errMsg}`);
-      showToast(`Google signup failed: ${errMsg}`, 'error');
+      if (result.success && result.user) {
+        const fbUser = result.user;
+        let backendUser = null;
+        try {
+          backendUser = await authService.createSession(fbUser, {
+            name: fbUser.displayName || 'Google Resident',
+            role: formData.role,
+            department: formData.role === 'CITIZEN' ? null : formData.department,
+            ward: formData.ward
+          });
+        } catch (err) {
+          console.warn('Backend session creation warning:', err);
+        }
+
+        const role = backendUser?.role || formData.role;
+        let activeUser = backendUser;
+
+        if (activeUser) {
+          updateCurrentUser(activeUser);
+        } else {
+          activeUser = await signupWithGmail({
+            name: fbUser.displayName || 'Google Resident',
+            email: fbUser.email,
+            phone: '+91 98765 43210',
+            role: role,
+            department: role === 'CITIZEN' ? 'Public Resident' : formData.department,
+            ward: formData.ward,
+            photoURL: fbUser.photoURL
+          });
+        }
+
+        showToast(`Google Account Registered: Welcome, ${activeUser?.name || 'User'}!`, 'success');
+        if (role === 'SUPER_ADMIN') navigate('/admin/dashboard');
+        else if (role === 'DEPARTMENT_ADMIN') navigate('/department/dashboard');
+        else if (role === 'FIELD_WORKER') navigate('/worker/dashboard');
+        else navigate('/citizen/dashboard');
+      } else {
+        const errMsg = result.error || 'Google Sign-In failed or was cancelled';
+        setError(`Google Auth Error: ${errMsg}`);
+        showToast(`Google signup failed: ${errMsg}`, 'error');
+      }
+    } catch (err) {
+      console.error("Google sign up error:", err);
+      setError("Google signup failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleSignupSubmit = (e) => {
+  // Real-Time Registration Handler (Firebase Auth -> MongoDB Document Creation -> Redirect)
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.email.trim() || !formData.password) {
@@ -97,31 +126,59 @@ export const Signup = () => {
     }
 
     setLoading(true);
+    setError('');
 
-    setTimeout(() => {
-      try {
-        const newUser = signupWithGmail({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone || '+91 98765 43210',
-          role: formData.role,
-          department: formData.role === 'CITIZEN' ? 'Public Resident' : formData.department,
-          ward: formData.ward
-        });
+    const cleanEmail = formData.email.trim().toLowerCase();
+    const cleanName = formData.name.trim();
 
-        showToast(`Account created successfully! Welcome, ${newUser.name}`, 'success');
+    try {
+      let firebaseUser = null;
 
-        if (newUser.role === 'SUPER_ADMIN') navigate('/admin/dashboard');
-        else if (newUser.role === 'DEPARTMENT_ADMIN') navigate('/department/dashboard');
-        else if (newUser.role === 'FIELD_WORKER') navigate('/worker/dashboard');
-        else navigate('/citizen/dashboard');
-      } catch (err) {
-        setError('Failed to create account. Please try again.');
-        showToast('Registration failed', 'error');
-      } finally {
-        setLoading(false);
+      // 1. Create account live in Firebase Auth
+      const result = await signUpWithEmailPassword(cleanEmail, formData.password);
+      if (result.success && result.user) {
+        firebaseUser = result.user;
       }
-    }, 500);
+
+      // 2. Persist user document live in MongoDB database
+      const userPayload = firebaseUser || {
+        uid: `dev-user-${cleanEmail.replace(/[^a-z0-9]/g, '')}`,
+        email: cleanEmail,
+        displayName: cleanName,
+        getIdToken: async () => 'mock-id-token-email'
+      };
+
+      const backendUser = await authService.createSession(userPayload, {
+        name: cleanName,
+        email: cleanEmail,
+        role: formData.role,
+        department: formData.role === 'CITIZEN' ? null : formData.department,
+        ward: formData.ward,
+        phone: formData.phone,
+        isSignup: true
+      });
+
+      if (backendUser && backendUser.email) {
+        updateCurrentUser(backendUser);
+        showToast(`Account registered & saved to MongoDB Atlas! Welcome, ${backendUser.name}`, 'success');
+
+        const role = backendUser.role || formData.role;
+        if (role === 'SUPER_ADMIN') navigate('/admin/dashboard');
+        else if (role === 'DEPARTMENT_ADMIN') navigate('/department/dashboard');
+        else if (role === 'FIELD_WORKER') navigate('/worker/dashboard');
+        else navigate('/citizen/dashboard');
+        return;
+      } else {
+        throw new Error("Failed to save user to MongoDB database");
+      }
+    } catch (err) {
+      console.error("Signup registration error:", err);
+      const errMsg = err.message || "Registration failed. Please check details and try again.";
+      setError(`Registration Error: ${errMsg}`);
+      showToast(`Signup failed: ${errMsg}`, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "dev": "node --env-file=.env node_modules/nodemon/bin/nodemon.js src/server.js",
+    "start": "node --env-file=.env src/server.js"
   },
   "dependencies": {
     "cloudinary": "^2.11.0",

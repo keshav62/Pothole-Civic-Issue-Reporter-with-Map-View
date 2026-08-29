@@ -167,16 +167,23 @@ export const IssueMap = ({
 
         {/* Issue Pins */}
         {issues.map((issue) => {
-          const lat = issue.location?.lat ?? issue.latitude;
-          const lng = issue.location?.lng ?? issue.longitude;
-          if (!lat || !lng) return null;
+          let lat = issue.lat ?? issue.latitude ?? issue.location?.lat ?? issue.leaflet?.lat;
+          let lng = issue.lng ?? issue.longitude ?? issue.location?.lng ?? issue.leaflet?.lng;
 
-          const isSelected = selectedIssueId === issue.id;
+          if (issue.location?.coordinates && Array.isArray(issue.location.coordinates) && issue.location.coordinates.length >= 2) {
+            lng = issue.location.coordinates[0];
+            lat = issue.location.coordinates[1];
+          }
+
+          if (lat == null || lng == null) return null;
+
+          const issueId = issue.id || issue.issueId || (issue._id ? String(issue._id) : Math.random());
+          const isSelected = selectedIssueId === issueId || selectedIssueId === issue.id || selectedIssueId === issue._id;
           const distance = userLocation?.lat && userLocation?.lng ? getDistanceKm(userLocation.lat, userLocation.lng, lat, lng) : null;
 
           return (
             <Marker
-              key={issue.id}
+              key={issueId}
               position={[lat, lng]}
               icon={createCustomIcon(issue.priority, issue.status, isSelected)}
               eventHandlers={{
@@ -188,7 +195,7 @@ export const IssueMap = ({
                   {/* Top Bar: ID + Priority + Category */}
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono font-bold text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                      {issue.id}
+                      {issueId}
                     </span>
                     <IssuePriority priority={issue.priority} />
                   </div>

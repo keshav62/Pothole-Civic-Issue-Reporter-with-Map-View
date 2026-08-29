@@ -90,13 +90,13 @@ export const fetchNearbyIssues = async ({
   // Build query string — only append optional params when they have a value
   const params = new URLSearchParams();
 
-  params.set('lat',    String(lat));
-  params.set('lng',    String(lng));
+  params.set('lat', String(lat));
+  params.set('lng', String(lng));
   params.set('radius', String(radius));
 
-  if (status)   params.set('status',   status);
+  if (status) params.set('status', status);
   if (category) params.set('category', category);
-  if (limit)    params.set('limit',    String(limit));
+  if (limit) params.set('limit', String(limit));
 
   const json = await apiFetch(`/api/issues/nearby?${params.toString()}`);
 
@@ -104,23 +104,25 @@ export const fetchNearbyIssues = async ({
   return json.data;
 };
 
+// ─── CRUD ────────────────────────────────────────────────────────────────────
+
 /**
- * createIssueApi
- *
- * Sends issue data + optional image to POST /api/issues.
- * Uses FormData if an image file (File object) is attached for Cloudinary upload.
+ * createIssue
+ * @param {Object} data - Contains title, description, category, priority, location, address, ward
+ * @param {File} [imageFile] - Optional photo File object for FormData upload
+ * @param {string} [imageUrl] - Optional photo URL string
  */
-export const createIssueApi = async (issueData, imageFile = null, imageUrl = null) => {
+export const createIssue = async (data, imageFile = null, imageUrl = null) => {
   if (imageFile instanceof File) {
     const formData = new FormData();
-    formData.append('title', issueData.title);
-    formData.append('description', issueData.description);
-    formData.append('category', issueData.category);
-    if (issueData.priority) formData.append('priority', issueData.priority);
-    if (issueData.address) formData.append('address', issueData.address);
-    if (issueData.ward) formData.append('ward', issueData.ward);
-    if (issueData.location) {
-      formData.append('location', JSON.stringify(issueData.location));
+    formData.append('title', data.title);
+    formData.append('description', data.description);
+    formData.append('category', data.category);
+    if (data.priority) formData.append('priority', data.priority);
+    if (data.address) formData.append('address', data.address);
+    if (data.ward) formData.append('ward', data.ward);
+    if (data.location) {
+      formData.append('location', JSON.stringify(data.location));
     }
     formData.append('images', imageFile);
 
@@ -132,8 +134,8 @@ export const createIssueApi = async (issueData, imageFile = null, imageUrl = nul
   }
 
   const body = {
-    ...issueData,
-    images: imageUrl ? [imageUrl] : [],
+    ...data,
+    ...(imageUrl ? { images: [imageUrl] } : {}),
   };
 
   const json = await apiFetch('/api/issues', {
@@ -143,19 +145,89 @@ export const createIssueApi = async (issueData, imageFile = null, imageUrl = nul
   return json.data;
 };
 
-/**
- * fetchIssuesApi
- * Calls GET /api/issues to fetch authenticated issues from MongoDB.
- */
-export const fetchIssuesApi = async (params = {}) => {
-  const query = new URLSearchParams();
-  if (params.status) query.set('status', params.status);
-  if (params.category) query.set('category', params.category);
-  if (params.priority) query.set('priority', params.priority);
-  if (params.ward) query.set('ward', params.ward);
-  if (params.search) query.set('search', params.search);
+export const createIssueApi = createIssue;
 
-  const path = `/api/issues${query.toString() ? `?${query.toString()}` : ''}`;
-  const json = await apiFetch(path);
+/**
+ * fetchIssues
+ * @param {Object} params - Filtering and pagination options
+ */
+export const fetchIssues = async ({ page, limit, status, category, priority, ward, search } = {}) => {
+  const params = new URLSearchParams();
+
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (status) params.set('status', status);
+  if (category) params.set('category', category);
+  if (priority) params.set('priority', priority);
+  if (ward) params.set('ward', ward);
+  if (search) params.set('search', search);
+
+  const qs = params.toString();
+  const endpoint = qs ? `/api/issues?${qs}` : '/api/issues';
+
+  const json = await apiFetch(endpoint);
+  return json.data;
+};
+
+export const fetchIssuesApi = fetchIssues;
+
+/**
+ * fetchIssueById
+ * @param {string} id
+ */
+export const fetchIssueById = async (id) => {
+  const json = await apiFetch(`/api/issues/${id}`);
+  return json.data;
+};
+
+/**
+ * updateIssue
+ * @param {string} id
+ * @param {Object} data
+ */
+export const updateIssue = async (id, data) => {
+  const json = await apiFetch(`/api/issues/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data)
+  });
+  return json.data;
+};
+
+/**
+ * deleteIssue
+ * @param {string} id
+ */
+export const deleteIssue = async (id) => {
+  const json = await apiFetch(`/api/issues/${id}`, {
+    method: 'DELETE'
+  });
+  return json.data;
+};
+
+/**
+ * assignIssue
+ * @param {string} id
+ * @param {string} workerId
+ * @param {string} note
+ */
+export const assignIssue = async (id, workerId, note) => {
+  const json = await apiFetch(`/api/issues/${id}/assign`, {
+    method: 'PATCH',
+    body: JSON.stringify({ workerId, note })
+  });
+  return json.data;
+};
+
+/**
+ * verifyIssue
+ * @param {string} id
+ * @param {boolean} approved
+ * @param {string} note
+ */
+export const verifyIssue = async (id, approved, note) => {
+  const json = await apiFetch(`/api/issues/${id}/verify`, {
+    method: 'POST',
+    body: JSON.stringify({ approved, note })
+  });
   return json.data;
 };

@@ -57,7 +57,7 @@ import { MyReports } from './pages/citizen/MyReports';
 import { NearbyMap } from './pages/citizen/NearbyMap';
 import { AlertsPage } from './pages/citizen/AlertsPage';
 
-// Protected Route Wrapper enforcing Role Based Access
+// Protected Route Wrapper enforcing Strict 1:1 Role Based Access
 const ProtectedRoute = ({ allowedRoles, children }) => {
   const { currentUser, role } = useAuth();
 
@@ -65,8 +65,17 @@ const ProtectedRoute = ({ allowedRoles, children }) => {
     return <Navigate to="/login" replace />;
   }
 
+  const roleDashboard = {
+    CITIZEN: '/citizen/dashboard',
+    SUPER_ADMIN: '/admin/dashboard',
+    DEPARTMENT_ADMIN: '/department/dashboard',
+    FIELD_WORKER: '/worker/dashboard'
+  };
+
+  // Enforce strict role isolation: redirect to assigned portal if role is not allowed for path
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to="/unauthorized" replace />;
+    const targetPath = roleDashboard[role] || '/citizen/dashboard';
+    return <Navigate to={targetPath} replace />;
   }
 
   return children;
@@ -88,7 +97,7 @@ export default function App() {
                 <Route path="/register" element={<Signup />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
 
-                {/* SUPER ADMIN ROUTES */}
+                {/* SUPER ADMIN ROUTES (Strictly SUPER_ADMIN only) */}
                 <Route
                   path="/admin"
                   element={
@@ -111,11 +120,11 @@ export default function App() {
                   <Route path="settings" element={<AdminSettings />} />
                 </Route>
 
-                {/* DEPARTMENT ADMIN ROUTES */}
+                {/* DEPARTMENT ADMIN ROUTES (Strictly DEPARTMENT_ADMIN only) */}
                 <Route
                   path="/department"
                   element={
-                    <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN', 'SUPER_ADMIN']}>
+                    <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN']}>
                       <DepartmentLayout />
                     </ProtectedRoute>
                   }
@@ -132,11 +141,11 @@ export default function App() {
                   <Route path="heatmap" element={<DepartmentMap />} />
                 </Route>
 
-                {/* FIELD WORKER ROUTES */}
+                {/* FIELD WORKER ROUTES (Strictly FIELD_WORKER only) */}
                 <Route
                   path="/worker"
                   element={
-                    <ProtectedRoute allowedRoles={['FIELD_WORKER', 'SUPER_ADMIN', 'DEPARTMENT_ADMIN']}>
+                    <ProtectedRoute allowedRoles={['FIELD_WORKER']}>
                       <WorkerProvider>
                         <WorkerLayout />
                       </WorkerProvider>
@@ -153,11 +162,11 @@ export default function App() {
                   <Route path="profile" element={<WorkerProfile />} />
                 </Route>
 
-                {/* CITIZEN ROUTES */}
+                {/* CITIZEN ROUTES (Strictly CITIZEN only) */}
                 <Route
                   path="/citizen"
                   element={
-                    <ProtectedRoute allowedRoles={['CITIZEN', 'SUPER_ADMIN', 'DEPARTMENT_ADMIN']}>
+                    <ProtectedRoute allowedRoles={['CITIZEN']}>
                       <CitizenLayout />
                     </ProtectedRoute>
                   }

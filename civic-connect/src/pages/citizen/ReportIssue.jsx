@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCivic } from '../../context/CivicContext';
-import { createIssueApi } from '../../services/issueService';
+import { createIssue } from '../../services/issueService';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
@@ -52,8 +52,7 @@ const CoordDisplay = ({ coords, accuracy }) => (
 
 // ─── Main page component ──────────────────────────────────────────────────────
 export const ReportIssue = () => {
-  const navigate = useNavigate();
-  const { showToast, addIssue } = useCivic();
+  const { showToast, addIssue, refreshIssues } = useCivic();
 
   // ── Multi-step form state ──────────────────────────────────────────────────
   const [step, setStep] = useState(1);
@@ -188,36 +187,45 @@ export const ReportIssue = () => {
       'Drainage': 'DRAINAGE',
       'Parks': 'OTHER',
       'Traffic': 'ROAD_DAMAGE',
+      'POTHOLE': 'POTHOLE',
+      'GARBAGE': 'GARBAGE',
+      'STREETLIGHT': 'STREETLIGHT',
+      'DRAINAGE': 'DRAINAGE',
+      'WATER_LEAK': 'WATER_LEAK',
+      'ROAD_DAMAGE': 'ROAD_DAMAGE',
+      'OTHER': 'OTHER',
     };
-    const backendCategory = categoryMap[category] || 'POTHOLE';
 
-    const location = {
-      type: 'Point',
-      coordinates: [
-        coords?.lng ?? 77.2090,
-        coords?.lat ?? 28.6139,
-      ],
+    const payload = {
+      title: title || 'Civic Issue Report',
+      description,
+      category: categoryMap[category] || 'OTHER',
+      priority: priority || 'MEDIUM',
+      address: address || 'Sector 15',
+      ward: ward || 'Ward 15',
+      location: {
+        type: 'Point',
+        coordinates: [
+          coords?.lng ?? 77.2090,
+          coords?.lat ?? 28.6139,
+        ],
+      },
     };
 
     setIsSubmitting(true);
     try {
-      const data = await createIssueApi(
-        {
-          title,
-          description,
-          category: backendCategory,
-          priority,
-          address: address || 'Sector 15',
-          ward,
-          location,
-        },
+      const data = await createIssue(
+        payload,
         imageFile,
         imageFile ? null : (image && !image.startsWith('data:') ? image : null)
       );
 
-      const createdIssue = data?.issue;
-      if (createdIssue) {
+      const createdIssue = data?.issue || data;
+      if (createdIssue && addIssue) {
         addIssue(createdIssue);
+      }
+      if (refreshIssues) {
+        await refreshIssues();
       }
       const complaintId = createdIssue?.issueId || createdIssue?._id || `CC-${Math.floor(1000 + Math.random() * 9000)}`;
       showToast(`Complaint ${complaintId} submitted to Municipal HQ!`, 'success');
@@ -518,6 +526,70 @@ export const ReportIssue = () => {
               {isSubmitting ? 'Uploading & Submitting…' : 'Submit Report to Municipal HQ'}
             </Button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+};
+          </div >
+        </div >
+      )}
+
+{/* ── STEP 4: Review & Submit ────────────────────────────────────────── */ }
+{
+  step === 4 && (
+    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+      <div className="flex items-center gap-2 text-slate-900 border-b border-slate-100 pb-3">
+        <ShieldCheck className="w-5 h-5 text-emerald-600" />
+        <h2 className="text-base font-bold">Step 4: Detailed Description &amp; Submission</h2>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold uppercase text-slate-600">
+            Detailed Description
+          </label>
+          <textarea
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Provide details about size of pothole, traffic hazard, exact landmark, etc."
+            className="w-full p-3 rounded-xl border border-slate-300 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            required
+          />
+        </div>
+
+        {/* Summary Review Card */}
+        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
+          <span className="text-[10px] uppercase font-bold text-slate-400 block">
+            Report Summary Review
+          </span>
+          <p><strong>Title:</strong> {title || 'Pothole Report'}</p>
+          <p><strong>Category:</strong> {category} ({priority} Priority)</p>
+          <p><strong>Location:</strong> {address || 'Not specified'} ({ward})</p>
+          {coords && (
+            <p className="font-mono text-[10px] text-slate-500">
+              Coordinates: {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+            </p>
+          )}
+          {image && (
+            <p className="text-emerald-600 font-bold">✓ Photo evidence attached</p>
+          )}
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+        <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
+        <Button
+          type="button"
+          variant="success"
+          icon={isSubmitting ? Loader2 : CheckCircle2}
+          disabled={isSubmitting}
+          className="py-3 px-6 text-xs font-bold shadow-md"
+          onClick={handleFinalSubmit}
+        >
+          {isSubmitting ? 'Uploading & Submitting…' : 'Submit Report to Municipal HQ'}
+        </Button>
         </div>
       )}
     </div>
