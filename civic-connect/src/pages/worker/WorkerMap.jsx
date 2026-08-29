@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useWorker } from '../../context/WorkerContext';
+import { useLocation } from '../../hooks/useLocation';
+import { getDistanceKm } from '../../utils/geoUtils';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { IssuePriority } from '../../components/issues/IssuePriority';
 import { IssueStatus } from '../../components/issues/IssueStatus';
-import { MapPin, Navigation, User, Crosshair, ArrowRight, Clock, Layers } from 'lucide-react';
+import { MapPin, Navigation, User, Crosshair, ArrowRight, Clock, Layers, Loader2, AlertCircle } from 'lucide-react';
 
-// Custom Marker Icons for Leaflet
+// Custom Marker Icons for Leaflet Tasks
 const createWorkerTaskIcon = (priority, status, isSelected = false) => {
   let color = '#3b82f6'; // Blue
   if (priority === 'CRITICAL' || status === 'OVERDUE') color = '#ef4444'; // Red
@@ -47,22 +49,35 @@ const createWorkerTaskIcon = (priority, status, isSelected = false) => {
 const workerUserIcon = L.divIcon({
   className: 'worker-user-marker',
   html: `
-    <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-center;">
-      <div style="position: absolute; inset: 0; background-color: rgba(37, 99, 235, 0.3); border-radius: 50%; animation: ping 1.5s infinite;"></div>
-      <div style="background-color: #2563eb; width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; items-center; justify-center; margin: auto;">
-        <div style="width: 10px; height: 10px; background-color: white; border-radius: 50%;"></div>
+    <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+      <div style="position: absolute; inset: 0; background-color: rgba(37, 99, 235, 0.35); border-radius: 50%; animation: ping 1.8s infinite;"></div>
+      <div style="
+        background-color: #2563eb;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 3.5px solid white;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 2;
+      ">
+        <div style="width: 8px; height: 8px; background-color: white; border-radius: 50%;"></div>
       </div>
     </div>
   `,
-  iconSize: [36, 36],
-  iconAnchor: [18, 18]
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -20]
 });
 
 const RecenterMap = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    if (center) {
-      map.setView(center, zoom || map.getZoom());
+    if (center && center[0] && center[1]) {
+      map.flyTo(center, zoom || map.getZoom(), { duration: 1.2 });
     }
   }, [center, zoom, map]);
   return null;
@@ -72,27 +87,84 @@ export const WorkerMap = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('ALL');
   const [selectedTask, setSelectedTask] = useState(null);
+  const [showLocationBanner, setShowLocationBanner] = useState(true);
   const { tasks } = useWorker();
 
-  // Default worker center location (Mumbai Ward 12 / Sector 15)
-  const defaultCenter = [19.1145, 72.8710];
-  const [mapCenter, setMapCenter] = useState(defaultCenter);
+  // Browser Geolocation via reusable hook
+  const { coords, accuracy, loading: gpsLoading, error: gpsError, getCurrentLocation } = useLocation();
+
+  // Fallback map center (Mumbai Ward 12 / Sector 15) if GPS is disabled or pending
+  const fallbackCenter = [19.1145, 72.8710];
+  const [mapCenter, setMapCenter] = useState(fallbackCenter);
   const [mapZoom, setMapZoom] = useState(14);
 
-  // Apply filters
-  const filteredTasks = tasks.filter(task => {
-    if (filter === 'ALL') return true;
-    if (filter === 'HIGH_PRIORITY') return task.priority === 'HIGH' || task.priority === 'CRITICAL';
-    if (filter === 'OVERDUE') return task.status === 'OVERDUE';
-    if (filter === 'IN_PROGRESS') return task.status === 'IN_PROGRESS';
-    if (filter === 'NEARBY') return true;
-    return true;
-  });
+  // Initial location fetch on mount
+  useEffect(() => {
+    getCurrentLocation();
+  }, [getCurrentLocation]);
 
-  const handleRecenter = () => {
-    setMapCenter([...defaultCenter]);
-    setMapZoom(14);
-  };
+  // When real GPS coordinates resolve, update map center automatically
+  useEffect(() => {
+    if (coords?.lat && coords?.lng) {
+      setMapCenter([coords.lat, coords.lng]);
+    }
+  }, [coords]);
+
+  // Enrich tasks with distance from worker's live location
+  const tasksWithDistance = useMemo(() => {
+    return tasks.map((task) => {
+      const distance =
+        coords?.lat && coords?.lng && task.latitude && task.longitude
+          ? getDistanceKm(coords.lat, coords.lng, task.latitude, task.longitude)
+          : null;
+      return {
+        ...task,
+        distance,
+      };
+    });
+  }, [tasks, coords]);
+
+  // Apply filter & proximity sorting
+  const filteredTasks = useMemo(() => {
+    return tasksWithDistance
+      .filter((task) => {
+        if (filter === 'ALL') return true;
+        if (filter === 'HIGH_PRIORITY') return task.priority === 'HIGH' || task.priority === 'CRITICAL';
+        if (filter === 'OVERDUE') return task.status === 'OVERDUE';
+        if (filter === 'IN_PROGRESS') return task.status === 'IN_PROGRESS';
+        if (filter === 'NEARBY') {
+          // If distance is calculated, filter tasks within 10 km, or return all if none within 10km
+          return task.distance !== null ? task.distance <= 10 : true;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        // If sorting by NEARBY or distance is available, sort closest first
+        if (filter === 'NEARBY' && a.distance !== null && b.distance !== null) {
+          return a.distance - b.distance;
+        }
+        return 0;
+      });
+  }, [tasksWithDistance, filter]);
+
+  const handleRecenter = useCallback(() => {
+    getCurrentLocation();
+    if (coords?.lat && coords?.lng) {
+      setMapCenter([coords.lat, coords.lng]);
+      setMapZoom(15);
+    } else {
+      setMapCenter([...fallbackCenter]);
+      setMapZoom(14);
+    }
+  }, [getCurrentLocation, coords]);
+
+  const selectedTaskDistance = useMemo(() => {
+    if (!selectedTask) return null;
+    if (coords?.lat && coords?.lng && selectedTask.latitude && selectedTask.longitude) {
+      return getDistanceKm(coords.lat, coords.lng, selectedTask.latitude, selectedTask.longitude);
+    }
+    return null;
+  }, [selectedTask, coords]);
 
   return (
     <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] flex flex-col relative overflow-hidden bg-slate-900 -m-4 sm:-m-6 lg:-m-8">
@@ -108,7 +180,7 @@ export const WorkerMap = () => {
 
         {/* Filter Pills */}
         <div className="bg-slate-900/90 backdrop-blur p-1 rounded-2xl border border-slate-800 shadow-xl flex items-center gap-1 overflow-x-auto max-w-full pointer-events-auto">
-          {['ALL', 'HIGH_PRIORITY', 'NEARBY', 'OVERDUE', 'IN_PROGRESS'].map(f => (
+          {['ALL', 'HIGH_PRIORITY', 'NEARBY', 'OVERDUE', 'IN_PROGRESS'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -124,11 +196,27 @@ export const WorkerMap = () => {
         </div>
       </div>
 
-      {/* 2. Real Interactive Leaflet Map Container */}
+      {/* 2. Geolocation Error / Status Notice Banner */}
+      {gpsError && showLocationBanner && (
+        <div className="absolute top-20 left-4 right-4 z-[400] bg-amber-500/95 backdrop-blur border border-amber-400 text-slate-950 p-3 rounded-2xl shadow-xl flex items-center justify-between gap-3 text-xs font-semibold">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-slate-950" />
+            <span>{gpsError} Tasks are shown using default ward area.</span>
+          </div>
+          <button
+            onClick={() => setShowLocationBanner(false)}
+            className="text-xs font-extrabold px-2 py-0.5 rounded bg-slate-950 text-amber-400 hover:bg-slate-900 cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* 3. Real Interactive Leaflet Map Container */}
       <div className="w-full h-full relative z-10">
         <MapContainer
-          center={defaultCenter}
-          zoom={14}
+          center={mapCenter}
+          zoom={mapZoom}
           scrollWheelZoom={true}
           style={{ height: '100%', width: '100%' }}
         >
@@ -140,15 +228,36 @@ export const WorkerMap = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {/* Worker Current Location Marker */}
-          <Marker position={defaultCenter} icon={workerUserIcon}>
-            <Popup className="custom-leaflet-popup">
-              <div className="p-1 text-center font-sans">
-                <span className="text-xs font-bold text-blue-600 block">You Are Here</span>
-                <span className="text-[10px] text-slate-500">Field Worker Live Location</span>
-              </div>
-            </Popup>
-          </Marker>
+          {/* Worker Current GPS Location Marker */}
+          {coords?.lat && coords?.lng && (
+            <>
+              {accuracy && (
+                <Circle
+                  center={[coords.lat, coords.lng]}
+                  radius={Math.min(accuracy, 300)}
+                  pathOptions={{
+                    fillColor: '#3b82f6',
+                    fillOpacity: 0.15,
+                    color: '#2563eb',
+                    weight: 1.5,
+                    dashArray: '4 4',
+                  }}
+                />
+              )}
+              <Marker position={[coords.lat, coords.lng]} icon={workerUserIcon}>
+                <Popup className="custom-leaflet-popup">
+                  <div className="p-1 text-center font-sans">
+                    <span className="text-xs font-bold text-blue-600 block flex items-center justify-center gap-1">
+                      <Navigation className="w-3 h-3 fill-blue-600" /> You Are Here
+                    </span>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">
+                      {accuracy ? `Field Crew GPS ±${accuracy}m` : 'Field Worker Live Location'}
+                    </span>
+                  </div>
+                </Popup>
+              </Marker>
+            </>
+          )}
 
           {/* Task Map Markers */}
           {filteredTasks.map((task) => {
@@ -164,7 +273,7 @@ export const WorkerMap = () => {
                   click: () => {
                     setSelectedTask(task);
                     setMapCenter([task.latitude, task.longitude]);
-                  }
+                  },
                 }}
               >
                 <Popup className="custom-leaflet-popup">
@@ -176,6 +285,12 @@ export const WorkerMap = () => {
 
                     <h4 className="font-bold text-xs text-slate-900 leading-snug">{task.title}</h4>
                     <p className="text-[11px] text-slate-600 truncate">{task.location}</p>
+
+                    {task.distance !== null && (
+                      <p className="text-[10px] text-blue-700 font-bold bg-blue-50 p-1 rounded border border-blue-100">
+                        📍 {task.distance} km from your current location
+                      </p>
+                    )}
 
                     <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
                       <IssueStatus status={task.status} />
@@ -196,7 +311,7 @@ export const WorkerMap = () => {
         </MapContainer>
       </div>
 
-      {/* 3. Task Details Bottom Drawer Card */}
+      {/* 4. Task Details Bottom Drawer Card */}
       {selectedTask && (
         <div className="absolute bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-[400] animate-in slide-in-from-bottom-4">
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden flex flex-col">
@@ -223,7 +338,11 @@ export const WorkerMap = () => {
                 <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-slate-800">{selectedTask.location}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">2.4 km away from your location</p>
+                  <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                    {selectedTaskDistance !== null
+                      ? `📍 ${selectedTaskDistance} km away from your location`
+                      : selectedTask.ward || 'Field Assigned Location'}
+                  </p>
                 </div>
               </div>
 
@@ -244,13 +363,18 @@ export const WorkerMap = () => {
         </div>
       )}
 
-      {/* Recenter Button */}
+      {/* Floating Recenter / Locate Me Button */}
       <button
         onClick={handleRecenter}
-        title="Recenter Map to Your Location"
-        className="absolute bottom-6 left-6 z-[400] w-12 h-12 bg-white hover:bg-slate-50 text-slate-700 hover:text-blue-600 rounded-2xl border border-slate-200 shadow-xl flex items-center justify-center transition-all cursor-pointer"
+        disabled={gpsLoading}
+        title="Recenter Map to Your Current Location"
+        className="absolute bottom-6 left-6 z-[400] w-12 h-12 bg-white hover:bg-slate-50 disabled:opacity-60 text-slate-700 hover:text-blue-600 rounded-2xl border border-slate-200 shadow-xl flex items-center justify-center transition-all cursor-pointer"
       >
-        <Navigation className="w-5 h-5" />
+        {gpsLoading ? (
+          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+        ) : (
+          <Navigation className="w-5 h-5 text-blue-600 fill-blue-600" />
+        )}
       </button>
     </div>
   );

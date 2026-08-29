@@ -447,5 +447,127 @@ export const MOCK_ISSUES = [
       { status: "IN_PROGRESS", title: "Work Started", date: "2026-08-27 07:00 PM", actor: "Amit Kumar" },
       { status: "RESOLVED", title: "Work Completed", date: "2026-08-28 05:00 AM", actor: "Amit Kumar" }
     ]
+  },
+  {
+    id: "CC-1055",
+    title: "Multiple dangerous potholes near Central Market intersection",
+    category: "Pothole",
+    description: "Cluster of 3 consecutive severe potholes on the left lane causing heavy vehicular swerving and two-wheeler accidents.",
+    priority: "CRITICAL",
+    status: "REPORTED",
+    ward: "Ward 15",
+    department: "Road Maintenance",
+    assignedWorker: null,
+    workerId: null,
+    latitude: 28.6155,
+    longitude: 77.2115,
+    address: "Central Market South Access Road, Ward 15, New Delhi",
+    reportedBy: "Sanjay Singhania (Citizen)",
+    reportedDate: "2026-08-29 07:00 AM",
+    slaHours: 24,
+    elapsedHours: 2,
+    slaDue: "2026-08-30 07:00 AM",
+    slaStatus: "ON_TIME",
+    images: {
+      before: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80",
+      after: null
+    },
+    workNotes: "",
+    timeline: [
+      { status: "REPORTED", title: "Reported by Citizen", date: "2026-08-29 07:00 AM", actor: "Sanjay S." }
+    ]
+  },
+  {
+    id: "CC-1056",
+    title: "Low water pressure and dirty water supply in Block D residential line",
+    category: "Water Leakage",
+    description: "Contaminated brown water output in 35 households due to cross-leakage near underground junction.",
+    priority: "HIGH",
+    status: "IN_PROGRESS",
+    ward: "Ward 8",
+    department: "Water Supply",
+    assignedWorker: "Amit Kumar",
+    workerId: "USR-005",
+    latitude: 28.6235,
+    longitude: 77.2160,
+    address: "Block D Residential Row, Sector 8, New Delhi",
+    reportedBy: "Residents Welfare Association",
+    reportedDate: "2026-08-28 02:00 PM",
+    slaHours: 24,
+    elapsedHours: 16,
+    slaDue: "2026-08-29 02:00 PM",
+    slaStatus: "ON_TIME",
+    images: {
+      before: "https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=800&q=80",
+      after: null
+    },
+    workNotes: "Pipeline pressure test underway; flushing valve opened.",
+    timeline: [
+      { status: "REPORTED", title: "Reported by RWA", date: "2026-08-28 02:00 PM", actor: "RWA Secretary" },
+      { status: "VERIFIED", title: "Verified by Super Admin", date: "2026-08-28 02:30 PM", actor: "Super Admin" },
+      { status: "ASSIGNED", title: "Assigned to Amit Kumar", date: "2026-08-28 03:00 PM", actor: "Water Admin" },
+      { status: "IN_PROGRESS", title: "Work Started", date: "2026-08-28 04:00 PM", actor: "Amit Kumar" }
+    ]
+  },
+  {
+    id: "CC-1057",
+    title: "Illegal commercial waste dumping near community clinic",
+    category: "Garbage Pileup",
+    description: "Unsegregated commercial packaging and wet waste dumped on open curb outside dispensary.",
+    priority: "HIGH",
+    status: "VERIFIED",
+    ward: "Ward 12",
+    department: "Sanitation",
+    assignedWorker: null,
+    workerId: null,
+    latitude: 28.6030,
+    longitude: 77.1975,
+    address: "Dispensary Lane, Ward 12, New Delhi",
+    reportedBy: "Dr. Alok Verma",
+    reportedDate: "2026-08-29 06:30 AM",
+    slaHours: 24,
+    elapsedHours: 4,
+    slaDue: "2026-08-30 06:30 AM",
+    slaStatus: "ON_TIME",
+    images: {
+      before: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=800&q=80",
+      after: null
+    },
+    workNotes: "",
+    timeline: [
+      { status: "REPORTED", title: "Reported by Citizen", date: "2026-08-29 06:30 AM", actor: "Dr. Alok V." },
+      { status: "VERIFIED", title: "Verified by Super Admin", date: "2026-08-29 07:00 AM", actor: "Super Admin" }
+    ]
+  },
+  {
+    id: "CC-1058",
+    title: "Severe stormwater drain overflow near bus terminal",
+    category: "Drainage",
+    description: "Silted arterial culvert overflowing across 3 bus parking bays with foul black sludge.",
+    priority: "CRITICAL",
+    status: "ASSIGNED",
+    ward: "Ward 4",
+    department: "Drainage",
+    assignedWorker: "Deepak Patel",
+    workerId: "USR-007",
+    latitude: 28.6320,
+    longitude: 77.2220,
+    address: "Inter-State Bus Terminal North Gate, Ward 4, New Delhi",
+    reportedBy: "Transport Authority Inspector",
+    reportedDate: "2026-08-29 05:45 AM",
+    slaHours: 12,
+    elapsedHours: 4,
+    slaDue: "2026-08-29 05:45 PM",
+    slaStatus: "ON_TIME",
+    images: {
+      before: "https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=800&q=80",
+      after: null
+    },
+    workNotes: "",
+    timeline: [
+      { status: "REPORTED", title: "Reported by Transit Staff", date: "2026-08-29 05:45 AM", actor: "Transit Cell" },
+      { status: "VERIFIED", title: "Verified by Admin", date: "2026-08-29 06:15 AM", actor: "Super Admin" },
+      { status: "ASSIGNED", title: "Assigned to Deepak Patel", date: "2026-08-29 06:30 AM", actor: "Drainage Admin" }
+    ]
   }
 ];

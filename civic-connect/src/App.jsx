@@ -38,6 +38,7 @@ import { DepartmentAssign } from './pages/department/DepartmentAssign';
 import { DepartmentWorkers } from './pages/department/DepartmentWorkers';
 import { DepartmentAnalytics } from './pages/department/DepartmentAnalytics';
 import { DepartmentEscalations } from './pages/department/DepartmentEscalations';
+import { DepartmentMap } from './pages/department/DepartmentMap';
 
 // Field Worker Pages
 import { WorkerDashboard } from './pages/worker/WorkerDashboard';
@@ -123,6 +124,8 @@ export default function App() {
                 <Route path="workers" element={<DepartmentWorkers />} />
                 <Route path="analytics" element={<DepartmentAnalytics />} />
                 <Route path="escalations" element={<DepartmentEscalations />} />
+                <Route path="map" element={<DepartmentMap />} />
+                <Route path="heatmap" element={<DepartmentMap />} />
               </Route>
 
               {/* FIELD WORKER ROUTES */}

@@ -40,7 +40,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
   const deptNavItems = [
     { label: 'Dashboard', path: '/department/dashboard', icon: LayoutDashboard },
     { label: 'Issues', path: '/department/issues', icon: FileText },
-    { label: 'City Map', path: '/admin/heatmap', icon: MapPin },
+    { label: 'City Map', path: '/department/map', icon: MapPin },
     { label: 'Workers', path: '/department/workers', icon: HardHat },
     { label: 'Assignments', path: '/department/assign', icon: UserCheck },
     { label: 'Analytics', path: '/department/analytics', icon: BarChart3 },
