@@ -1,5 +1,6 @@
 import Issue from '../models/Issue.js';
 import { transitionIssueStatus, getIssueTimeline } from '../services/issueService.js';
+import { uploadBeforeImages, uploadAfterImages } from '../services/imageService.js';
 import { STATUS } from '../utils/constants.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -225,6 +226,109 @@ export const completeTask = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'Task marked as completed. Awaiting citizen verification.',
+      data: { task: updated },
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ─── POST /api/workers/tasks/:id/proof ──────────────────────────────────────────
+
+/**
+ * submitProof
+ *
+ * Accepts before/after repair images and a repair note from a field worker.
+ * Uploads images to Cloudinary, persists URLs to issue.beforeImages / afterImages,
+ * records a history entry, then transitions the issue status to
+ * PENDING_CITIZEN_VERIFICATION.
+ *
+ * The issue is NOT marked resolved here — the citizen must verify first.
+ *
+ * Request:  multipart/form-data
+ *   beforeImages  — up to 5 image files
+ *   afterImages   — up to 5 image files
+ *   repairNote    — plain text field
+ *
+ * Requires:  issue.status === IN_PROGRESS
+ *            issue.assignedWorker === req.user._id
+ */
+export const submitProof = async (req, res, next) => {
+  try {
+    const issueId    = req.params.id;
+    const repairNote = req.body.repairNote?.trim() || '';
+
+    // req.files is populated by multer's fields() middleware in the route.
+    // Each field is an array; default to empty array when not provided.
+    const beforeFiles = req.files?.beforeImages || [];
+    const afterFiles  = req.files?.afterImages  || [];
+
+    // At least one image set must be provided
+    if (beforeFiles.length === 0 && afterFiles.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one before or after image is required as proof',
+      });
+    }
+
+    // 1. Verify the issue exists, is IN_PROGRESS, and belongs to this worker.
+    //    This is a read-only check before any expensive uploads.
+    const issue = await Issue.findOne({
+      _id:            issueId,
+      assignedWorker: req.user._id,
+    });
+
+    if (!issue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found or not assigned to you',
+      });
+    }
+
+    if (issue.status !== STATUS.IN_PROGRESS) {
+      return res.status(422).json({
+        success: false,
+        message: `Cannot submit proof for a task with status '${issue.status}'. Task must be IN_PROGRESS.`,
+      });
+    }
+
+    // 2. Upload images to Cloudinary in parallel.
+    //    imageService functions handle ownership checks internally as well.
+    const uploadPromises = [];
+
+    if (beforeFiles.length > 0) {
+      uploadPromises.push(
+        uploadBeforeImages(issueId, beforeFiles, req.user)
+      );
+    }
+    if (afterFiles.length > 0) {
+      uploadPromises.push(
+        uploadAfterImages(issueId, afterFiles, req.user)
+      );
+    }
+
+    // Wait for all uploads to finish before touching the status
+    await Promise.all(uploadPromises);
+
+    // 3. Transition status: IN_PROGRESS → PENDING_CITIZEN_VERIFICATION.
+    //    transitionIssueStatus enforces the FSM, writes to DB, and
+    //    records TASK_COMPLETED in IssueHistory.
+    const updated = await transitionIssueStatus(
+      issueId,
+      STATUS.PENDING_CITIZEN_VERIFICATION,
+      req.user,
+      {
+        // Repair note is stored in the history record, not on the Issue document
+        note: repairNote || `Proof submitted: ${beforeFiles.length} before, ${afterFiles.length} after image(s)`,
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Proof submitted successfully. Awaiting citizen verification.',
       data: { task: updated },
     });
   } catch (error) {
