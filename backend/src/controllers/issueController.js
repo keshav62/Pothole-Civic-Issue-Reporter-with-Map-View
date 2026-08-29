@@ -1,5 +1,6 @@
 import Issue, { ISSUE_STATUSES } from '../models/Issue.js';
 import { recordIssueCreated } from '../services/issueService.js';
+import { assignWorkerToIssue } from '../services/assignmentService.js';
 
 // ─── Allowed fields per role for PATCH ───────────────────────────────────────
 // This is the authoritative whitelist. The frontend cannot update anything
@@ -287,5 +288,47 @@ export const deleteIssue = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// ─── PATCH /api/issues/:id/assign ───────────────────────────────────────────────
+
+/**
+ * Assign a FIELD_WORKER to an issue.
+ * Only SUPER_ADMIN and DEPARTMENT_ADMIN can call this.
+ *
+ * The request body must contain { workerId }.
+ * All validation (worker role, active status, dept match) is done
+ * inside assignmentService — nothing from the request body is trusted
+ * beyond the raw workerId used to look up the worker in MongoDB.
+ */
+export const assignIssue = async (req, res, next) => {
+  try {
+    const { workerId, note } = req.body;
+
+    if (!workerId) {
+      return res.status(400).json({
+        success: false,
+        message: 'workerId is required',
+      });
+    }
+
+    const updated = await assignWorkerToIssue(
+      req.params.id,
+      workerId,
+      req.user,     // authenticated admin — never trust role/dept from body
+      note || ''
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Worker assigned successfully',
+      data: { issue: updated },
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
