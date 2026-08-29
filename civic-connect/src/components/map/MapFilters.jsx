@@ -32,7 +32,7 @@ const RecenterMap = ({ center }) => {
   return null;
 };
 
-export const IssueMap = ({
+export const MapFilters = ({
   issues = [],
   center = [28.6139, 77.2090],
   zoom = 12,

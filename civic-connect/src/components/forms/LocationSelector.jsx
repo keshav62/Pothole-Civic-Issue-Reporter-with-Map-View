@@ -1,64 +1,52 @@
-import React from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import React, { useState } from 'react';
+import { LocationPicker } from '../map/LocationPicker';
+import { MapPin, Navigation, AlertCircle } from 'lucide-react';
 
-export const StatCard = ({
-  title,
+export const LocationSelector = ({
   value,
-  change,
-  changeType = 'positive',
-  icon: Icon,
-  color = 'blue'
+  onChange,
+  label = 'Issue Location'
 }) => {
-  const colorClasses = {
-    blue: 'bg-blue-50/80 text-blue-600 border-blue-200/80 shadow-blue-500/5',
-    amber: 'bg-amber-50/80 text-amber-600 border-amber-200/80 shadow-amber-500/5',
-    emerald: 'bg-emerald-50/80 text-emerald-600 border-emerald-200/80 shadow-emerald-500/5',
-    purple: 'bg-purple-50/80 text-purple-600 border-purple-200/80 shadow-purple-500/5',
-    red: 'bg-red-50/80 text-red-600 border-red-200/80 shadow-red-500/5',
-    cyan: 'bg-cyan-50/80 text-cyan-600 border-cyan-200/80 shadow-cyan-500/5'
-  };
+  const [address, setAddress] = useState(value?.address || '');
 
-  const topAccents = {
-    blue: 'border-t-blue-500',
-    amber: 'border-t-amber-500',
-    emerald: 'border-t-emerald-500',
-    purple: 'border-t-purple-500',
-    red: 'border-t-red-500',
-    cyan: 'border-t-cyan-500'
+  const handleLocationChange = (coords) => {
+    const updated = {
+      latitude: coords.lat,
+      longitude: coords.lng,
+      address: address || `${coords.lat.toFixed(4)}° N, ${coords.lng.toFixed(4)}° E`
+    };
+    onChange?.(updated);
   };
 
   return (
-    <div className={`bg-white rounded-2xl border border-slate-200/90 border-t-2 ${topAccents[color] || 'border-t-blue-500'} p-5 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`}>
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>
-        {Icon && (
-          <div className={`p-2.5 rounded-xl border shadow-xs ${colorClasses[color] || colorClasses.blue}`}>
-            <Icon className="w-4 h-4" />
-          </div>
-        )}
-      </div>
+    <div className="space-y-3">
+      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+        {label}
+      </label>
 
-      <div className="mt-3 flex items-baseline justify-between">
-        <h3 className="text-2xl font-black text-slate-900 tracking-tight font-sans">{value}</h3>
-        {change && (
-          <div className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
-            changeType === 'positive'
-              ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/60'
-              : changeType === 'negative'
-              ? 'text-red-700 bg-red-50 border border-red-200/60'
-              : 'text-slate-600 bg-slate-100 border border-slate-200/60'
-          }`}>
-            {changeType === 'positive' ? (
-              <TrendingUp className="w-3 h-3" />
-            ) : changeType === 'negative' ? (
-              <TrendingDown className="w-3 h-3" />
-            ) : (
-              <Minus className="w-3 h-3" />
-            )}
-            <span>{change}</span>
-          </div>
-        )}
+      <div className="space-y-2">
+        <div className="relative">
+          <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search address or landmark..."
+            value={address}
+            onChange={(e) => {
+              setAddress(e.target.value);
+              onChange?.({ ...(value || {}), address: e.target.value });
+            }}
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:bg-white text-slate-800"
+          />
+        </div>
+
+        <LocationPicker
+          initialLocation={value?.latitude ? { lat: value.latitude, lng: value.longitude } : undefined}
+          onLocationChange={handleLocationChange}
+          height="220px"
+        />
       </div>
     </div>
   );
 };
+
+export default LocationSelector;

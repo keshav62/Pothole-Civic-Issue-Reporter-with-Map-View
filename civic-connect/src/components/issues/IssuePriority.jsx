@@ -10,7 +10,8 @@ export const IssuePriority = ({ priority }) => {
     LOW: { label: 'LOW', icon: ArrowDownRight, variant: 'LOW' }
   };
 
-  const config = priorityConfig[priority] || { label: priority, icon: ArrowUpRight, variant: 'LOW' };
+  const key = (priority || '').toString().toUpperCase();
+  const config = priorityConfig[key] || { label: priority || 'MEDIUM', icon: ArrowUpRight, variant: 'LOW' };
 
   return <Badge variant={config.variant} icon={config.icon}>{config.label}</Badge>;
 };
