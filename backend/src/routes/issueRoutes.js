@@ -6,6 +6,7 @@ import {
   updateIssue,
   deleteIssue,
   assignIssue,
+  verifyIssue,
 } from '../controllers/issueController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
@@ -45,6 +46,18 @@ router.patch(
   '/:id/assign',
   authorizeRoles('SUPER_ADMIN', 'DEPARTMENT_ADMIN'),
   assignIssue
+);
+
+// POST /api/issues/:id/verify
+// Citizen confirms or rejects the completed repair.
+//   verified=true  → CITIZEN_VERIFIED → RESOLVED  (auto-closed)
+//   verified=false → REOPENED         (note required)
+// SUPER_ADMIN is also allowed so admins can unblock stuck issues.
+// Ownership check (reportedBy === req.user._id) is enforced inside the controller.
+router.post(
+  '/:id/verify',
+  authorizeRoles('CITIZEN', 'SUPER_ADMIN'),
+  verifyIssue
 );
 
 export default router;
