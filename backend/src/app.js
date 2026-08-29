@@ -54,7 +54,7 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 //   Protects all endpoints against general abuse and DDoS amplification.
 const globalLimiter = rateLimit({
   windowMs:          15 * 60 * 1000,   // 15 minutes
-  max:               200,
+  max:               2000,             // 2000 requests / 15 min per IP to support real-time polling
   standardHeaders:   true,             // Return rate limit info in RateLimit-* headers
   legacyHeaders:     false,
   message: {

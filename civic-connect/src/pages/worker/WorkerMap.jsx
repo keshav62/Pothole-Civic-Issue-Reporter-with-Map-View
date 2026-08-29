@@ -12,8 +12,8 @@ import { IssuePriority } from '../../components/issues/IssuePriority';
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { MapPin, Navigation, User, Crosshair, ArrowRight, Clock, Layers, Loader2, AlertCircle } from 'lucide-react';
 
-// Custom Marker Icons for Leaflet Tasks based strictly on Severity
-const createWorkerTaskIcon = (priority, status, isSelected = false) => {
+// Custom Marker Icons for Leaflet Tasks with Issue Tag Badges
+const createWorkerTaskIcon = (priority, status, isSelected = false, displayTag = '') => {
   const prio = (priority || '').toString().toUpperCase();
 
   let color = '#06b6d4'; // Default Cyan (LOW)
@@ -22,37 +22,61 @@ const createWorkerTaskIcon = (priority, status, isSelected = false) => {
   else if (prio === 'MEDIUM') color = '#3b82f6'; // Blue
   else if (prio === 'LOW') color = '#06b6d4'; // Cyan
 
-  const size = isSelected ? 32 : 26;
-  const borderWidth = isSelected ? 4 : 3;
+  const tagText = displayTag || 'TASK';
   const isPulse = prio === 'CRITICAL' || isSelected;
 
   return L.divIcon({
-    className: 'custom-task-marker',
+    className: 'custom-task-marker-tagged',
     html: `
-      <div style="position: relative; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center;">
-        ${isPulse ? `
-          <div style="position: absolute; inset: -4px; border-radius: 50%; background-color: ${color}; opacity: 0.4; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-        ` : ''}
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;">
+        <!-- Issue Tag Badge -->
         <div style="
-          background-color: ${color};
-          width: ${size}px;
-          height: ${size}px;
-          border-radius: 50%;
-          border: ${borderWidth}px solid white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+          background-color: #0f172a;
+          color: #ffffff;
+          font-family: monospace, ui-monospace, sans-serif;
+          font-weight: 800;
+          font-size: 10px;
+          padding: 2px 7px;
+          border-radius: 9999px;
+          border: 2px solid ${color};
+          box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+          white-space: nowrap;
+          margin-bottom: 2px;
           display: flex;
           align-items: center;
-          justify-content: center;
-          transition: transform 0.2s;
-          position: relative;
-          z-index: 2;
+          gap: 4px;
+          z-index: 10;
         ">
-          <div style="width: 8px; height: 8px; background-color: white; border-radius: 50%;"></div>
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:${color};"></span>
+          ${tagText}
+        </div>
+
+        <!-- Pin Marker Circle -->
+        <div style="position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+          ${isPulse ? `
+            <div style="position: absolute; inset: -3px; border-radius: 50%; background-color: ${color}; opacity: 0.4; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          ` : ''}
+          <div style="
+            background-color: ${color};
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+          ">
+            <div style="width: 6px; height: 6px; background-color: white; border-radius: 50%;"></div>
+          </div>
         </div>
       </div>
     `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2]
+    iconSize: [80, 48],
+    iconAnchor: [40, 44],
+    popupAnchor: [0, -42]
   });
 };
 
@@ -277,12 +301,13 @@ export const WorkerMap = () => {
           {filteredTasks.map((task) => {
             if (!task.latitude || !task.longitude) return null;
             const isSelected = selectedTask?.id === task.id;
+            const displayTag = task.displayId || task.issueId || task.id || (task._id ? String(task._id).slice(-4) : 'ISS');
 
             return (
               <Marker
                 key={task.id}
                 position={[task.latitude, task.longitude]}
-                icon={createWorkerTaskIcon(task.priority, task.status, isSelected)}
+                icon={createWorkerTaskIcon(task.priority, task.status, isSelected, displayTag)}
                 eventHandlers={{
                   click: () => {
                     setSelectedTask(task);

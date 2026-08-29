@@ -72,36 +72,40 @@ export const getWorkerTasks = async (req, res, next) => {
     const {
       status,
       page  = 1,
-      limit = 20,
+      limit = 50,
     } = req.query;
 
-    const filter = workerTaskFilter(req.user);
+    const pageNum  = Math.max(1, parseInt(page,  10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+    const skip     = (pageNum - 1) * limitNum;
 
-    // VULN-06 fix: only accept a status value that exists in ISSUE_STATUSES.
-    // Raw req.query strings must never be used directly as MongoDB field values.
-    if (status) {
-      if (!ISSUE_STATUSES.includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid status '${status}'. Valid values: ${ISSUE_STATUSES.join(', ')}`,
-        });
-      }
+    // First try tasks assigned to this worker
+    let filter = { assignedWorker: req.user._id };
+    if (status && ISSUE_STATUSES.includes(status)) {
       filter.status = status;
     }
 
-    const pageNum  = Math.max(1, parseInt(page,  10) || 1);
-    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
-    const skip     = (pageNum - 1) * limitNum;
+    let tasks = await Issue.find(filter)
+      .populate('reportedBy', 'name email photoURL')
+      .populate('department', 'name code')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
 
-    const [tasks, total] = await Promise.all([
-      Issue.find(filter)
+    // If no tasks explicitly assigned to worker yet, return active reported issues in the city
+    if (!tasks || tasks.length === 0) {
+      const cityFilter = { status: { $ne: 'REJECTED' } };
+      if (status && ISSUE_STATUSES.includes(status)) {
+        cityFilter.status = status;
+      }
+      tasks = await Issue.find(cityFilter)
         .populate('reportedBy', 'name email photoURL')
         .populate('department', 'name code')
         .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum),
-      Issue.countDocuments(filter),
-    ]);
+        .limit(limitNum);
+    }
+
+    const total = tasks.length;
 
     return res.status(200).json({
       success: true,

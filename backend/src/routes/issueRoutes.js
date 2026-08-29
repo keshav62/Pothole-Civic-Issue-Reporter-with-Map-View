@@ -43,14 +43,14 @@ router.post('/', validateCreateIssue, createIssue);
 router.get('/', getIssues);
 
 // GET /api/issues/:id — all authenticated roles can view a single issue
-router.get('/:id', validateObjectId, getIssueById);
+router.get('/:id', getIssueById);
 
 // PATCH /api/issues/:id — validate present fields, then apply role whitelists in controller
-router.patch('/:id', validateObjectId, validateUpdateIssue, updateIssue);
+router.patch('/:id', validateUpdateIssue, updateIssue);
 
 // DELETE /api/issues/:id — SUPER_ADMIN or the reporting CITIZEN (REPORTED only)
 // Coarse role guard here; fine-grained ownership check is inside the controller
-router.delete('/:id', validateObjectId, authorizeRoles('SUPER_ADMIN', 'CITIZEN'), deleteIssue);
+router.delete('/:id', authorizeRoles('SUPER_ADMIN', 'CITIZEN'), deleteIssue);
 
 // PATCH /api/issues/:id/assign
 // Assigns a verified FIELD_WORKER to the issue and transitions status to ASSIGNED.

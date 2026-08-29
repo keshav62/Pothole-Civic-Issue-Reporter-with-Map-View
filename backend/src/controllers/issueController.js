@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Issue, { ISSUE_STATUSES, ISSUE_CATEGORIES } from '../models/Issue.js';
 import { recordIssueCreated, transitionIssueStatus } from '../services/issueService.js';
 import { assignWorkerToIssue } from '../services/assignmentService.js';
@@ -160,10 +161,17 @@ export const getIssues = async (req, res, next) => {
 
 export const getIssueById = async (req, res, next) => {
   try {
-    const issue = await Issue.findById(req.params.id)
-      .populate('reportedBy',    'name email photoURL')
-      .populate('assignedWorker','name email phone photoURL')
-      .populate('department',    'name code contactEmail contactPhone');
+    const idParam = req.params.id;
+    const isMongoId = mongoose.isValidObjectId(idParam);
+    const issue = isMongoId
+      ? await Issue.findById(idParam)
+          .populate('reportedBy',    'name email photoURL')
+          .populate('assignedWorker','name email phone photoURL')
+          .populate('department',    'name code contactEmail contactPhone')
+      : await Issue.findOne({ $or: [{ issueId: idParam }, { id: idParam }] })
+          .populate('reportedBy',    'name email photoURL')
+          .populate('assignedWorker','name email phone photoURL')
+          .populate('department',    'name code contactEmail contactPhone');
 
     if (!issue) {
       return res.status(404).json({ success: false, message: 'Issue not found' });

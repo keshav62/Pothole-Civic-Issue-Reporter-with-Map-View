@@ -32,6 +32,37 @@ export const CivicProvider = ({ children }) => {
     }
   }, []);
 
+  const generateLiveNotifications = useCallback((issueList) => {
+    if (!issueList || !Array.isArray(issueList)) return [];
+
+    return issueList.slice(0, 15).map(issue => {
+      const displayId = issue.issueId || issue.id || String(issue._id || 'ISS');
+      const addressStr = issue.address || (typeof issue.location === 'string' ? issue.location : issue.location?.address) || issue.ward || 'Municipal Field Zone';
+
+      let notifType = 'ASSIGNMENT';
+      let title = `New Task Dispatched: ${displayId}`;
+      if (issue.priority === 'CRITICAL') {
+        notifType = 'SLA_WARNING';
+        title = `CRITICAL ALERT: ${issue.title || displayId}`;
+      } else if (issue.status === 'RESOLVED' || issue.status === 'COMPLETED') {
+        notifType = 'APPROVAL';
+        title = `Task Resolved: ${displayId}`;
+      }
+
+      return {
+        id: `NOTIF-${issue._id || issue.id}`,
+        type: notifType,
+        title,
+        message: `${issue.title || 'Civic complaint'} reported at ${addressStr}`,
+        time: issue.createdAt ? new Date(issue.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+        read: false,
+        priority: issue.priority,
+        issueId: displayId,
+        role: undefined
+      };
+    });
+  }, []);
+
   useEffect(() => {
     if (!currentUser) return;
     const loadIssues = async () => {
@@ -39,23 +70,25 @@ export const CivicProvider = ({ children }) => {
         const data = await issueService.fetchIssues({ limit: 100 });
         if (data?.issues?.length) {
           setIssues(data.issues);
-        } else {
-          setIssues(MOCK_ISSUES); // fallback
+          setNotifications(generateLiveNotifications(data.issues));
         }
       } catch (err) {
-        console.warn('Failed to fetch issues from API, using mock data:', err);
-        setIssues(MOCK_ISSUES);
+        console.warn('Failed to fetch issues from API:', err);
       }
     };
     loadIssues();
     loadUsersAndWorkers();
-  }, [currentUser, loadUsersAndWorkers]);
+
+    const interval = setInterval(loadIssues, 10000);
+    return () => clearInterval(interval);
+  }, [currentUser, loadUsersAndWorkers, generateLiveNotifications]);
 
   const refreshIssues = async () => {
     try {
       const data = await issueService.fetchIssues({ limit: 100 });
       if (data?.issues?.length) {
         setIssues(data.issues);
+        setNotifications(generateLiveNotifications(data.issues));
       }
     } catch (err) {
       console.warn('Failed to refresh issues from API:', err);

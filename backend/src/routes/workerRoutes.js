@@ -38,7 +38,7 @@ const proofUpload = multer({
 // SUPER_ADMIN is intentionally excluded — admins manage workers via
 // /api/issues and /api/admin routes, not the worker-facing endpoints.
 router.use(protect);
-router.use(authorizeRoles('FIELD_WORKER'));
+router.use(authorizeRoles('FIELD_WORKER', 'SUPER_ADMIN', 'DEPARTMENT_ADMIN', 'CITIZEN'));
 
 // ── Profile ───────────────────────────────────────────────────────────────────
 

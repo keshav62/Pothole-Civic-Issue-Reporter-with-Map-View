@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as workerService from '../services/workerService';
+import * as issueService from '../services/issueService';
 import { useAuth } from './AuthContext';
 import {
   workerTasks as initialTasks,
@@ -20,23 +21,55 @@ export const useWorker = () => {
 
 export const WorkerProvider = ({ children }) => {
   const { currentUser } = useAuth();
-  const [tasks, setTasks] = useState(initialTasks);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [tasks, setTasks] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [recentActivity, setRecentActivity] = useState(initialActivity);
   const [profile, setProfile] = useState(initialProfile);
 
-  useEffect(() => {
-    if (!currentUser || currentUser.role !== 'FIELD_WORKER') return;
-    const loadTasks = async () => {
-      try {
-        const data = await workerService.fetchWorkerTasks();
-        if (data?.tasks?.length) setTasks(data.tasks);
-      } catch (err) {
-        console.warn('Failed to fetch worker tasks, using mock data:', err);
+  const generateWorkerNotifications = useCallback((taskList) => {
+    if (!taskList || !Array.isArray(taskList)) return [];
+    return taskList.slice(0, 10).map(task => {
+      const taskId = task.issueId || task.id || (task._id ? String(task._id) : 'ISS-000');
+      return {
+        id: `notif-${task._id || task.id}`,
+        type: 'TASK_ASSIGNED',
+        title: `Task Dispatched: ${taskId}`,
+        message: `${task.title || 'Civic issue'} reported at ${task.address || task.location?.address || 'Municipal Field Zone'}`,
+        timestamp: task.createdAt || new Date().toISOString(),
+        isRead: false,
+        taskId: taskId
+      };
+    });
+  }, []);
+
+  const loadTasks = useCallback(async () => {
+    try {
+      const data = await workerService.fetchWorkerTasks();
+      if (data?.tasks && data.tasks.length > 0) {
+        setTasks(data.tasks);
+        setNotifications(generateWorkerNotifications(data.tasks));
+        return;
       }
-    };
+    } catch (err) {
+      console.warn('Worker tasks API returned error, attempting issueService fallback:', err);
+    }
+
+    try {
+      const fallbackData = await issueService.fetchIssues({ limit: 100 });
+      if (fallbackData?.issues && fallbackData.issues.length > 0) {
+        setTasks(fallbackData.issues);
+        setNotifications(generateWorkerNotifications(fallbackData.issues));
+      }
+    } catch (fallbackErr) {
+      console.warn('Failed to fetch fallback issues from API:', fallbackErr);
+    }
+  }, [generateWorkerNotifications]);
+
+  useEffect(() => {
     loadTasks();
-  }, [currentUser]);
+    const interval = setInterval(loadTasks, 10000);
+    return () => clearInterval(interval);
+  }, [currentUser, loadTasks]);
 
   // Helper to add activity
   const addActivity = (type, taskId, taskTitle, action) => {
@@ -148,6 +181,7 @@ export const WorkerProvider = ({ children }) => {
       notifications,
       recentActivity,
       profile,
+      refreshTasks: loadTasks,
       updateTaskStatus,
       submitProof,
       markNotificationRead,

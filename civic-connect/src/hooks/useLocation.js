@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 /**
  * useLocation
@@ -67,6 +67,10 @@ export const useLocation = () => {
       }
     );
   }, []);
+
+  useEffect(() => {
+    getCurrentLocation();
+  }, [getCurrentLocation]);
 
   return { coords, accuracy, loading, error, getCurrentLocation };
 };
