@@ -1,4 +1,5 @@
 import Issue, { ISSUE_STATUSES } from '../models/Issue.js';
+import { recordIssueCreated } from '../services/issueService.js';
 
 // ─── Allowed fields per role for PATCH ───────────────────────────────────────
 // This is the authoritative whitelist. The frontend cannot update anything
@@ -43,6 +44,10 @@ export const createIssue = async (req, res, next) => {
       status:      'REPORTED',
       reportedBy:  req.user._id,   // always from the authenticated session — never from body
     });
+
+    // Record the initial history entry — ISSUE_REPORTED
+    // Done after create() so we have the issue._id
+    await recordIssueCreated(issue, req.user);
 
     return res.status(201).json({
       success: true,
