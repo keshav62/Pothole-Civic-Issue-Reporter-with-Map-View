@@ -23,8 +23,11 @@ export const apiFetch = async (path, options = {}) => {
   // Wait for Firebase to restore session from IndexedDB if this is a hard refresh
   await auth.authStateReady();
 
+  // Prefer the explicitly provided customToken (used for dev mock fallbacks during login/signup)
+  let token = options.customToken || null;
+
   // 1. Get a live, cryptographically secure Firebase ID token
-  if (auth.currentUser) {
+  if (!token && auth.currentUser) {
     try {
       token = await auth.currentUser.getIdToken();
     } catch (err) {
