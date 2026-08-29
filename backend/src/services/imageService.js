@@ -1,5 +1,5 @@
 import { Readable } from 'stream';
-import cloudinary from '../config/cloudinary.js';
+import cloudinary, { isCloudinaryConfigured } from '../config/cloudinary.js';
 import Issue from '../models/Issue.js';
 import IssueHistory, { HISTORY_ACTIONS } from '../models/IssueHistory.js';
 
@@ -25,8 +25,22 @@ const FOLDERS = {
  * @param {string} folder   - Destination Cloudinary folder
  * @param {string} filename - Used as the public_id prefix for predictable naming
  */
-const uploadBufferToCloudinary = (buffer, folder, filename) => {
+export const uploadBufferToCloudinary = (buffer, folder = FOLDERS.issue, filename = 'issue') => {
   return new Promise((resolve, reject) => {
+    if (!isCloudinaryConfigured()) {
+      const err = new Error('Cloudinary environment variables (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) are missing on the backend.');
+      err.statusCode = 500;
+      return reject(err);
+    }
+
+    // Ensure Cloudinary is configured with current process.env
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key:    process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      secure:     true,
+    });
+
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
@@ -39,7 +53,11 @@ const uploadBufferToCloudinary = (buffer, folder, filename) => {
         ],
       },
       (error, result) => {
-        if (error) return reject(new Error(`Cloudinary upload failed: ${error.message}`));
+        if (error) {
+          const err = new Error(`Cloudinary upload failed: ${error.message}`);
+          err.statusCode = 500;
+          return reject(err);
+        }
         resolve(result.secure_url);   // always HTTPS — api_secret never exposed
       }
     );

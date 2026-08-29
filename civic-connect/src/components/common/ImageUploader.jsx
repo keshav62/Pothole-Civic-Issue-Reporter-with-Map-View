@@ -16,7 +16,7 @@ export const ImageUploader = ({
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        onImageChange(reader.result);
+        onImageChange(reader.result, file);
       };
       reader.readAsDataURL(file);
     }
@@ -25,7 +25,7 @@ export const ImageUploader = ({
   const handleRemove = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    onImageChange('');
+    onImageChange('', null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -110,7 +110,7 @@ export const ImageUploader = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      onImageChange(preset.url);
+                      onImageChange(preset.url, null);
                     }}
                     className="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-300 rounded text-[10px] font-semibold text-slate-700 transition-colors cursor-pointer"
                   >

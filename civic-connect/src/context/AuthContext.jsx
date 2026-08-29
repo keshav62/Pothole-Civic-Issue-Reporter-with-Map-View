@@ -23,6 +23,13 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         console.log("Firebase Auth User Detected:", firebaseUser.email);
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          localStorage.setItem('civic_connect_token', idToken);
+          localStorage.setItem('civicconnect_token', idToken);
+        } catch (err) {
+          console.error("Failed to fetch Firebase ID token:", err);
+        }
         if (!sessionCreated.current && !authService.getCurrentUser()) {
           try {
             sessionCreated.current = true;
@@ -35,6 +42,7 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         sessionCreated.current = false;
+      }
       }
     });
     return () => unsubscribe();

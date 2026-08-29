@@ -1,9 +1,9 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -15,32 +15,29 @@ import './models/Department.js';
 import './models/IssueHistory.js';
 import './models/Notification.js';
 
-dotenv.config();
-
 const app = express();
 
 // ─── Security headers (Helmet) ────────────────────────────────────────────────
-// Sets X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security,
-// Content-Security-Policy and more. Applied before all other middleware.
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
-// VULN-05 fix: whitelist only the HTTP methods and headers actually used by
-// this API. Prevents unrecognised verbs (TRACE, CONNECT) and arbitrary custom
-// headers from being allowed from the permitted origin.
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
+  'http://localhost:5176',
+  'http://localhost:3000',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
   'http://127.0.0.1:5175',
+  'http://127.0.0.1:5176',
 ].filter(Boolean);
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
-    // Allow non-browser requests (Postman, curl, server-to-server) or listed origins
+    // Allow non-browser requests or listed origins
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -48,18 +45,20 @@ app.use(cors({
     if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
       return callback(null, true);
     }
-    return callback(new Error(`CORS origin not allowed: ${origin}`));
+    return callback(null, false);
   },
   credentials:    true,
-  methods:        ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+  methods:        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 
 // ─── Request body parsing ─────────────────────────────────────────────────────
-// VULN-02 fix: cap JSON body at 16 kb — sufficient for all real payloads
-// in this app (issue descriptions, coordinates, status strings, note text).
-// Default Express limit is 100 kb which is unnecessarily large.
-app.use(express.json({ limit: '16kb' }));
+// Allow up to 25mb for JSON payloads to seamlessly support base64 image uploads in issue reporting
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // ─── Logging ──────────────────────────────────────────────────────────────────
 // VULN-09 fix: use 'combined' (Apache-style) format in production — structured,

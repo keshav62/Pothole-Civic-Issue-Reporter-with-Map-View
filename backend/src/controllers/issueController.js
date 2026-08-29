@@ -1,6 +1,9 @@
 import Issue, { ISSUE_STATUSES, ISSUE_CATEGORIES } from '../models/Issue.js';
+import User from '../models/User.js';
+import Department from '../models/Department.js';
 import { recordIssueCreated, transitionIssueStatus } from '../services/issueService.js';
 import { assignWorkerToIssue } from '../services/assignmentService.js';
+import { uploadBufferToCloudinary } from '../services/imageService.js';
 
 // ─── Allowed fields per role for PATCH ───────────────────────────────────────
 // This is the authoritative whitelist. The frontend cannot update anything
@@ -32,19 +35,44 @@ const pick = (obj, keys) =>
 
 export const createIssue = async (req, res, next) => {
   try {
-    const { title, description, category, location, address, ward, priority } = req.body;
+    const { title, description, category, address, ward, priority, images: bodyImages } = req.body;
+
+    const imageUrls = [];
+
+    // 1. Process sample preset or existing URL strings sent in req.body
+    if (Array.isArray(bodyImages)) {
+      imageUrls.push(...bodyImages.filter(Boolean));
+    } else if (typeof bodyImages === 'string' && bodyImages.trim()) {
+      imageUrls.push(bodyImages.trim());
+    }
+
+    // 2. Process binary files uploaded via Multer (req.files or req.file)
+    const files = req.files || (req.file ? [req.file] : []);
+    if (files.length > 0) {
+      const uploadedCloudinaryUrls = await Promise.all(
+        files.map((file) =>
+          uploadBufferToCloudinary(file.buffer, 'civicconnect/issues', 'issue')
+        )
+      );
+      imageUrls.push(...uploadedCloudinaryUrls);
+    }
 
     const issue = await Issue.create({
       title:       title.trim(),
       description: description.trim(),
       category,
-      location,
+      location:    req.body.location,
       address:     address?.trim() || '',
       ward:        ward?.trim()    || '',
       priority:    priority        || 'MEDIUM',
       status:      'REPORTED',
+      images:      imageUrls,
       reportedBy:  req.user._id,   // always from the authenticated session — never from body
     });
+
+    console.log(
+      `[POST /api/issues] Issue persisted to MongoDB! MongoDB _id: ${issue._id} | issueId: ${issue.issueId} | Collection: ${issue.constructor.collection.name} | Database: ${issue.db.name}`
+    );
 
     // Record the initial history entry — ISSUE_REPORTED
     // Done after create() so we have the issue._id

@@ -1,4 +1,5 @@
-import admin from '../config/firebaseAdmin.js';
+import { getAuth } from 'firebase-admin/auth';
+import '../config/firebaseAdmin.js';
 import User from '../models/User.js';
 
 /**
@@ -29,37 +30,58 @@ export const protect = async (req, res, next) => {
 
     // 3. Verify the token with Firebase Admin
     let decodedToken;
+    let firebaseUid;
+
     try {
-      decodedToken = await admin.verifyIdToken(idToken);
+      decodedToken = await getAuth().verifyIdToken(idToken);
+      firebaseUid = decodedToken?.uid;
     } catch (firebaseError) {
-      // In development mode, fallback to active MongoDB user if dev token provided
+      // In development mode, if Firebase token verification fails (e.g. mock/demo UI session),
+      // fallback to finding or seeding a valid active user in MongoDB:
       if (process.env.NODE_ENV !== 'production') {
-        const devUser = await User.findOne({ isActive: true });
-        if (devUser) {
-          req.user = devUser;
-          return next();
+        let devUser = await User.findOne({ isActive: true });
+        if (!devUser) {
+          devUser = await User.create({
+            firebaseUid: 'dev-citizen-uid',
+            name: 'Demo Citizen',
+            email: 'citizen@civicconnect.org',
+            role: 'CITIZEN',
+          });
         }
+        req.user = devUser;
+        return next();
       }
+
       return res.status(401).json({
         success: false,
         message: 'Unauthorized: Invalid or expired token',
       });
     }
 
-    // 4. Extract the Firebase UID from the verified token
-    const firebaseUid = decodedToken.uid;
+    // Look up the user in MongoDB using the Firebase UID or email
+    const userEmail = decodedToken.email ? decodedToken.email.toLowerCase() : null;
+    let user = await User.findOne({
+      $or: [
+        ...(firebaseUid ? [{ firebaseUid }] : []),
+        ...(userEmail ? [{ email: userEmail }] : []),
+      ],
+    });
 
-    // 5. Look up the user in MongoDB using the Firebase UID or email
-    let user = await User.findOne({ firebaseUid });
-    if (!user && decodedToken.email) {
-      user = await User.findOne({ email: decodedToken.email.toLowerCase() });
+    if (user && !user.firebaseUid && firebaseUid) {
+      user.firebaseUid = firebaseUid;
+      await user.save();
     }
 
     if (!user) {
       if (process.env.NODE_ENV !== 'production') {
-        user = await User.findOne({ isActive: true });
-      }
-      if (!user) {
+        user = await User.create({
+          firebaseUid,
+          name: decodedToken.name || decodedToken.email?.split('@')[0] || 'Civic User',
+          email: userEmail || `user-${firebaseUid}@civicconnect.org`,
+          photoURL: decodedToken.picture || '',
+          role: 'CITIZEN',
+        });
+      } else {
         return res.status(401).json({
           success: false,
           message: 'Unauthorized: User not registered in the system',
@@ -67,7 +89,7 @@ export const protect = async (req, res, next) => {
       }
     }
 
-    // 6. Reject soft-deleted / suspended accounts
+    // Reject deactivated accounts
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
@@ -75,7 +97,7 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // 7. Attach the verified MongoDB user document to the request
+    // Attach the verified MongoDB user document to the request
     req.user = user;
     next();
   } catch (error) {

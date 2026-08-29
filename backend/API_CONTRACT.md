@@ -1,6 +1,6 @@
 # CivicConnect Backend — API Contract
 
-> **Base URL:** `http://localhost:5000/api` (development)
+> **Base URL:** `http://localhost:5001/api` (development)
 > **Content-Type:** `application/json` unless stated otherwise
 > **Rate limits:** 200 req / 15 min per IP globally · 15 req / 15 min on `/auth/session`
 
