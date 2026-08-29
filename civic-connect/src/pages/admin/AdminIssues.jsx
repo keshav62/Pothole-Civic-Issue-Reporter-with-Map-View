@@ -6,7 +6,7 @@ import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
 import { Button } from '../../components/common/Button';
 import { Pagination } from '../../components/common/Pagination';
-import { Search, Filter, RotateCcw, Plus } from 'lucide-react';
+import { Search, Filter, RotateCcw, ShieldCheck } from 'lucide-react';
 
 export const AdminIssues = () => {
   const { issues, departments } = useCivic();
@@ -21,7 +21,6 @@ export const AdminIssues = () => {
 
   const pageSize = 8;
 
-  // Filtered issues calculation
   const filteredIssues = issues.filter((issue) => {
     const matchesSearch =
       issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,13 +50,13 @@ export const AdminIssues = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">All Civic Issues</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Browse, filter, and take enterprise action across all reported municipal issues.
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">All Municipal Civic Issues</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Browse, filter, and take bulk administrative action across all reported issues.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -68,10 +67,13 @@ export const AdminIssues = () => {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
-          <Filter className="w-3.5 h-3.5 text-blue-600" />
-          <span>Advanced Search & Filters</span>
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <Filter className="w-3.5 h-3.5 text-blue-600" />
+            <span>Advanced Filters</span>
+          </div>
+          <span className="text-xs font-semibold text-slate-500">{filteredIssues.length} issues matched</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
@@ -144,3 +146,5 @@ export const AdminIssues = () => {
     </div>
   );
 };
+
+export default AdminIssues;

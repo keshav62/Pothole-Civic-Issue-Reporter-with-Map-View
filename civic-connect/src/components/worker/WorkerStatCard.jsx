@@ -15,8 +15,8 @@ const WorkerStatCard = ({ label, value, icon, colorSet, footnote, pulse = false 
   return (
     <div
       className={cn(
-        'relative bg-white rounded-2xl p-5 border border-slate-100 shadow-sm',
-        'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group',
+        'relative bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm shadow-slate-900/[0.03]',
+        'hover:shadow-lg hover:shadow-slate-900/[0.06] hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group',
         colorSet.ring && `ring-1 ${colorSet.ring}`
       )}
     >
@@ -31,7 +31,7 @@ const WorkerStatCard = ({ label, value, icon, colorSet, footnote, pulse = false 
       <div className="relative flex items-start justify-between gap-3">
         {/* Text column */}
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5 truncate">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 mb-1.5 truncate">
             {label}
           </p>
           <div className="flex items-end gap-2">

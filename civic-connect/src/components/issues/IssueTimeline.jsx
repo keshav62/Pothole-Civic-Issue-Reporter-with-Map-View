@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Circle, Clock, User, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Clock, User, ShieldCheck } from 'lucide-react';
 
 export const IssueTimeline = ({ timeline = [] }) => {
   const steps = [
@@ -10,16 +10,15 @@ export const IssueTimeline = ({ timeline = [] }) => {
     { key: 'RESOLVED', title: 'Resolved' }
   ];
 
-  // Find index of current status
   const currentStatus = timeline[timeline.length - 1]?.status || 'REPORTED';
   const currentStepIdx = steps.findIndex(s => s.key === currentStatus);
 
   return (
-    <div className="py-4">
+    <div className="py-2">
       <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Resolution Progress Timeline</h4>
       <div className="relative">
         {/* Horizontal Line for Desktop */}
-        <div className="hidden sm:block absolute top-4 left-4 right-4 h-0.5 bg-slate-200" />
+        <div className="hidden sm:block absolute top-4 left-6 right-6 h-0.5 bg-slate-200" />
 
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
           {steps.map((step, idx) => {
@@ -30,7 +29,7 @@ export const IssueTimeline = ({ timeline = [] }) => {
             return (
               <div key={step.key} className="relative flex sm:flex-col items-center gap-3 sm:gap-2 text-left sm:text-center z-10">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-colors ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-2xs transition-colors shrink-0 ${
                     isCompleted
                       ? 'bg-emerald-600 text-white ring-4 ring-emerald-50'
                       : isCurrent
@@ -38,7 +37,7 @@ export const IssueTimeline = ({ timeline = [] }) => {
                       : 'bg-slate-100 text-slate-400 border border-slate-300'
                   }`}
                 >
-                  {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : idx + 1}
+                  {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
                 </div>
 
                 <div>
@@ -47,7 +46,7 @@ export const IssueTimeline = ({ timeline = [] }) => {
                   </p>
                   {historyItem ? (
                     <div className="text-[10px] text-slate-500 mt-0.5">
-                      <p>{historyItem.date}</p>
+                      <p className="font-mono text-slate-400">{historyItem.date}</p>
                       <p className="font-medium text-slate-700">{historyItem.actor}</p>
                     </div>
                   ) : (
@@ -62,3 +61,5 @@ export const IssueTimeline = ({ timeline = [] }) => {
     </div>
   );
 };
+
+export default IssueTimeline;

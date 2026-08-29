@@ -12,10 +12,10 @@ export const DepartmentLayout = () => {
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
       <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-      <div className="md:pl-64 flex-1 flex flex-col min-w-0">
+      <div className="lg:pl-64 flex-1 flex flex-col min-w-0">
         <Topbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-        <main className="app-page-enter flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
+        <main className="page-fade-in flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-4">
           <Breadcrumbs />
           <Outlet />
         </main>
@@ -25,3 +25,5 @@ export const DepartmentLayout = () => {
     </div>
   );
 };
+
+export default DepartmentLayout;
