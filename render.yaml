@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: civicconnect
+    runtime: node
+    plan: free
+    buildCommand: cd civic-connect && npm install && npm run build && cd ../backend && npm install
+    startCommand: cd backend && node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false

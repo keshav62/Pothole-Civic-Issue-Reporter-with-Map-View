@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Environment files (secrets)
+.env
+.env.local
+.env.production
+
+# Build output
+civic-connect/dist/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
