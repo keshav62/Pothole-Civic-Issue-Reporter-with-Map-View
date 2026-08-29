@@ -104,7 +104,7 @@ export const AdminIssueDetails = () => {
           {/* Issue Overview Card */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-4">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Issue Specifications</h3>
-            
+
             <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200">
               {issue.description}
             </p>

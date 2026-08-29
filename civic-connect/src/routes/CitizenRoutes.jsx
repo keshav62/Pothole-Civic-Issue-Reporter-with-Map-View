@@ -1,21 +1,66 @@
 import React from 'react';
-import { Route } from 'react-router-dom';
-import { CitizenDashboard } from '../pages/citizen/CitizenDashboard';
-import { MyReports } from '../pages/citizen/MyReports';
-import { ReportIssue } from '../pages/citizen/ReportIssue';
-import { NearbyIssues } from '../pages/citizen/NearbyIssues';
-import { CitizenNotifications } from '../pages/citizen/Notifications';
-import { CitizenProfile } from '../pages/citizen/Profile';
-import { CitizenIssueDetails } from '../pages/citizen/IssueDetails';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './ProtectedRoute';
+import RoleRoute from './RoleRoute';
+import DashboardLayout from '../layouts/DashboardLayout';
 
-export const citizenRoutes = [
-  { path: 'dashboard', element: <CitizenDashboard /> },
-  { path: 'reports', element: <MyReports /> },
-  { path: 'report', element: <ReportIssue /> },
-  { path: 'nearby', element: <NearbyIssues /> },
-  { path: 'notifications', element: <CitizenNotifications /> },
-  { path: 'profile', element: <CitizenProfile /> },
-  { path: 'issues/:id', element: <CitizenIssueDetails /> },
-];
+// Auth Pages
+import Login from '../pages/auth/Login';
+import Register from '../pages/auth/Register';
+import ForgotPassword from '../pages/auth/ForgotPassword';
 
-export default citizenRoutes;
+// App Pages
+import DashboardPage from '../pages/dashboard/DashboardPage';
+import ReportsPage from '../pages/reports/ReportsPage';
+import MapPage from '../pages/map/MapPage';
+import ProfilePage from '../pages/profile/ProfilePage';
+import SettingsPage from '../pages/settings/SettingsPage';
+import UnauthorizedPage from '../pages/UnauthorizedPage';
+import NotFoundPage from '../pages/NotFoundPage';
+
+import { APP_ROUTES, USER_ROLES } from '../utils/constants';
+
+export const AppRoutes = () => {
+  return (
+    <Routes>
+      {/* Root redirect to Dashboard (which redirects to /login if unauthenticated) */}
+      <Route path={APP_ROUTES.HOME} element={<Navigate to={APP_ROUTES.DASHBOARD} replace />} />
+
+      {/* Public Auth Routes */}
+      <Route path={APP_ROUTES.LOGIN} element={<Login />} />
+      <Route path={APP_ROUTES.REGISTER} element={<Register />} />
+      <Route path={APP_ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
+
+      {/* Protected Routes inside unified DashboardLayout */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path={APP_ROUTES.DASHBOARD} element={<DashboardPage />} />
+        <Route path={APP_ROUTES.REPORTS} element={<ReportsPage />} />
+        <Route path={APP_ROUTES.MAP} element={<MapPage />} />
+        <Route path={APP_ROUTES.PROFILE} element={<ProfilePage />} />
+        <Route path={APP_ROUTES.SETTINGS} element={<SettingsPage />} />
+
+        {/* Example: Specific Role-Gated Routes (Ready for Member 2-5 features) */}
+        <Route
+          path="/admin/audit"
+          element={
+            <RoleRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.DEPARTMENT_ADMIN]}>
+              <DashboardPage />
+            </RoleRoute>
+          }
+        />
+      </Route>
+
+      {/* Error & Fallback Routes */}
+      <Route path={APP_ROUTES.UNAUTHORIZED} element={<UnauthorizedPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+};
+
+export default AppRoutes;

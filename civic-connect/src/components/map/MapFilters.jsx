@@ -1,76 +1,100 @@
-import React from 'react';
-import { SlidersHorizontal, RefreshCw } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { IssueStatus } from '../issues/IssueStatus';
+import { IssuePriority } from '../issues/IssuePriority';
+import { Button } from '../common/Button';
+import { useNavigate } from 'react-router-dom';
 
-export const MapFilters = ({
-  category,
-  onCategoryChange,
-  status,
-  onStatusChange,
-  priority,
-  onPriorityChange,
-  onReset,
-  categories = ['All', 'Pothole', 'Water Leakage', 'Garbage Pileup', 'Streetlight', 'Drainage', 'Traffic Signal', 'Other'],
-  statuses = ['All', 'REPORTED', 'VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'],
-  priorities = ['All', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
+// Custom DivIcon for Leaflet markers with status/priority colors
+const createCustomIcon = (priority, status) => {
+  let color = '#3B82F6'; // Default Blue
+  if (priority === 'CRITICAL' || status === 'BREACHED') color = '#EF4444'; // Red
+  else if (priority === 'HIGH') color = '#F59E0B'; // Amber
+  else if (status === 'RESOLVED') color = '#10B981'; // Green
+
+  return L.divIcon({
+    className: 'custom-map-marker',
+    html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; items-center; justify-center;"></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  });
+};
+
+const RecenterMap = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView(center, map.getZoom());
+    }
+  }, [center, map]);
+  return null;
+};
+
+export const IssueMap = ({
+  issues = [],
+  center = [28.6139, 77.2090],
+  zoom = 12,
+  height = '450px',
+  rolePrefix = '/admin'
 }) => {
+  const navigate = useNavigate();
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-          <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600" /> Map Filters
-        </span>
-        {onReset && (
-          <button
-            onClick={onReset}
-            className="text-[11px] font-bold text-slate-400 hover:text-slate-700 flex items-center gap-1 transition-colors"
-          >
-            <RefreshCw className="w-3 h-3" /> Reset
-          </button>
-        )}
-      </div>
+    <div className="w-full rounded-xl overflow-hidden border border-slate-200 shadow-xs relative" style={{ height }}>
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        scrollWheelZoom={true}
+        style={{ height: '100%', width: '100%' }}
+      >
+        <RecenterMap center={center} />
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-500 mb-1">Category</label>
-          <select
-            value={category}
-            onChange={(e) => onCategoryChange?.(e.target.value)}
-            className="w-full text-xs py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-emerald-500"
-          >
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
+        {issues.map((issue) => {
+          if (!issue.latitude || !issue.longitude) return null;
+          return (
+            <Marker
+              key={issue.id}
+              position={[issue.latitude, issue.longitude]}
+              icon={createCustomIcon(issue.priority, issue.status)}
+            >
+              <Popup className="custom-leaflet-popup">
+                <div className="p-1 max-w-xs space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono font-bold text-xs text-blue-600">{issue.id}</span>
+                    <IssuePriority priority={issue.priority} />
+                  </div>
 
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-500 mb-1">Status</label>
-          <select
-            value={status}
-            onChange={(e) => onStatusChange?.(e.target.value)}
-            className="w-full text-xs py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-emerald-500"
-          >
-            {statuses.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
+                  <h4 className="font-bold text-xs text-slate-900 leading-snug">{issue.title}</h4>
+                  <p className="text-[11px] text-slate-600 line-clamp-2">{issue.address}</p>
 
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-500 mb-1">Priority</label>
-          <select
-            value={priority}
-            onChange={(e) => onPriorityChange?.(e.target.value)}
-            className="w-full text-xs py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-emerald-500"
-          >
-            {priorities.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-100">
+                    <span>Dept: <strong>{issue.department}</strong></span>
+                    <span>Ward: <strong>{issue.ward}</strong></span>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between gap-2">
+                    <IssueStatus status={issue.status} />
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      className="text-[11px] py-1 px-2"
+                      onClick={() => navigate(`${rolePrefix}/issues/${issue.id}`)}
+                    >
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
     </div>
   );
 };
-
-export default MapFilters;

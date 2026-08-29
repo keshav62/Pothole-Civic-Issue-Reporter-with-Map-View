@@ -5,7 +5,7 @@ import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
-import { UserPlus, Search, Edit2, ShieldAlert, CheckCircle } from 'lucide-react';
+import { UserPlus, Search, Edit2, ShieldAlert, CheckCircle, Sparkles } from 'lucide-react';
 
 export const UserManagement = () => {
   const { users, addUser, updateUserStatus } = useCivic();
@@ -59,31 +59,49 @@ export const UserManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">User Management</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Manage administrative personnel, department heads, ward officers, and field workers.
-          </p>
+    <div className="space-y-6 pb-12 animate-in fade-in duration-200">
+      {/* Refined Dark Hero Banner (Same as Citizen & Admin Portals) */}
+      <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-slate-800">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-bold uppercase tracking-wider mb-3">
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+              <span>SUPER ADMIN DIRECTORY</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug">
+              User & Credential Management
+            </h1>
+            <p className="text-slate-400 font-medium text-xs sm:text-sm max-w-xl mt-1.5 leading-relaxed">
+              Manage administrative personnel, division directors, ward officers, and field workers across city departments.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap gap-3 shrink-0">
+            <Button
+              size="lg"
+              variant="primary"
+              icon={UserPlus}
+              className="py-3 px-5 font-bold text-xs shrink-0"
+              onClick={() => setIsModalOpen(true)}
+            >
+              Add New User
+            </Button>
+          </div>
         </div>
-        <Button variant="primary" icon={UserPlus} onClick={() => setIsModalOpen(true)}>
-          + Add User
-        </Button>
       </div>
 
       {/* Tabs & Search Filter */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-3">
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-blue-600 text-white shadow-xs'
+                    ? 'bg-blue-600 text-white shadow-2xs'
                     : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
@@ -92,7 +110,7 @@ export const UserManagement = () => {
             ))}
           </div>
 
-          <div className="w-full sm:w-64">
+          <div className="w-full sm:w-72">
             <Input
               placeholder="Search user name or email..."
               icon={Search}
@@ -106,7 +124,7 @@ export const UserManagement = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+              <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <th className="py-3 px-4">User</th>
                 <th className="py-3 px-4">Role</th>
                 <th className="py-3 px-4">Department / Ward</th>
@@ -117,34 +135,34 @@ export const UserManagement = () => {
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {filteredUsers.map((usr) => (
-                <tr key={usr.id} className="hover:bg-slate-50">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
+                <tr key={usr.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-4">
+                    <div className="flex items-center gap-3 min-w-0">
                       <img
                         src={usr.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'}
                         alt={usr.name}
-                        className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-200"
+                        className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-200 shrink-0"
                       />
-                      <div>
-                        <p className="font-bold text-slate-900">{usr.name}</p>
-                        <p className="text-[11px] text-slate-400">{usr.email}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 truncate">{usr.name}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{usr.email}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                  <td className="py-3.5 px-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
                       {usr.roleLabel || usr.role}
                     </span>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3.5 px-4">
                     <p className="font-semibold text-slate-800">{usr.department}</p>
-                    <p className="text-[10px] text-slate-400">{usr.ward}</p>
+                    <p className="text-[10px] text-slate-400 font-medium">{usr.ward}</p>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3.5 px-4">
                     <Badge variant={usr.status}>{usr.status}</Badge>
                   </td>
-                  <td className="py-3 px-4 text-slate-500">{usr.lastActive}</td>
-                  <td className="py-3 px-4 text-right">
+                  <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">{usr.lastActive}</td>
+                  <td className="py-3.5 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       {usr.status === 'ACTIVE' ? (
                         <Button
@@ -243,3 +261,5 @@ export const UserManagement = () => {
     </div>
   );
 };
+
+export default UserManagement;

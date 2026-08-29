@@ -14,10 +14,10 @@ export const AdminLayout = () => {
       <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
       {/* Main Content Area */}
-      <div className="md:pl-64 flex-1 flex flex-col min-w-0">
+      <div className="lg:pl-64 flex-1 flex flex-col min-w-0">
         <Topbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
+        <main className="page-fade-in flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-4">
           <Breadcrumbs />
           <Outlet />
         </main>
@@ -27,3 +27,5 @@ export const AdminLayout = () => {
     </div>
   );
 };
+
+export default AdminLayout;

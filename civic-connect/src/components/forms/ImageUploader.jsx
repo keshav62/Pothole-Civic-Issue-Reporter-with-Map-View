@@ -1,61 +1,64 @@
-import React, { useState } from 'react';
-import { Upload, X, Camera } from 'lucide-react';
+import React from 'react';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-export const ImageUploader = ({
+export const StatCard = ({
+  title,
   value,
-  onChange,
-  label = 'Upload Photo Evidence',
-  helperText = 'JPG, PNG, or HEIC up to 10MB'
+  change,
+  changeType = 'positive',
+  icon: Icon,
+  color = 'blue'
 }) => {
-  const [preview, setPreview] = useState(value || '');
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result;
-      setPreview(dataUrl);
-      onChange?.(dataUrl);
-    };
-    reader.readAsDataURL(file);
+  const colorClasses = {
+    blue: 'bg-blue-50/80 text-blue-600 border-blue-200/80 shadow-blue-500/5',
+    amber: 'bg-amber-50/80 text-amber-600 border-amber-200/80 shadow-amber-500/5',
+    emerald: 'bg-emerald-50/80 text-emerald-600 border-emerald-200/80 shadow-emerald-500/5',
+    purple: 'bg-purple-50/80 text-purple-600 border-purple-200/80 shadow-purple-500/5',
+    red: 'bg-red-50/80 text-red-600 border-red-200/80 shadow-red-500/5',
+    cyan: 'bg-cyan-50/80 text-cyan-600 border-cyan-200/80 shadow-cyan-500/5'
   };
 
-  const handleRemove = () => {
-    setPreview('');
-    onChange?.(null);
+  const topAccents = {
+    blue: 'border-t-blue-500',
+    amber: 'border-t-amber-500',
+    emerald: 'border-t-emerald-500',
+    purple: 'border-t-purple-500',
+    red: 'border-t-red-500',
+    cyan: 'border-t-cyan-500'
   };
 
   return (
-    <div className="space-y-2">
-      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-        {label}
-      </label>
-
-      {preview ? (
-        <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 h-52">
-          <img src={preview} alt="Uploaded preview" className="w-full h-full object-cover" />
-          <button
-            type="button"
-            onClick={handleRemove}
-            className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ) : (
-        <label className="block w-full border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/20 transition-all">
-          <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <Camera className="w-6 h-6 text-slate-400" />
+    <div className={`bg-white rounded-2xl border border-slate-200/90 border-t-2 ${topAccents[color] || 'border-t-blue-500'} p-5 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`}>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>
+        {Icon && (
+          <div className={`p-2.5 rounded-xl border shadow-xs ${colorClasses[color] || colorClasses.blue}`}>
+            <Icon className="w-4 h-4" />
           </div>
-          <p className="text-sm font-semibold text-slate-700 mb-0.5">Click or drag image to upload</p>
-          <p className="text-xs text-slate-400">{helperText}</p>
-          <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-        </label>
-      )}
+        )}
+      </div>
+
+      <div className="mt-3 flex items-baseline justify-between">
+        <h3 className="text-2xl font-black text-slate-900 tracking-tight font-sans">{value}</h3>
+        {change && (
+          <div className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
+            changeType === 'positive'
+              ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/60'
+              : changeType === 'negative'
+              ? 'text-red-700 bg-red-50 border border-red-200/60'
+              : 'text-slate-600 bg-slate-100 border border-slate-200/60'
+          }`}>
+            {changeType === 'positive' ? (
+              <TrendingUp className="w-3 h-3" />
+            ) : changeType === 'negative' ? (
+              <TrendingDown className="w-3 h-3" />
+            ) : (
+              <Minus className="w-3 h-3" />
+            )}
+            <span>{change}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
-
-export default ImageUploader;

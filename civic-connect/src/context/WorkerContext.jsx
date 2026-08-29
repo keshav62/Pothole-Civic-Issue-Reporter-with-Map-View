@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState } from 'react';
-import { 
-  workerTasks as initialTasks, 
+import {
+  workerTasks as initialTasks,
   workerNotifications as initialNotifications,
   recentActivity as initialActivity,
-  workerProfile as initialProfile 
+  workerProfile as initialProfile
 } from '../data/workerMockData';
 
 const WorkerContext = createContext();
@@ -53,7 +53,7 @@ export const WorkerProvider = ({ children }) => {
   const updateTaskStatus = (taskId, newStatus) => {
     setTasks(prevTasks => prevTasks.map(task => {
       if (task.id === taskId) {
-        
+
         // Triggers for specific statuses
         if (newStatus === 'ACCEPTED') {
           addActivity('assigned', taskId, task.title, 'You accepted this task');
@@ -70,7 +70,7 @@ export const WorkerProvider = ({ children }) => {
   const submitProof = (taskId, afterImage, repairNotes) => {
     setTasks(prevTasks => prevTasks.map(task => {
       if (task.id === taskId) {
-        
+
         // Update stats
         setProfile(prev => ({
           ...prev,
@@ -81,7 +81,7 @@ export const WorkerProvider = ({ children }) => {
         // Log activities and notifications
         addActivity('proof_uploaded', taskId, task.title, 'You uploaded completion photo');
         addActivity('completed', taskId, task.title, 'Task marked as resolved');
-        
+
         addNotification(
           'STATUS_UPDATED',
           'Resolution Submitted',
@@ -89,8 +89,8 @@ export const WorkerProvider = ({ children }) => {
           taskId
         );
 
-        return { 
-          ...task, 
+        return {
+          ...task,
           status: 'COMPLETED',
           afterImage,
           repairNotes
@@ -101,7 +101,7 @@ export const WorkerProvider = ({ children }) => {
   };
 
   const markNotificationRead = (notifId) => {
-    setNotifications(prev => prev.map(n => 
+    setNotifications(prev => prev.map(n =>
       n.id === notifId ? { ...n, isRead: true } : n
     ));
   };

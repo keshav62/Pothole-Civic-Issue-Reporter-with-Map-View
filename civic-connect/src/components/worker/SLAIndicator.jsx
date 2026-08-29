@@ -9,7 +9,7 @@ export const SLAIndicator = ({ dueDate, status, className }) => {
   useEffect(() => {
     // If the task is already completed, we don't need to tick the clock
     if (status === 'COMPLETED') return;
-    
+
     const timer = setInterval(() => {
       setNow(new Date());
     }, 60000); // 1 minute
@@ -31,7 +31,7 @@ export const SLAIndicator = ({ dueDate, status, className }) => {
   const targetDate = new Date(dueDate);
   const diffMs = targetDate.getTime() - now.getTime();
   const isOverdue = diffMs < 0;
-  
+
   // Absolute diff in hours and minutes
   const absDiffMs = Math.abs(diffMs);
   const diffHours = Math.floor(absDiffMs / (1000 * 60 * 60));
@@ -75,9 +75,9 @@ export const SLAIndicator = ({ dueDate, status, className }) => {
   };
 
   return (
-    <div 
+    <div
       className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all duration-300", 
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all duration-300",
         stateStyles[state],
         className
       )}

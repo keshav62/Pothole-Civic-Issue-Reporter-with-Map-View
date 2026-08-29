@@ -1,249 +1,172 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { useCivic } from '../../context/CivicContext';
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
-import { IssueTimeline } from '../../components/issues/IssueTimeline';
-import { IssueMap } from '../../components/map/IssueMap';
-import {
-  ArrowLeft, MapPin, Calendar, Building2, User, Clock,
-  ShieldCheck, AlertTriangle, CheckCircle2, Share2, Printer,
-  FileText, ExternalLink, Image as ImageIcon
-} from 'lucide-react';
+import { Button } from '../../components/common/Button';
+import { Plus, CheckCircle2, Clock, MapPin, FileText, ChevronRight, ShieldCheck, Sparkles, Map } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-export const CitizenIssueDetails = () => {
-  const { id } = useParams();
+export const CitizenDashboard = () => {
+  const { currentUser } = useAuth();
+  const { issues } = useCivic();
   const navigate = useNavigate();
-  const { issues, showToast } = useCivic();
 
-  const issue = issues.find(i => i.id === id || i.id?.toLowerCase() === id?.toLowerCase());
+  const myReports = issues;
+  const resolvedCount = myReports.filter(i => i.status === 'RESOLVED').length;
+  const inProgressCount = myReports.filter(i => i.status === 'IN_PROGRESS' || i.status === 'ASSIGNED').length;
+  const pendingCount = myReports.filter(i => i.status === 'REPORTED' || i.status === 'VERIFIED').length;
 
-  if (!issue) {
-    return (
-      <div className="max-w-xl mx-auto py-12 text-center bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <AlertTriangle className="w-8 h-8" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Issue Not Found</h2>
-        <p className="text-sm text-slate-500 mb-6">
-          We couldn't find an issue with the reference ID "{id}". It may have been archived or removed.
-        </p>
-        <button
-          onClick={() => navigate('/citizen/reports')}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to My Reports
-        </button>
-      </div>
-    );
-  }
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `Civic Issue ${issue.id}: ${issue.title}`,
-        text: `Track status of ${issue.title} on CivicConnect`,
-        url: window.location.href,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      showToast?.('Link copied to clipboard!', 'info');
-    }
-  };
+  const recentReports = myReports.slice(0, 4);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Top action bar */}
-      <div className="flex items-center justify-between gap-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-colors shadow-sm"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back
-        </button>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleShare}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold transition-colors shadow-sm"
+    <div className="space-y-6 pb-20 md:pb-6 animate-in fade-in duration-300">
+      {/* Welcome Hero Banner */}
+      <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-blue-700/40">
+        <div className="absolute right-0 top-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[10px] font-bold uppercase tracking-wider mb-3">
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>CIVICCONNECT CITIZEN PORTAL</span>
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+              Welcome, {currentUser?.name || 'Citizen'}! 👋
+            </h1>
+            <p className="text-blue-100 font-medium text-xs sm:text-sm max-w-xl mt-2 leading-relaxed">
+              Report civic issues in your neighborhood, track real-time resolution timelines, and help improve your city infrastructure.
+            </p>
+          </div>
+
+          <Button
+            size="lg"
+            variant="success"
+            icon={Plus}
+            className="shadow-xl py-3.5 px-6 font-black text-sm shrink-0"
+            onClick={() => navigate('/citizen/report')}
           >
-            <Share2 className="w-3.5 h-3.5" /> Share
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold transition-colors shadow-sm"
-          >
-            <Printer className="w-3.5 h-3.5" /> Print
-          </button>
+            + Report New Civic Issue
+          </Button>
         </div>
       </div>
 
-      {/* Main Issue Header Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-sm font-extrabold bg-slate-100 text-slate-700 px-3 py-1 rounded-lg border border-slate-200">
-              {issue.id}
-            </span>
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              {issue.category}
-            </span>
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Reports</span>
+            <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+              <FileText className="w-4 h-4" />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <IssuePriority priority={issue.priority} />
-            <IssueStatus status={issue.status} />
-          </div>
+          <p className="text-3xl font-black text-slate-900 mt-2">{myReports.length}</p>
         </div>
 
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 leading-tight mb-2">
-            {issue.title}
-          </h1>
-          <p className="text-sm text-slate-600 leading-relaxed">
-            {issue.description || 'No detailed description provided.'}
-          </p>
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Resolved</span>
+            <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-blue-600 mt-2">{resolvedCount}</p>
         </div>
 
-        {/* Timeline Component */}
-        <div className="pt-2">
-          <IssueTimeline timeline={issue.timeline || []} />
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">In Progress</span>
+            <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-amber-600 mt-2">{inProgressCount}</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Community Score</span>
+            <div className="p-2 rounded-xl bg-purple-50 text-purple-600 border border-purple-100">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-purple-600 mt-2">950 pts</p>
         </div>
       </div>
 
-      {/* Grid: Details & Map / Photos */}
+      {/* Main Grid: My Reports & Nearby Map Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Evidence Photos & Official Resolution Info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Photo Evidence Card */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-emerald-600" />
-              Photo Evidence & Verification
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Before Photo */}
-              <div className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
-                  Reported Condition (Before)
-                </span>
-                {issue.images?.before ? (
-                  <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 h-52 relative group">
-                    <img
-                      src={issue.images.before}
-                      alt="Before"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                ) : (
-                  <div className="rounded-xl border-2 border-dashed border-slate-200 h-52 flex flex-col items-center justify-center text-slate-400 bg-slate-50 p-4 text-center">
-                    <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                    <span className="text-xs font-medium">No initial photo uploaded</span>
-                  </div>
-                )}
-              </div>
-
-              {/* After Photo (Resolution) */}
-              <div className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
-                  Resolution Proof (After)
-                </span>
-                {issue.images?.after ? (
-                  <div className="rounded-xl overflow-hidden border border-emerald-200 bg-emerald-50/30 h-52 relative group">
-                    <img
-                      src={issue.images.after}
-                      alt="After Resolution"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">
-                      Verified Fix ✓
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border-2 border-dashed border-slate-200 h-52 flex flex-col items-center justify-center text-slate-400 bg-slate-50 p-4 text-center">
-                    <Clock className="w-8 h-8 mb-2 opacity-50 text-amber-500" />
-                    <span className="text-xs font-medium">
-                      {issue.status === 'RESOLVED' ? 'Resolution proof pending upload' : 'Awaiting worker resolution proof'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+        {/* Left 2 Cols: My Reported Complaints */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-black text-slate-900">Your Reported Issues</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={ChevronRight}
+              onClick={() => navigate('/citizen/reports')}
+            >
+              View All Reports
+            </Button>
           </div>
 
-          {/* Official Department & Worker Notes */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Department Response & Notes
-            </h3>
+          <div className="space-y-3">
+            {recentReports.map((issue) => (
+              <div
+                key={issue.id}
+                onClick={() => navigate('/citizen/reports')}
+                className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div className="flex items-start gap-3.5 min-w-0">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-bold text-base shrink-0">
+                    {issue.id.slice(-3)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-xs text-blue-600">{issue.id}</span>
+                      <IssuePriority priority={issue.priority} />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 truncate mt-1">{issue.title}</h3>
+                    <p className="text-xs text-slate-500 truncate flex items-center gap-1 mt-1">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{issue.address}</span>
+                    </p>
+                  </div>
+                </div>
 
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span className="font-semibold text-slate-700">Official Status Note:</span>
-                <span>SLA Target: <strong>{issue.slaHours || 48} Hours</strong></span>
+                <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                  <IssueStatus status={issue.status} />
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </div>
               </div>
-              <p className="text-sm text-slate-700 leading-relaxed italic">
-                {issue.workNotes || 'The municipal team has logged this issue. As soon as a field team inspects the site, additional status updates and resolution notes will appear here.'}
-              </p>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Right 1 Col: Location Map & Metadata */}
-        <div className="space-y-6">
-          {/* Location Map Preview */}
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-emerald-600" />
-                Incident Location
-              </h3>
-              <span className="text-[11px] font-bold text-slate-500">{issue.ward || 'Ward 1'}</span>
-            </div>
-
-            {issue.latitude && issue.longitude ? (
-              <div className="h-48 relative">
-                <IssueMap
-                  issues={[issue]}
-                  center={[issue.latitude, issue.longitude]}
-                  zoom={15}
-                  height="192px"
-                  rolePrefix="/citizen/issues"
-                />
-              </div>
-            ) : (
-              <div className="h-48 bg-slate-50 flex items-center justify-center text-slate-400 text-xs p-4 text-center">
-                Location coordinates unavailable
-              </div>
-            )}
-
-            <div className="p-4 bg-white text-xs text-slate-600 flex items-start gap-2 border-t border-slate-100">
-              <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-              <span className="leading-tight font-medium">{issue.address || issue.location?.address || 'No street address listed'}</span>
-            </div>
-          </div>
-
-          {/* Quick Metadata Box */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Report Metadata</h4>
-            <div className="divide-y divide-slate-100 text-sm">
-              <div className="py-2 flex items-center justify-between">
-                <span className="text-slate-500 text-xs flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Reported On</span>
-                <span className="font-semibold text-slate-800 text-xs">{issue.reportedDate || 'Recent'}</span>
-              </div>
-              <div className="py-2 flex items-center justify-between">
-                <span className="text-slate-500 text-xs flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" /> Department</span>
-                <span className="font-semibold text-slate-800 text-xs">{issue.department || 'General'}</span>
-              </div>
-              <div className="py-2 flex items-center justify-between">
-                <span className="text-slate-500 text-xs flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Assigned Team</span>
-                <span className="font-semibold text-slate-800 text-xs">{issue.assignedWorker || 'Unassigned'}</span>
-              </div>
-              <div className="py-2 flex items-center justify-between">
-                <span className="text-slate-500 text-xs flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> SLA Target</span>
-                <span className="font-semibold text-emerald-700 text-xs">{issue.slaHours || 48} hrs (On Schedule)</span>
+        {/* Right Col: Quick Nearby Map Card */}
+        <div className="space-y-4">
+          <h2 className="text-base font-black text-slate-900">Neighborhood Map</h2>
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+            <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden relative flex items-center justify-center p-4">
+              <img
+                src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800"
+                alt="Neighborhood Map"
+                className="w-full h-full object-cover opacity-70 absolute inset-0"
+              />
+              <div className="relative z-10 text-center space-y-2">
+                <span className="px-3 py-1 bg-slate-900/90 text-white rounded-full text-xs font-bold border border-slate-700 shadow-md inline-block">
+                  📍 Ward 15 Active Issues
+                </span>
               </div>
             </div>
+
+            <Button
+              variant="outline"
+              icon={Map}
+              className="w-full text-xs font-bold py-2.5"
+              onClick={() => navigate('/citizen/nearby')}
+            >
+              Explore Interactive Ward Map
+            </Button>
           </div>
         </div>
       </div>
@@ -251,4 +174,4 @@ export const CitizenIssueDetails = () => {
   );
 };
 
-export default CitizenIssueDetails;
+export default CitizenDashboard;

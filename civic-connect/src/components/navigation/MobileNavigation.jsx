@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 export const MobileNavigation = () => {
   const { notifications } = useCivic();
   const { role } = useAuth();
-  
+
   if (role !== 'FIELD_WORKER' && role !== 'CITIZEN') {
     return null;
   }

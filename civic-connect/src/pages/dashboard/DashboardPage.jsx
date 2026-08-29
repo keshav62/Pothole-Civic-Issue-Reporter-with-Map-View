@@ -41,7 +41,7 @@ export const DashboardPage = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700 rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-xs font-medium mb-3">
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -151,7 +151,7 @@ export const DashboardPage = () => {
                 <Badge role={user?.role} size="sm" dot />
               </div>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
               {user?.role ? user.role.slice(0, 3) : 'USR'}
             </div>
           </CardContent>
