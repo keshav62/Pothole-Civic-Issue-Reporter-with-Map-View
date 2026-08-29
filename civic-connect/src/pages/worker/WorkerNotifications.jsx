@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useWorker } from '../../context/WorkerContext';
+import { apiFetch } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 import {
   Bell,
   CheckCircle2,
@@ -48,8 +49,31 @@ const formatTimeAgo = (timestamp) => {
 };
 
 export const WorkerNotifications = () => {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState('ALL'); // ALL, UNREAD
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useWorker();
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        const res = await apiFetch('/api/notifications?limit=50');
+        setNotifications(res.data.notifications.map(n => ({
+          ...n,
+          id: n._id,
+          timestamp: n.createdAt,
+          taskId: n.issue?.issueId || n.issue?._id,
+        })));
+      } catch (err) {
+        setError('Failed to load notifications.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
 
   // Filter notifications
   const displayedNotifications = notifications.filter(n => {
@@ -57,12 +81,22 @@ export const WorkerNotifications = () => {
     return true;
   });
 
-  const markAllAsRead = () => {
-    markAllNotificationsRead();
+  const markAllAsRead = async () => {
+    try {
+      await apiFetch('/api/notifications/read-all', { method: 'PATCH' });
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
   };
 
-  const markAsRead = (id) => {
-    markNotificationRead(id);
+  const markAsRead = async (id) => {
+    try {
+      await apiFetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+      setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -126,7 +160,18 @@ export const WorkerNotifications = () => {
 
         {/* Notifications List */}
         <div className="divide-y divide-slate-100">
-          {displayedNotifications.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center flex flex-col items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-sm text-slate-500 font-medium">Loading notifications...</p>
+            </div>
+          ) : error ? (
+            <div className="p-12 text-center flex flex-col items-center">
+              <AlertTriangle className="w-8 h-8 text-red-400 mb-4" />
+              <h3 className="text-sm font-bold text-red-600">Error</h3>
+              <p className="text-xs text-red-500 mt-1">{error}</p>
+            </div>
+          ) : displayedNotifications.length === 0 ? (
             <div className="p-12 text-center flex flex-col items-center">
               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                 <Bell className="w-8 h-8 text-slate-300" />
@@ -163,8 +208,11 @@ export const WorkerNotifications = () => {
                       {notification.message}
                     </p>
 
-                    {notification.taskId && (
-                      <span className="inline-flex items-center text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded cursor-pointer hover:bg-blue-100 transition-colors">
+                    {notification.issue && (
+                      <span 
+                        onClick={() => navigate(`/worker/tasks/${notification.issue._id}`)}
+                        className="inline-flex items-center text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded cursor-pointer hover:bg-blue-100 transition-colors"
+                      >
                         View Task #{notification.taskId}
                       </span>
                     )}

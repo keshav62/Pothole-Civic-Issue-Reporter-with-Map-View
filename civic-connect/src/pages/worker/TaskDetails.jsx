@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useWorker } from '../../context/WorkerContext';
+import { apiFetch } from '../../services/api';
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
 import { LocationCard } from '../../components/worker/LocationCard';
@@ -28,27 +28,104 @@ export const TaskDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { tasks, updateTaskStatus } = useWorker();
-  const { showToast } = React.useContext(ToastContext);
+  const [task, setTask] = useState(null);
+  const [timeline, setTimeline] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Find task from context
-  const task = tasks.find(t => t.id === id) || tasks[0];
-
-  if (!task) return null;
-
-  const handleAccept = () => {
-    updateTaskStatus(task.id, 'ACCEPTED');
-    showToast("Task accepted successfully!", "success");
+  const fetchTaskDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await apiFetch(`/api/workers/me/tasks/${id}`);
+      const issue = response.data.task;
+      
+      setTask({
+        id: issue._id,
+        displayId: issue.issueId || issue._id.substring(0, 8).toUpperCase(),
+        title: issue.title,
+        category: issue.category,
+        status: issue.status,
+        priority: issue.priority,
+        description: issue.description,
+        location: issue.address || 'Location not specified',
+        latitude: issue.location?.coordinates?.[1],
+        longitude: issue.location?.coordinates?.[0],
+        dueDate: issue.dueDate,
+        assignedDate: issue.createdAt,
+        beforeImage: issue.beforeImages?.[0] || issue.images?.[0] || null,
+        afterImage: issue.afterImages?.[0] || null,
+        citizenName: issue.reportedBy?.name || 'Citizen',
+        department: issue.department?.name || 'Department'
+      });
+      setTimeline(response.data.timeline || []);
+    } catch (err) {
+      if (err.status === 404) setError('Task not found or not assigned to you.');
+      else if (err.status === 401 || err.status === 403) setError('Unauthorized to view this task.');
+      else setError(err.message || 'Server error loading task.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleStart = () => {
-    updateTaskStatus(task.id, 'IN_PROGRESS');
-    showToast("Task started. Timeline updated.", "success");
+  useEffect(() => {
+    fetchTaskDetails();
+  }, [id]);
+
+  const handleAccept = async () => {
+    if (isUpdating) return;
+    try {
+      setIsUpdating(true);
+      await apiFetch(`/api/workers/tasks/${id}/accept`, { method: 'PATCH' });
+      showToast("Task accepted successfully!", "success");
+      await fetchTaskDetails(); // Refresh all data including timeline without browser refresh
+    } catch (err) {
+      showToast(err.message || "Failed to accept task", "error");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleStart = async () => {
+    if (isUpdating) return;
+    try {
+      setIsUpdating(true);
+      await apiFetch(`/api/workers/tasks/${id}/start`, { method: 'PATCH' });
+      showToast("Task started. Timeline updated.", "success");
+      await fetchTaskDetails(); // Refresh all data including timeline without browser refresh
+    } catch (err) {
+      showToast(err.message || "Failed to start task", "error");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleUploadProof = () => {
-    navigate(`/worker/tasks/${task.id}/upload`);
+    navigate(`/worker/tasks/${id}/upload`);
   };
+
+  if (loading) {
+    return (
+      <div className="py-24 flex flex-col justify-center items-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+        <span className="mt-4 text-slate-500 font-medium">Loading task details...</span>
+      </div>
+    );
+  }
+
+  if (error || !task) {
+    return (
+      <div className="py-24 px-4 flex justify-center">
+        <div className="bg-red-50/50 rounded-2xl border border-red-100 p-8 max-w-md text-center">
+          <h3 className="text-xl font-bold text-red-700 mb-2">Access Denied</h3>
+          <p className="text-red-500 mb-6">{error || 'Task not found.'}</p>
+          <Button variant="outline" onClick={() => navigate('/worker/tasks')} fullWidth>
+            Return to Task List
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6 pb-24 animate-in fade-in duration-200">
@@ -65,7 +142,7 @@ export const TaskDetails = () => {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
-              {task.id}
+              {task.displayId}
             </span>
             <Badge variant="neutral" className="uppercase tracking-wider text-[10px]">
               {task.category}
@@ -136,6 +213,79 @@ export const TaskDetails = () => {
             )}
           </div>
 
+          {/* 4. Chronological Timeline */}
+          {timeline.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4 mt-6">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-slate-400" /> Task History Timeline
+              </h3>
+              <div className="space-y-0">
+                {timeline.map((item, idx) => {
+                  const isLast = idx === timeline.length - 1;
+                  // Map raw actions to the requested display labels
+                  const actionMap = {
+                    'WORKER_ASSIGNED': 'Assigned',
+                    'TASK_ACCEPTED': 'Accepted',
+                    'TASK_STARTED': 'Work Started',
+                    'PROOF_UPLOADED': 'Proof Uploaded',
+                    'TASK_COMPLETED': 'Proof Submitted',
+                    'CITIZEN_VERIFIED': 'Citizen Verified',
+                  };
+                  const displayAction = actionMap[item.action] || item.action.replace(/_/g, ' ');
+
+                  return (
+                    <div key={item._id || idx} className="flex gap-4 group">
+                      <div className="flex flex-col items-center">
+                        <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 shadow-sm z-10 group-hover:bg-blue-100 group-hover:scale-110 transition-transform">
+                          <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                        </div>
+                        {!isLast && <div className="w-0.5 flex-1 bg-slate-100 my-1 min-h-[24px]"></div>}
+                      </div>
+                      <div className={`pb-6 pt-1 ${isLast ? '' : ''}`}>
+                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
+                          <p className="text-sm font-bold text-slate-900">{displayAction}</p>
+                          <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">•</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            {item.oldStatus ? `${item.oldStatus} ➔ ${item.newStatus}` : item.newStatus}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {new Date(item.createdAt).toLocaleString()}
+                        </p>
+                        <p className="text-[10px] font-medium text-slate-400 mt-0.5 flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          By: {item.performedBy?.name || 'System User'}
+                        </p>
+                        {item.note && (
+                          <div className="mt-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100 text-slate-600">
+                            {item.note}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {/* Pending State for Citizen Verification */}
+                {task.status === 'PENDING_CITIZEN_VERIFICATION' && (
+                  <div className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0 shadow-sm z-10 animate-pulse">
+                        <Clock className="w-4 h-4 text-amber-600" />
+                      </div>
+                    </div>
+                    <div className="pb-2 pt-1">
+                      <p className="text-sm font-bold text-amber-700">Waiting for Citizen Verification</p>
+                      <p className="text-[10px] text-amber-600/70 mt-1">
+                        The citizen has been notified to review the proof.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <ResolutionVerification task={task} />
         </div>
 
@@ -186,24 +336,24 @@ export const TaskDetails = () => {
 
           <div className="flex-1 sm:flex-none flex justify-end">
             {task.status === 'ASSIGNED' && (
-              <Button variant="primary" icon={CheckCircle2} onClick={handleAccept} fullWidth className="sm:w-auto px-6">
-                Accept Task
+              <Button variant="primary" icon={CheckCircle2} onClick={handleAccept} disabled={isUpdating} fullWidth className="sm:w-auto px-6">
+                {isUpdating ? 'Accepting...' : 'Accept Task'}
               </Button>
             )}
 
             {task.status === 'ACCEPTED' && (
-              <Button variant="primary" icon={Clock} onClick={handleStart} fullWidth className="sm:w-auto px-6">
-                Start Task
+              <Button variant="primary" icon={Clock} onClick={handleStart} disabled={isUpdating} fullWidth className="sm:w-auto px-6">
+                {isUpdating ? 'Starting...' : 'Start Task'}
               </Button>
             )}
 
-            {(task.status === 'IN_PROGRESS' || task.status === 'OVERDUE') && (
-              <Button variant="success" icon={UploadCloud} onClick={handleUploadProof} fullWidth className="sm:w-auto px-6">
+            {(task.status === 'IN_PROGRESS' || task.status === 'REOPENED') && (
+              <Button variant="success" icon={UploadCloud} onClick={handleUploadProof} disabled={isUpdating} fullWidth className="sm:w-auto px-6">
                 Upload Proof & Complete Task
               </Button>
             )}
 
-            {task.status === 'COMPLETED' && (
+            {(task.status === 'PENDING_CITIZEN_VERIFICATION' || task.status === 'CITIZEN_VERIFIED' || task.status === 'RESOLVED') && (
               <Button variant="outline" icon={FileText} onClick={() => navigate('/worker/tasks')} fullWidth className="sm:w-auto px-6">
                 Return to Task List
               </Button>

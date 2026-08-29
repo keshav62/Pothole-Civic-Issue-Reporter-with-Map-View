@@ -19,10 +19,20 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5
  * @throws {{ status: number, message: string, errors?: Array }}
  */
 export const apiFetch = async (path, options = {}) => {
-  let token = null;
+  // Wait for Firebase to restore session from IndexedDB if this is a hard refresh
+  if (auth?.authStateReady) {
+    try {
+      await auth.authStateReady();
+    } catch (err) {
+      console.warn('Firebase authStateReady warning:', err);
+    }
+  }
 
-  // 1. Try to get a live Firebase ID token
-  if (auth?.currentUser) {
+  // Prefer explicitly provided customToken if passed in options
+  let token = options.customToken || null;
+
+  // 1. Get live Firebase ID token if authenticated
+  if (!token && auth?.currentUser) {
     try {
       token = await auth.currentUser.getIdToken();
     } catch (err) {
@@ -30,14 +40,18 @@ export const apiFetch = async (path, options = {}) => {
     }
   }
 
-  // 2. Fall back to localStorage token or dev fallback token
+  // 2. Fall back to cached token in localStorage
   if (!token) {
     token = localStorage.getItem('civicconnect_token') || localStorage.getItem('civic_connect_token');
   }
 
-  // Fallback to dev token if none exists so request never fails 401 authorization in development
+  // 3. Fall back to dev mock token in non-production environments to prevent 401 errors in dev sessions
   if (!token) {
-    token = 'mock-id-token-email';
+    if (import.meta.env.DEV || process.env.NODE_ENV !== 'production') {
+      token = 'mock-id-token-email';
+    } else {
+      throw { status: 401, message: 'Unauthorized: No valid authentication token found.' };
+    }
   }
 
   const headers = new Headers(options.headers || {});
