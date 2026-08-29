@@ -211,10 +211,11 @@ export const CivicProvider = ({ children }) => {
       console.warn('API call failed, updating locally:', err);
     }
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId || issue._id === issueId) {
+      const isMatch = issue.id === issueId || issue._id === issueId || issue.issueId === issueId || String(issue._id) === String(issueId);
+      if (isMatch) {
         const newTimeline = [
           ...(issue.timeline || []),
-          { status: newStatus, title: `Status changed to ${newStatus}`, date: new Date().toLocaleString(), actor: 'System' }
+          { status: newStatus, title: `Status changed to ${newStatus}`, date: new Date().toLocaleString(), actor: 'Field Worker' }
         ];
         return { ...issue, status: newStatus, timeline: newTimeline };
       }
@@ -225,7 +226,8 @@ export const CivicProvider = ({ children }) => {
 
   const updateIssueImages = (issueId, beforeImage, afterImage) => {
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId || issue._id === issueId) {
+      const isMatch = issue.id === issueId || issue._id === issueId || issue.issueId === issueId || String(issue._id) === String(issueId);
+      if (isMatch) {
         return {
           ...issue,
           images: {
@@ -245,10 +247,11 @@ export const CivicProvider = ({ children }) => {
       console.warn('API call failed, updating locally:', err);
     }
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId || issue._id === issueId) {
+      const isMatch = issue.id === issueId || issue._id === issueId || issue.issueId === issueId || String(issue._id) === String(issueId);
+      if (isMatch) {
         const newTimeline = [
           ...(issue.timeline || []),
-          { status: 'IN_PROGRESS', title: 'Work Started by Worker', date: new Date().toLocaleString(), actor: issue.assignedWorker || 'Worker' }
+          { status: 'IN_PROGRESS', title: 'Work Started by Field Worker', date: new Date().toLocaleString(), actor: 'Field Worker' }
         ];
         return { ...issue, status: 'IN_PROGRESS', timeline: newTimeline };
       }

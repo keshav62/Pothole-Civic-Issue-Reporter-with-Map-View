@@ -21,14 +21,73 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-// ─── Nominatim reverse geocoding ─────────────────────────────────────────────
+// ─── Nominatim & Multi-Tier Reverse Geocoding ─────────────────────────────
 const reverseGeocode = async (lat, lng) => {
-  const url =
-    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
-  const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-  if (!res.ok) throw new Error(`Nominatim HTTP ${res.status}`);
-  const data = await res.json();
-  return data.display_name ?? null;
+  // Check LPU Campus Bounding Box (31.240° N - 31.265° N, 75.690° E - 75.720° E)
+  const isLpuCampus = lat >= 31.240 && lat <= 31.265 && lng >= 75.690 && lng <= 75.720;
+
+  try {
+    // Primary: OpenStreetMap Nominatim jsonv2 with addressdetails & zoom 18
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { 'Accept-Language': 'en' }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        const addr = data.address || {};
+        const landmark = data.name || addr.amenity || addr.building || addr.mall || addr.university || addr.suburb;
+
+        // If location is within LPU Campus bounds, format precise campus address
+        if (isLpuCampus) {
+          const blockName = addr.building || addr.amenity || (data.name && data.name !== 'Phagwara' ? data.name : null);
+          const parts = [
+            blockName,
+            'Lovely Professional University (LPU Campus)',
+            addr.road || 'Jalandhar - Phagwara Highway',
+            addr.city || 'Phagwara',
+            addr.state || 'Punjab'
+          ].filter(Boolean);
+
+          return Array.from(new Set(parts)).join(', ');
+        }
+
+        if (landmark && data.display_name && !data.display_name.startsWith(landmark)) {
+          return `${landmark}, ${data.display_name}`;
+        }
+        if (data.display_name) return data.display_name;
+      }
+    }
+  } catch (err) {
+    console.warn('Primary geocoding notice:', err);
+  }
+
+  try {
+    // Secondary: BigDataCloud Reverse Geocoding Client API
+    const url2 = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
+    const res2 = await fetch(url2);
+    if (res2.ok) {
+      const data2 = await res2.json();
+      const parts = [
+        isLpuCampus ? 'Lovely Professional University (LPU Campus)' : (data2.locality || data2.city),
+        data2.principalSubdivision || 'Punjab',
+        'India'
+      ].filter(Boolean);
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
+    }
+  } catch (err2) {
+    console.warn('Secondary geocoding notice:', err2);
+  }
+
+  // Tertiary Fallback: High precision campus/landmark coordinate address
+  if (isLpuCampus) {
+    return `Lovely Professional University (LPU Campus), GT Road, Phagwara, Punjab (${lat.toFixed(6)}° N, ${lng.toFixed(6)}° E)`;
+  }
+
+  return `Precise Incident Location (${lat.toFixed(6)}° N, ${lng.toFixed(6)}° E)`;
 };
 
 // ─── Small coordinate readout ─────────────────────────────────────────────────

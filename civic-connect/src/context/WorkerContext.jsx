@@ -111,15 +111,13 @@ export const WorkerProvider = ({ children }) => {
     }
 
     setTasks(prevTasks => prevTasks.map(task => {
-      if (task.id === taskId) {
-
-        // Triggers for specific statuses
+      const isMatch = task.id === taskId || task._id === taskId || task.issueId === taskId || String(task._id) === String(taskId);
+      if (isMatch) {
         if (newStatus === 'ACCEPTED') {
-          addActivity('assigned', taskId, task.title, 'You accepted this task');
+          addActivity('assigned', taskId, task.title || 'Civic Task', 'You accepted this task');
         } else if (newStatus === 'IN_PROGRESS') {
-          addActivity('started', taskId, task.title, 'You started working on this task');
+          addActivity('started', taskId, task.title || 'Civic Task', 'You started working on this task');
         }
-
         return { ...task, status: newStatus };
       }
       return task;
@@ -134,7 +132,8 @@ export const WorkerProvider = ({ children }) => {
     }
 
     setTasks(prevTasks => prevTasks.map(task => {
-      if (task.id === taskId) {
+      const isMatch = task.id === taskId || task._id === taskId || task.issueId === taskId || String(task._id) === String(taskId);
+      if (isMatch) {
 
         // Update stats
         setProfile(prev => ({
@@ -144,8 +143,8 @@ export const WorkerProvider = ({ children }) => {
         }));
 
         // Log activities and notifications
-        addActivity('proof_uploaded', taskId, task.title, 'You uploaded completion photo');
-        addActivity('completed', taskId, task.title, 'Task marked as resolved');
+        addActivity('proof_uploaded', taskId, task.title || 'Civic Task', 'You uploaded completion photo');
+        addActivity('completed', taskId, task.title || 'Civic Task', 'Task marked as resolved');
 
         addNotification(
           'STATUS_UPDATED',
