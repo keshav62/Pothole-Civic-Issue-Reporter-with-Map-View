@@ -192,6 +192,90 @@ export const validateUpdateIssue = (req, res, next) => {
   next();
 };
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const RADIUS_MIN = 1;          // metres
+const RADIUS_MAX = 50_000;     // 50 km hard cap
+const NEARBY_LIMIT_MAX = 100;
+const NEARBY_LIMIT_DEFAULT = 50;
+
+/**
+ * validateNearbyQuery
+ *
+ * Express middleware for GET /api/issues/nearby.
+ * Validates lat, lng, radius (required) and status, category, limit (optional).
+ * This is a PUBLIC endpoint — no authentication middleware runs before it.
+ *
+ * 422 Unprocessable Entity on validation failure (consistent with other endpoints).
+ */
+export const validateNearbyQuery = (req, res, next) => {
+  const { lat, lng, radius, status, category, limit } = req.query;
+  const errors = [];
+
+  // ── lat ────────────────────────────────────────────────────────────────────
+  const latErr = validateLatitude(lat);
+  if (latErr) errors.push({ field: 'lat', message: latErr });
+
+  // ── lng ────────────────────────────────────────────────────────────────────
+  const lngErr = validateLongitude(lng);
+  if (lngErr) errors.push({ field: 'lng', message: lngErr });
+
+  // ── radius ─────────────────────────────────────────────────────────────────
+  if (radius === undefined || radius === null || radius === '') {
+    errors.push({ field: 'radius', message: 'radius is required' });
+  } else {
+    const r = Number(radius);
+    if (!Number.isFinite(r) || !Number.isInteger(r)) {
+      errors.push({ field: 'radius', message: 'radius must be an integer (metres)' });
+    } else if (r < RADIUS_MIN || r > RADIUS_MAX) {
+      errors.push({
+        field: 'radius',
+        message: `radius must be between ${RADIUS_MIN} and ${RADIUS_MAX} metres`,
+      });
+    }
+  }
+
+  // ── status (optional, comma-separated) ────────────────────────────────────
+  if (status !== undefined && status !== '') {
+    // Import ISSUE_STATUSES is not available here yet; inline the list or import at top.
+    // We import it via the model — re-use the already-imported ISSUE_CATEGORIES reference
+    // and validate below in the controller where the model is imported.
+    // Here we only reject obviously wrong formats.
+    const statusValues = status.split(',').map((s) => s.trim()).filter(Boolean);
+    if (statusValues.length === 0) {
+      errors.push({ field: 'status', message: 'status must not be empty when provided' });
+    }
+    // Individual enum check happens in the controller which imports ISSUE_STATUSES.
+  }
+
+  // ── category (optional, single enum value) ─────────────────────────────────
+  if (category !== undefined && category !== '') {
+    const catErr = validateCategory(category);
+    if (catErr) errors.push({ field: 'category', message: catErr });
+  }
+
+  // ── limit (optional) ───────────────────────────────────────────────────────
+  if (limit !== undefined && limit !== '') {
+    const l = Number(limit);
+    if (!Number.isFinite(l) || !Number.isInteger(l) || l < 1 || l > NEARBY_LIMIT_MAX) {
+      errors.push({
+        field: 'limit',
+        message: `limit must be an integer between 1 and ${NEARBY_LIMIT_MAX}`,
+      });
+    }
+  }
+
+  if (errors.length > 0) {
+    return res.status(422).json({
+      success: false,
+      message: 'Validation failed',
+      errors,
+    });
+  }
+
+  next();
+};
+
 // ─── Named exports for unit testing ──────────────────────────────────────────
 export {
   validateTitle,
@@ -203,4 +287,7 @@ export {
   validateAddress,
   validateWard,
   validateGeoJSONLocation,
+  RADIUS_MIN,
+  RADIUS_MAX,
+  NEARBY_LIMIT_DEFAULT,
 };

@@ -7,17 +7,30 @@ import {
   deleteIssue,
   assignIssue,
   verifyIssue,
+  getNearbyIssues,
 } from '../controllers/issueController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 import {
   validateCreateIssue,
   validateUpdateIssue,
+  validateNearbyQuery,
 } from '../validators/issueValidator.js';
 
 const router = Router();
 
-// All issue routes require authentication
+// ─── Public routes (no authentication required) ───────────────────────────────
+// These are mounted BEFORE router.use(protect) so unauthenticated callers
+// (e.g. the public Leaflet map) can reach them without a Firebase ID token.
+//
+// Security note: getNearbyIssues returns a stripped public projection only.
+// No PII fields (reportedBy, assignedWorker, department) are included.
+
+// GET /api/issues/nearby?lat=&lng=&radius=
+// Public map endpoint — returns active issues within the requested radius.
+router.get('/nearby', validateNearbyQuery, getNearbyIssues);
+
+// ─── Authenticated routes (Firebase token required for all below) ─────────────
 router.use(protect);
 
 // POST /api/issues — validate first, then create
@@ -61,3 +74,4 @@ router.post(
 );
 
 export default router;
+
