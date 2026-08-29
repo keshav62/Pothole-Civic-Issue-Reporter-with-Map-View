@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useRealtimeAlerts } from '../../context/AlertContext';
 import {
   LayoutDashboard,
   FileText,
@@ -17,11 +18,13 @@ import {
   UserCheck,
   ClipboardList,
   Plus,
-  Shield
+  Shield,
+  Bell
 } from 'lucide-react';
 
 export const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { currentUser, logout, role } = useAuth();
+  const { unreadCount } = useRealtimeAlerts();
   const location = useLocation();
 
   const adminNavItems = [
@@ -56,6 +59,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   const citizenNavItems = [
     { label: 'Dashboard', path: '/citizen/dashboard', icon: LayoutDashboard },
+    { label: 'Alerts', path: '/citizen/alerts', icon: AlertOctagon, badge: unreadCount },
     { label: 'My Reports', path: '/citizen/reports', icon: FileText },
     { label: 'Report Issue', path: '/citizen/report', icon: Plus },
     { label: 'Nearby Map', path: '/citizen/nearby', icon: MapPin }
@@ -137,7 +141,15 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
                 <span className="truncate">{item.label}</span>
-                {isActive && (
+                
+                {/* Dynamic Unread Badge Counter */}
+                {Boolean(item.badge && item.badge > 0) && (
+                  <span className="ml-auto bg-red-500 text-white font-bold text-[10px] px-1.5 py-0.5 rounded-full shadow-xs animate-pulse">
+                    {item.badge}
+                  </span>
+                )}
+
+                {isActive && !item.badge && (
                   <span className="absolute right-2 w-1.5 h-1.5 rounded-full bg-white shadow-xs" />
                 )}
               </NavLink>

@@ -4,6 +4,7 @@ import { useCivic } from '../../context/CivicContext';
 import { IssueStatus } from '../../components/issues/IssueStatus';
 import { IssuePriority } from '../../components/issues/IssuePriority';
 import { Button } from '../../components/common/Button';
+import { NearbyCivicAlerts } from '../../components/citizen/NearbyCivicAlerts';
 import {
   Plus,
   CheckCircle2,
@@ -70,7 +71,7 @@ export const CitizenDashboard = () => {
         </div>
       </div>
 
-      {/* KPI Section */}
+      {/* KPI Statistics Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
@@ -124,6 +125,9 @@ export const CitizenDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* REALTIME NEARBY CIVIC ALERTS CARD */}
+      <NearbyCivicAlerts />
 
       {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
