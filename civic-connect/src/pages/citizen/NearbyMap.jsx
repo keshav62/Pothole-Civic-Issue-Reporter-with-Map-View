@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useCivic } from '../../context/CivicContext';
+import { useRealtimeAlerts } from '../../context/AlertContext';
 import { useLocation } from '../../hooks/useLocation';
 import { IssueMap } from '../../components/map/IssueMap';
 import { Button } from '../../components/common/Button';
@@ -25,6 +26,7 @@ import {
   Sparkles,
   Loader2,
   XCircle,
+  Radio,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,6 +35,7 @@ import { getDistanceKm } from '../../utils/geoUtils';
 
 export const NearbyMap = () => {
   const { issues } = useCivic();
+  const { userLocation, alerts } = useRealtimeAlerts();
   const navigate = useNavigate();
 
   // Browser Geolocation via hook
@@ -162,10 +165,19 @@ export const NearbyMap = () => {
               </button>
             </div>
 
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-bold uppercase tracking-wider mb-2">
-              <Compass className="w-3.5 h-3.5 text-blue-400" />
-              <span>CITIZEN NEIGHBORHOOD MAP</span>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-bold uppercase tracking-wider">
+                <Compass className="w-3.5 h-3.5 text-blue-400" />
+                <span>CITIZEN NEIGHBORHOOD MAP</span>
+              </div>
+              {alerts && alerts.length > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                  <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                  {alerts.length} Active Alert Issues
+                </span>
+              )}
             </div>
+
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug">
               Neighborhood Civic Issue Explorer
             </h1>
@@ -386,7 +398,7 @@ export const NearbyMap = () => {
             </div>
 
             <span className="font-semibold text-slate-600">
-              Click any pin to inspect ticket details & repair timeline
+              Click any pin to inspect ticket details and repair timeline
             </span>
           </div>
         </div>

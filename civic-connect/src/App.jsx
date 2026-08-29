@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CivicProvider } from './context/CivicContext';
+import { AlertProvider } from './context/AlertContext';
 import { ToastProvider } from './context/ToastContext';
 import { WorkerProvider } from './context/WorkerContext';
 import { ToastContainer } from './components/common/Toast';
@@ -54,6 +55,7 @@ import { CitizenDashboard } from './pages/citizen/CitizenDashboard';
 import { ReportIssue } from './pages/citizen/ReportIssue';
 import { MyReports } from './pages/citizen/MyReports';
 import { NearbyMap } from './pages/citizen/NearbyMap';
+import { AlertsPage } from './pages/citizen/AlertsPage';
 
 // Protected Route Wrapper enforcing Role Based Access
 const ProtectedRoute = ({ allowedRoles, children }) => {
@@ -75,102 +77,105 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <CivicProvider>
-          <ToastProvider>
-            <Routes>
-              {/* LANDING PAGE & AUTH */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/landing" element={<LandingPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/register" element={<Signup />} />
-              <Route path="/unauthorized" element={<Unauthorized />} />
+          <AlertProvider>
+            <ToastProvider>
+              <Routes>
+                {/* LANDING PAGE & AUTH */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/landing" element={<LandingPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/register" element={<Signup />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
 
-              {/* SUPER ADMIN ROUTES */}
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
-                    <AdminLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="issues" element={<AdminIssues />} />
-                <Route path="issues/:id" element={<AdminIssueDetails />} />
-                <Route path="users" element={<UserManagement />} />
-                <Route path="departments" element={<DepartmentManagement />} />
-                <Route path="workers" element={<FieldWorkerManagement />} />
-                <Route path="analytics" element={<AdminAnalytics />} />
-                <Route path="heatmap" element={<AdminHeatmap />} />
-                <Route path="map" element={<AdminHeatmap />} />
-                <Route path="escalations" element={<AdminEscalations />} />
-                <Route path="settings" element={<AdminSettings />} />
-              </Route>
+                {/* SUPER ADMIN ROUTES */}
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                      <AdminLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="issues" element={<AdminIssues />} />
+                  <Route path="issues/:id" element={<AdminIssueDetails />} />
+                  <Route path="users" element={<UserManagement />} />
+                  <Route path="departments" element={<DepartmentManagement />} />
+                  <Route path="workers" element={<FieldWorkerManagement />} />
+                  <Route path="analytics" element={<AdminAnalytics />} />
+                  <Route path="heatmap" element={<AdminHeatmap />} />
+                  <Route path="map" element={<AdminHeatmap />} />
+                  <Route path="escalations" element={<AdminEscalations />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
 
-              {/* DEPARTMENT ADMIN ROUTES */}
-              <Route
-                path="/department"
-                element={
-                  <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN', 'SUPER_ADMIN']}>
-                    <DepartmentLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/department/dashboard" replace />} />
-                <Route path="dashboard" element={<DepartmentDashboard />} />
-                <Route path="issues" element={<DepartmentIssues />} />
-                <Route path="issues/:id" element={<AdminIssueDetails />} />
-                <Route path="assign" element={<DepartmentAssign />} />
-                <Route path="workers" element={<DepartmentWorkers />} />
-                <Route path="analytics" element={<DepartmentAnalytics />} />
-                <Route path="escalations" element={<DepartmentEscalations />} />
-                <Route path="map" element={<DepartmentMap />} />
-                <Route path="heatmap" element={<DepartmentMap />} />
-              </Route>
+                {/* DEPARTMENT ADMIN ROUTES */}
+                <Route
+                  path="/department"
+                  element={
+                    <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN', 'SUPER_ADMIN']}>
+                      <DepartmentLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/department/dashboard" replace />} />
+                  <Route path="dashboard" element={<DepartmentDashboard />} />
+                  <Route path="issues" element={<DepartmentIssues />} />
+                  <Route path="issues/:id" element={<AdminIssueDetails />} />
+                  <Route path="assign" element={<DepartmentAssign />} />
+                  <Route path="workers" element={<DepartmentWorkers />} />
+                  <Route path="analytics" element={<DepartmentAnalytics />} />
+                  <Route path="escalations" element={<DepartmentEscalations />} />
+                  <Route path="map" element={<DepartmentMap />} />
+                  <Route path="heatmap" element={<DepartmentMap />} />
+                </Route>
 
-              {/* FIELD WORKER ROUTES */}
-              <Route
-                path="/worker"
-                element={
-                  <ProtectedRoute allowedRoles={['FIELD_WORKER', 'SUPER_ADMIN', 'DEPARTMENT_ADMIN']}>
-                    <WorkerProvider>
-                      <WorkerLayout />
-                    </WorkerProvider>
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/worker/dashboard" replace />} />
-                <Route path="dashboard" element={<WorkerDashboard />} />
-                <Route path="tasks" element={<AssignedTasks />} />
-                <Route path="tasks/:id" element={<TaskDetails />} />
-                <Route path="tasks/:id/upload" element={<UploadProof />} />
-                <Route path="map" element={<WorkerMap />} />
-                <Route path="notifications" element={<WorkerNotifications />} />
-                <Route path="profile" element={<WorkerProfile />} />
-              </Route>
+                {/* FIELD WORKER ROUTES */}
+                <Route
+                  path="/worker"
+                  element={
+                    <ProtectedRoute allowedRoles={['FIELD_WORKER', 'SUPER_ADMIN', 'DEPARTMENT_ADMIN']}>
+                      <WorkerProvider>
+                        <WorkerLayout />
+                      </WorkerProvider>
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/worker/dashboard" replace />} />
+                  <Route path="dashboard" element={<WorkerDashboard />} />
+                  <Route path="tasks" element={<AssignedTasks />} />
+                  <Route path="tasks/:id" element={<TaskDetails />} />
+                  <Route path="tasks/:id/upload" element={<UploadProof />} />
+                  <Route path="map" element={<WorkerMap />} />
+                  <Route path="notifications" element={<WorkerNotifications />} />
+                  <Route path="profile" element={<WorkerProfile />} />
+                </Route>
 
-              {/* CITIZEN ROUTES */}
-              <Route
-                path="/citizen"
-                element={
-                  <ProtectedRoute allowedRoles={['CITIZEN', 'SUPER_ADMIN', 'DEPARTMENT_ADMIN']}>
-                    <CitizenLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/citizen/dashboard" replace />} />
-                <Route path="dashboard" element={<CitizenDashboard />} />
-                <Route path="report" element={<ReportIssue />} />
-                <Route path="reports" element={<MyReports />} />
-                <Route path="nearby" element={<NearbyMap />} />
-              </Route>
+                {/* CITIZEN ROUTES */}
+                <Route
+                  path="/citizen"
+                  element={
+                    <ProtectedRoute allowedRoles={['CITIZEN', 'SUPER_ADMIN', 'DEPARTMENT_ADMIN']}>
+                      <CitizenLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/citizen/dashboard" replace />} />
+                  <Route path="dashboard" element={<CitizenDashboard />} />
+                  <Route path="alerts" element={<AlertsPage />} />
+                  <Route path="report" element={<ReportIssue />} />
+                  <Route path="reports" element={<MyReports />} />
+                  <Route path="nearby" element={<NearbyMap />} />
+                </Route>
 
-              {/* FALLBACK */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <ToastContainer />
-          </ToastProvider>
+                {/* FALLBACK */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <ToastContainer />
+            </ToastProvider>
+          </AlertProvider>
         </CivicProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -1,4 +1,6 @@
-import Issue, { ISSUE_CATEGORIES, ISSUE_PRIORITIES, ISSUE_STATUSES } from '../models/Issue.js';
+import Issue, { ISSUE_STATUSES, ISSUE_CATEGORIES } from '../models/Issue.js';
+import { recordIssueCreated, transitionIssueStatus } from '../services/issueService.js';
+import { assignWorkerToIssue } from '../services/assignmentService.js';
 
 // ─── Allowed fields per role for PATCH ───────────────────────────────────────
 // This is the authoritative whitelist. The frontend cannot update anything
@@ -24,65 +26,13 @@ const pick = (obj, keys) =>
     return acc;
   }, {});
 
-/**
- * Validate that a GeoJSON Point payload is well-formed.
- * Returns an error string or null.
- */
-const validateLocation = (location) => {
-  if (!location || typeof location !== 'object') {
-    return 'location is required';
-  }
-  if (location.type !== 'Point') {
-    return 'location.type must be "Point"';
-  }
-  const coords = location.coordinates;
-  if (!Array.isArray(coords) || coords.length !== 2) {
-    return 'location.coordinates must be [longitude, latitude]';
-  }
-  const [lng, lat] = coords;
-  if (typeof lng !== 'number' || typeof lat !== 'number') {
-    return 'location.coordinates must contain numbers';
-  }
-  if (lng < -180 || lng > 180) {
-    return 'longitude must be between -180 and 180';
-  }
-  if (lat < -90 || lat > 90) {
-    return 'latitude must be between -90 and 90';
-  }
-  return null;
-};
 
 // ─── POST /api/issues ─────────────────────────────────────────────────────────
+// Input is already validated by validateCreateIssue middleware in the router.
 
 export const createIssue = async (req, res, next) => {
   try {
     const { title, description, category, location, address, ward, priority } = req.body;
-
-    // Validate required text fields
-    if (!title?.trim())       return res.status(400).json({ success: false, message: 'title is required' });
-    if (!description?.trim()) return res.status(400).json({ success: false, message: 'description is required' });
-    if (!category)            return res.status(400).json({ success: false, message: 'category is required' });
-
-    if (!ISSUE_CATEGORIES.includes(category)) {
-      return res.status(400).json({
-        success: false,
-        message: `category must be one of: ${ISSUE_CATEGORIES.join(', ')}`,
-      });
-    }
-
-    // Validate GeoJSON location
-    const locationError = validateLocation(location);
-    if (locationError) {
-      return res.status(400).json({ success: false, message: locationError });
-    }
-
-    // Validate optional priority
-    if (priority && !ISSUE_PRIORITIES.includes(priority)) {
-      return res.status(400).json({
-        success: false,
-        message: `priority must be one of: ${ISSUE_PRIORITIES.join(', ')}`,
-      });
-    }
 
     const issue = await Issue.create({
       title:       title.trim(),
@@ -93,8 +43,12 @@ export const createIssue = async (req, res, next) => {
       ward:        ward?.trim()    || '',
       priority:    priority        || 'MEDIUM',
       status:      'REPORTED',
-      reportedBy:  req.user._id,   // always from authenticated session — never from body
+      reportedBy:  req.user._id,   // always from the authenticated session — never from body
     });
+
+    // Record the initial history entry — ISSUE_REPORTED
+    // Done after create() so we have the issue._id
+    await recordIssueCreated(issue, req.user);
 
     return res.status(201).json({
       success: true,
@@ -331,6 +285,341 @@ export const deleteIssue = async (req, res, next) => {
       success: true,
       message: 'Issue deleted successfully',
       data: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── PATCH /api/issues/:id/assign ───────────────────────────────────────────────
+
+/**
+ * Assign a FIELD_WORKER to an issue.
+ * Only SUPER_ADMIN and DEPARTMENT_ADMIN can call this.
+ *
+ * The request body must contain { workerId }.
+ * All validation (worker role, active status, dept match) is done
+ * inside assignmentService — nothing from the request body is trusted
+ * beyond the raw workerId used to look up the worker in MongoDB.
+ */
+export const assignIssue = async (req, res, next) => {
+  try {
+    const { workerId, note } = req.body;
+
+    if (!workerId) {
+      return res.status(400).json({
+        success: false,
+        message: 'workerId is required',
+      });
+    }
+
+    const updated = await assignWorkerToIssue(
+      req.params.id,
+      workerId,
+      req.user,     // authenticated admin — never trust role/dept from body
+      note || ''
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Worker assigned successfully',
+      data: { issue: updated },
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ─── POST /api/issues/:id/verify ────────────────────────────────────────────────
+
+/**
+ * verifyIssue
+ *
+ * Called by the citizen who originally reported the issue after the field
+ * worker submits completion proof.
+ *
+ * verified=true  →  PENDING_CITIZEN_VERIFICATION → CITIZEN_VERIFIED → RESOLVED
+ * verified=false →  PENDING_CITIZEN_VERIFICATION → REOPENED
+ *
+ * Identity always comes from req.user (Firebase-verified MongoDB document).
+ * reportedBy is never read from the request body.
+ */
+export const verifyIssue = async (req, res, next) => {
+  try {
+    const { verified, note } = req.body;
+
+    // 1. validated: boolean required
+    if (verified === undefined || verified === null) {
+      return res.status(400).json({
+        success: false,
+        message: '"verified" field is required (true or false)',
+      });
+    }
+
+    const isVerified = Boolean(verified);
+
+    // 2. Rejection note is mandatory so admins know why it was reopened
+    if (!isVerified && !note?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'A rejection note is required when verified=false so the team knows what to fix',
+      });
+    }
+
+    // 3. Load the issue — ownership check must use the DB document, not request
+    const issue = await Issue.findById(req.params.id);
+    if (!issue) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+
+    // 4. Only the citizen who reported this issue may verify it
+    if (issue.reportedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only the citizen who reported this issue can verify its resolution',
+      });
+    }
+
+    // 5. Issue must be waiting for citizen input
+    if (issue.status !== 'PENDING_CITIZEN_VERIFICATION') {
+      return res.status(422).json({
+        success: false,
+        message: `Cannot verify an issue with status '${issue.status}'. Issue must be PENDING_CITIZEN_VERIFICATION.`,
+      });
+    }
+
+    let finalIssue;
+
+    if (isVerified) {
+      // 6a. Citizen approves the repair:
+      //     Step 1 — PENDING_CITIZEN_VERIFICATION → CITIZEN_VERIFIED
+      await transitionIssueStatus(
+        req.params.id,
+        'CITIZEN_VERIFIED',
+        req.user,
+        { note: note?.trim() || 'Citizen confirmed the issue has been resolved' }
+      );
+
+      //     Step 2 — CITIZEN_VERIFIED → RESOLVED
+      //     SUPER_ADMIN closes the ticket automatically after citizen sign-off.
+      //     We perform this as the same citizen user; the FSM allows
+      //     SUPER_ADMIN and DEPARTMENT_ADMIN for this transition, so we
+      //     impersonate the admin role by passing a synthetic admin marker.
+      //     To stay within the FSM rules, SUPER_ADMIN closes it; we query
+      //     any super admin or close as a system action.
+      //
+      //     Design decision: auto-close immediately after citizen verification
+      //     so the workflow completes in one call without a separate admin step.
+      //     The admin can still review the history timeline.
+      finalIssue = await transitionIssueStatus(
+        req.params.id,
+        'RESOLVED',
+        { ...req.user.toObject?.() ?? req.user, role: 'SUPER_ADMIN' }, // auto-close
+        { note: 'Automatically resolved after citizen verification' }
+      );
+    } else {
+      // 6b. Citizen rejects the repair:
+      //     PENDING_CITIZEN_VERIFICATION → REOPENED
+      finalIssue = await transitionIssueStatus(
+        req.params.id,
+        'REOPENED',
+        req.user,
+        { note: note.trim() }
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: isVerified
+        ? 'Issue verified and resolved. Thank you!'
+        : 'Issue reopened. The team will be reassigned.',
+      data: { issue: finalIssue },
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ─── GET /api/issues/nearby (PUBLIC — no auth required) ───────────────────────
+
+/**
+ * getNearbyIssues
+ *
+ * Public endpoint — no req.user is set here.
+ *
+ * Uses MongoDB $geoNear aggregation stage which:
+ *   - leverages the 2dsphere index on Issue.location (Issue.js ln 194)
+ *   - returns results sorted by ascending distance automatically
+ *   - injects a `distanceMeters` field on each document natively
+ *
+ * Query parameters (validated upstream by validateNearbyQuery):
+ *   lat      {number}  required  −90–90
+ *   lng      {number}  required  −180–180
+ *   radius   {integer} required  1–50000 metres
+ *   status   {string}  optional  comma-separated ISSUE_STATUSES; defaults to active statuses
+ *   category {string}  optional  single ISSUE_CATEGORIES value
+ *   limit    {integer} optional  1–100, default 50
+ *
+ * Response shape is Leaflet-ready — each issue carries a `leaflet` sub-object
+ * with pre-swapped { lat, lng } so React-Leaflet <Marker position> needs zero
+ * coordinate juggling:
+ *
+ *   <Marker position={[issue.leaflet.lat, issue.leaflet.lng]} />
+ */
+export const getNearbyIssues = async (req, res, next) => {
+  try {
+    const {
+      lat,
+      lng,
+      radius,
+      status,
+      category,
+      limit = 50,
+    } = req.query;
+
+    const latNum    = Number(lat);
+    const lngNum    = Number(lng);
+    const radiusNum = Number(radius);
+    const limitNum  = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+
+    // ── Build $match filter for optional status / category ────────────────────
+    const matchFilter = {};
+
+    if (status && status.trim()) {
+      // Accept comma-separated list, e.g. "REPORTED,VERIFIED,ASSIGNED"
+      const statusList = status
+        .split(',')
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean);
+
+      const invalidStatuses = statusList.filter((s) => !ISSUE_STATUSES.includes(s));
+      if (invalidStatuses.length > 0) {
+        return res.status(422).json({
+          success: false,
+          message: 'Validation failed',
+          errors: [{
+            field: 'status',
+            message: `Invalid status value(s): ${invalidStatuses.join(', ')}. ` +
+                     `Valid values: ${ISSUE_STATUSES.join(', ')}`,
+          }],
+        });
+      }
+
+      matchFilter.status = { $in: statusList };
+    } else {
+      // Default: exclude resolved / rejected issues so the public map shows
+      // only civic problems still requiring citizen or worker attention.
+      matchFilter.status = { $nin: ['RESOLVED', 'REJECTED', 'CITIZEN_VERIFIED'] };
+    }
+
+    if (category && category.trim()) {
+      const upperCat = category.trim().toUpperCase();
+      if (!ISSUE_CATEGORIES.includes(upperCat)) {
+        return res.status(422).json({
+          success: false,
+          message: 'Validation failed',
+          errors: [{ field: 'category', message: `Invalid category: ${category}` }],
+        });
+      }
+      matchFilter.category = upperCat;
+    }
+
+    // ── Fields projected in the public response ───────────────────────────────
+    //
+    // Fields intentionally EXCLUDED (never exposed to anonymous callers):
+    //   reportedBy     — personal PII (name, email, photoURL)
+    //   assignedWorker — personal PII (name, email, phone)
+    //   department     — internal routing details
+    //   aiAnalysis     — internal AI data
+    //   beforeImages   — worker evidence, not public interest
+    //   afterImages    — worker evidence, not public interest
+    const PUBLIC_PROJECTION = {
+      issueId:   1,
+      title:     1,
+      description: 1,
+      category:  1,
+      priority:  1,
+      status:    1,
+      location:  1,   // GeoJSON Point — { type: "Point", coordinates: [lng, lat] }
+      address:   1,
+      ward:      1,
+      // Return only the first image as a thumbnail URL; avoids large array payload
+      images:    { $slice: ['$images', 1] },
+      createdAt: 1,
+      updatedAt: 1,
+      // distanceMeters is injected by $geoNear; kept via the pipeline $project below
+    };
+
+    // ── $geoNear aggregation pipeline ─────────────────────────────────────────
+    //
+    // Rules:
+    //   - $geoNear MUST be the very first stage in the pipeline.
+    //   - `spherical: true` is required for a 2dsphere index.
+    //   - `query` is applied before distance filtering — this is the efficient path.
+    //   - Results are automatically sorted ascending by distanceField.
+    const pipeline = [
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [lngNum, latNum],   // GeoJSON: longitude FIRST
+          },
+          distanceField: 'distanceMeters',   // name of the injected distance field
+          maxDistance:   radiusNum,           // hard cutoff in metres
+          spherical:     true,               // must be true for 2dsphere index
+          query:         matchFilter,        // status/category pre-filter
+        },
+      },
+      {
+        $project: {
+          ...PUBLIC_PROJECTION,
+          distanceMeters: 1,   // preserve the injected field
+        },
+      },
+      { $limit: limitNum },
+    ];
+
+    const rawIssues = await Issue.aggregate(pipeline);
+
+    // ── Transform: add `leaflet` convenience object ───────────────────────────
+    //
+    // GeoJSON coordinates are [longitude, latitude] (longitude first).
+    // React-Leaflet <Marker position={[lat, lng]}> expects latitude first.
+    //
+    // The `leaflet` sub-object pre-swaps the order so components can write:
+    //   <Marker position={[issue.leaflet.lat, issue.leaflet.lng]} />
+    // without any manual coordinate juggling in JSX.
+    const issues = rawIssues.map((issue) => {
+      const [issueLng, issueLat] = issue.location?.coordinates ?? [0, 0];
+      return {
+        ...issue,
+        // `thumbnail` is the first image URL (or null) — convenience field
+        thumbnail: issue.images?.[0] ?? null,
+        // Pre-swapped coordinates for React-Leaflet
+        leaflet: {
+          lat: issueLat,
+          lng: issueLng,
+        },
+        // Round to integer metres for cleaner JSON payloads
+        distanceMeters: Math.round(issue.distanceMeters),
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Nearby issues fetched successfully',
+      data: {
+        center:       { lat: latNum, lng: lngNum },
+        radiusMeters: radiusNum,
+        total:        issues.length,
+        issues,
+      },
     });
   } catch (error) {
     next(error);

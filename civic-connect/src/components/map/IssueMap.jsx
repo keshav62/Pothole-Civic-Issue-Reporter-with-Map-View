@@ -7,7 +7,6 @@ import { IssuePriority } from '../issues/IssuePriority';
 import { Button } from '../common/Button';
 import { getDistanceKm } from '../../utils/geoUtils';
 import { HeatMap } from './HeatMap';
-
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, ArrowRight, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 
@@ -92,15 +91,12 @@ const RecenterMap = ({ center, zoom, flyToCoords }) => {
     if (flyToCoords && (!prevFlyRef.current || prevFlyRef.current.lat !== flyToCoords.lat || prevFlyRef.current.lng !== flyToCoords.lng)) {
       prevFlyRef.current = flyToCoords;
       map.flyTo([flyToCoords.lat, flyToCoords.lng], flyToCoords.zoom || 15, { duration: 1.2 });
-    } else if (center) {
+    } else if (center && Array.isArray(center) && center.length === 2 && center[0] && center[1]) {
       map.setView(center, zoom || map.getZoom());
     }
   }, [center, zoom, flyToCoords, map]);
   return null;
 };
-
-// Use getDistanceKm from '../../utils/geoUtils'
-
 
 export const IssueMap = ({
   issues = [],
@@ -108,7 +104,7 @@ export const IssueMap = ({
   zoom = 13,
   height = '480px',
   rolePrefix = '/admin',
-  userLocation = null, // { lat: number, lng: number, accuracy?: number, label?: string }
+  userLocation = null, // { lat: number, lng: number, accuracy?: number, label?: string, address?: string }
   showHeatmap = false,
   selectedIssueId = null,
   onMarkerSelect = null,
@@ -118,11 +114,12 @@ export const IssueMap = ({
   emptyMessage = 'No civic issues match the selected category filter in this area.',
 }) => {
   const navigate = useNavigate();
+  const mapCenter = (userLocation && userLocation.lat && userLocation.lng) ? [userLocation.lat, userLocation.lng] : center;
 
   return (
     <div className="w-full rounded-2xl overflow-hidden border border-slate-200 shadow-xs relative" style={{ height }}>
       <MapContainer
-        center={center}
+        center={mapCenter}
         zoom={zoom}
         scrollWheelZoom={true}
         style={{ height: '100%', width: '100%' }}
@@ -157,7 +154,7 @@ export const IssueMap = ({
               <Popup className="custom-leaflet-popup">
                 <div className="p-1 text-center font-sans">
                   <span className="font-bold text-blue-600 text-xs flex items-center justify-center gap-1">
-                    <Navigation className="w-3 h-3 fill-blue-600" /> {userLocation.label || 'Your Current Location'}
+                    <Navigation className="w-3 h-3 fill-blue-600" /> {userLocation.label || userLocation.address || 'Your Current Location'}
                   </span>
                   <span className="text-[10px] text-slate-500 block mt-0.5">
                     {userLocation.accuracy ? `GPS accuracy ±${Math.round(userLocation.accuracy)}m` : 'Live Browser Geolocation'}
@@ -175,7 +172,7 @@ export const IssueMap = ({
           if (!lat || !lng) return null;
 
           const isSelected = selectedIssueId === issue.id;
-          const distance = userLocation ? getDistanceKm(userLocation.lat, userLocation.lng, lat, lng) : null;
+          const distance = userLocation?.lat && userLocation?.lng ? getDistanceKm(userLocation.lat, userLocation.lng, lat, lng) : null;
 
           return (
             <Marker
