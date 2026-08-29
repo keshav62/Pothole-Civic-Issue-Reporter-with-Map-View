@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useWorker } from '../../context/WorkerContext';
+import { apiFetch } from '../../services/api';
 import { useLocation } from '../../hooks/useLocation';
 import { getDistanceKm } from '../../utils/geoUtils';
 import { Badge } from '../../components/common/Badge';
@@ -99,7 +99,32 @@ export const WorkerMap = () => {
   const [filter, setFilter] = useState('ALL');
   const [selectedTask, setSelectedTask] = useState(null);
   const [showLocationBanner, setShowLocationBanner] = useState(true);
-  const { tasks } = useWorker();
+  const [tasks, setTasks] = useState([]);
+  const [loadingTasks, setLoadingTasks] = useState(true);
+
+  // Fetch real tasks from backend
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoadingTasks(true);
+        const response = await apiFetch('/api/workers/me/tasks?limit=100');
+        // Normalize coordinates for Leaflet
+        const normalizedTasks = response.data.tasks.map(task => ({
+          ...task,
+          id: task._id,
+          latitude: task.location?.coordinates?.[1] || task.latitude,
+          longitude: task.location?.coordinates?.[0] || task.longitude,
+          address: task.address || task.location?.address
+        }));
+        setTasks(normalizedTasks);
+      } catch (err) {
+        console.error('Failed to fetch tasks for map:', err);
+      } finally {
+        setLoadingTasks(false);
+      }
+    };
+    fetchTasks();
+  }, []);
 
   // Browser Geolocation via reusable hook
   const { coords, accuracy, loading: gpsLoading, error: gpsError, getCurrentLocation } = useLocation();
@@ -126,7 +151,7 @@ export const WorkerMap = () => {
     return tasks.map((task) => {
       const distance =
         coords?.lat && coords?.lng && task.latitude && task.longitude
-          ? getDistanceKm(coords.lat, coords.lng, task.latitude, task.longitude)
+          ? getDistanceKm(coords.lat, coords.lng, task.latitude, task.longitude).toFixed(1)
           : null;
       return {
         ...task,
@@ -232,7 +257,7 @@ export const WorkerMap = () => {
           center={mapCenter}
           zoom={mapZoom}
           scrollWheelZoom={true}
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: '100%', width: '100%', zIndex: 10 }}
         >
           <RecenterMap center={mapCenter} zoom={mapZoom} />
 
@@ -313,7 +338,7 @@ export const WorkerMap = () => {
 
                     {/* Location & Live Distance */}
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 space-y-1">
-                      <p className="text-[11px] text-slate-600 line-clamp-2 leading-tight">📍 {task.location}</p>
+                      <p className="text-[11px] text-slate-600 line-clamp-2 leading-tight">📍 {task.address || 'Location pending'}</p>
                       {task.distance !== null && (
                         <p className="text-[10px] text-blue-700 font-bold bg-blue-100/80 px-1.5 py-0.5 rounded inline-block mt-0.5">
                           📍 {task.distance} km from your current location
@@ -370,7 +395,7 @@ export const WorkerMap = () => {
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-slate-800">{selectedTask.location}</p>
+                  <p className="text-xs font-semibold text-slate-800">{selectedTask.address || 'Location pending'}</p>
                   <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
                     {selectedTaskDistance !== null
                       ? `📍 ${selectedTaskDistance} km away from your location`
