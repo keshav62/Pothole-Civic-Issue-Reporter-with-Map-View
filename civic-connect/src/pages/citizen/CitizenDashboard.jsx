@@ -23,7 +23,7 @@ export const CitizenDashboard = () => {
   const recentReports = myReports.slice(0, 3); // top 3
 
   return (
-    <div className="space-y-6 pb-20 md:pb-6 animate-in fade-in duration-500">
+    <div className="space-y-6 pb-20 md:pb-6 animate-fade-in-up">
       
       {/* Welcome & CTA Section */}
       <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden">
@@ -49,7 +49,7 @@ export const CitizenDashboard = () => {
 
       {/* Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-center gap-2 text-slate-500 mb-3">
             <FileText className="w-4 h-4 text-blue-500" />
             <span className="text-xs font-bold uppercase tracking-wider">Total Reports</span>
@@ -57,7 +57,7 @@ export const CitizenDashboard = () => {
           <p className="text-3xl font-black text-slate-800">{myReports.length}</p>
         </div>
         
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-center gap-2 text-slate-500 mb-3">
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             <span className="text-xs font-bold uppercase tracking-wider">Resolved</span>
@@ -65,7 +65,7 @@ export const CitizenDashboard = () => {
           <p className="text-3xl font-black text-emerald-600">{resolvedCount}</p>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-center gap-2 text-slate-500 mb-3">
             <Clock className="w-4 h-4 text-amber-500" />
             <span className="text-xs font-bold uppercase tracking-wider">In Progress</span>
@@ -73,7 +73,7 @@ export const CitizenDashboard = () => {
           <p className="text-3xl font-black text-amber-600">{inProgressCount}</p>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-center gap-2 text-slate-500 mb-3">
             <AlertOctagon className="w-4 h-4 text-red-500" />
             <span className="text-xs font-bold uppercase tracking-wider">Pending</span>

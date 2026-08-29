@@ -13,35 +13,32 @@ export const Topbar = ({ toggleSidebar }) => {
   const [profileDropdown, setProfileDropdown] = useState(false);
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-6 flex items-center justify-between gap-4 shadow-xs">
-      {/* Left: Mobile Menu Toggle & Brand Tagline */}
+    <header className="h-14 bg-slate-950 border-b border-slate-800 sticky top-0 z-30 px-4 sm:px-6 flex items-center justify-between gap-4 shadow-xs text-slate-100">
+      {/* Left: Mobile Menu Toggle & Page Context Label */}
       <div className="flex items-center gap-3">
         <button
           onClick={toggleSidebar}
-          className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+          className="md:hidden p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4 h-4" />
         </button>
 
-        <div>
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <span>CivicConnect</span>
-            <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-              {role === 'SUPER_ADMIN' ? 'SUPER ADMIN' : role === 'DEPARTMENT_ADMIN' ? 'DEPT ADMIN' : 'FIELD WORKER'}
-            </span>
-          </h2>
-          <p className="text-[11px] text-slate-500 hidden sm:block">Report. Resolve. Improve Your City.</p>
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-bold text-slate-200 tracking-tight">CivicConnect</span>
+          <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+            {role === 'SUPER_ADMIN' ? 'HQ Admin' : role === 'DEPARTMENT_ADMIN' ? 'Dept Control' : 'Field Crew'}
+          </span>
         </div>
       </div>
 
       {/* Center: Search Bar */}
-      <div className="hidden md:flex items-center flex-1 max-w-md mx-4">
+      <div className="hidden md:flex items-center flex-1 max-w-sm mx-4">
         <div className="relative w-full">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
-            placeholder="Search issue ID (e.g. CC-1024), ward, category, worker..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
+            placeholder="Search issues, categories, or workers..."
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:bg-slate-700 transition-all"
           />
         </div>
       </div>
@@ -58,50 +55,50 @@ export const Topbar = ({ toggleSidebar }) => {
         <div className="relative">
           <button
             onClick={() => setProfileDropdown(!profileDropdown)}
-            className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 p-1 rounded-md hover:bg-slate-100/80 transition-colors cursor-pointer"
           >
             <img
               src={currentUser?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'}
               alt="Avatar"
-              className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-500/20"
+              className="w-6 h-6 rounded-full object-cover ring-1 ring-slate-200"
             />
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 hidden sm:block" />
+            <ChevronDown className="w-3 h-3 text-slate-400 hidden sm:block" />
           </button>
 
           {profileDropdown && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 divide-y divide-slate-100">
-              <div className="px-4 py-2.5">
-                <p className="text-xs font-bold text-slate-900">{currentUser?.name}</p>
-                <p className="text-[11px] text-slate-500">{currentUser?.email}</p>
-                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
-                  <ShieldCheck className="w-3 h-3" />
-                  {currentUser?.isFirebaseGoogleAuth || currentUser?.isGoogleAuth ? 'Firebase Google SSO Verified' : 'Verified Govt Administrator'}
+            <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-md border border-slate-200 py-1 z-50 divide-y divide-slate-100">
+              <div className="px-4 py-2">
+                <p className="text-[11px] font-bold text-slate-800">{currentUser?.name}</p>
+                <p className="text-[9px] text-slate-400 truncate">{currentUser?.email}</p>
+                <div className="mt-1 flex items-center gap-1 text-[9px] text-emerald-700 font-bold">
+                  <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                  Govt Authorized
                 </div>
               </div>
 
-              <div className="py-1">
+              <div className="py-0.5">
                 <button
                   onClick={() => {
                     setProfileDropdown(false);
                     if (role === 'FIELD_WORKER') navigate('/worker/profile');
                     else navigate('/admin/settings');
                   }}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  className="w-full text-left px-4 py-1.5 text-[10px] text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                 >
-                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  <User className="w-3 h-3 text-slate-400" />
                   Account Settings
                 </button>
               </div>
 
-              <div className="py-1">
+              <div className="py-0.5">
                 <button
                   onClick={() => {
                     setProfileDropdown(false);
                     logout();
                   }}
-                  className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
+                  className="w-full text-left px-4 py-1.5 text-[10px] text-red-600 hover:bg-red-50 flex items-center gap-2 font-bold"
                 >
-                  <LogOut className="w-3.5 h-3.5 text-red-500" />
+                  <LogOut className="w-3 h-3 text-red-500" />
                   Sign Out
                 </button>
               </div>
@@ -112,3 +109,5 @@ export const Topbar = ({ toggleSidebar }) => {
     </header>
   );
 };
+
+export default Topbar;

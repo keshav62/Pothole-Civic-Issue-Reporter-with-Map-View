@@ -11,9 +11,7 @@ export const Card = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-xl ${
-        bordered ? 'border border-slate-200' : ''
-      } shadow-xs ${
+      className={`bg-white rounded-lg border border-slate-200 shadow-sm ${
         hoverable
           ? 'transition-all duration-200 hover:shadow-md hover:border-slate-300 cursor-pointer'
           : ''

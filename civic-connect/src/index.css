@@ -1,58 +1,87 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "leaflet/dist/leaflet.css";
 
 @layer base {
   :root {
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --primary-light: #dbeafe;
+    --primary: #1e40af; /* Deeper Slate-Blue for a more serious enterprise feeling */
+    --primary-hover: #1e3a8a;
+    --primary-light: #eff6ff;
     --secondary: #475569;
     --secondary-hover: #334155;
-    --background: #f8fafc;
+    --background: #f8fafc; /* Sleek, light-gray neutral backdrop */
     --card: #ffffff;
-    --border: #e2e8f0;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --success: #16a34a;
-    --warning: #d97706;
-    --danger: #dc2626;
-    --info: #0284c7;
+    --border: #e2e8f0; /* Thin, light gray borders */
+    --text-main: #0f172a; /* Slate-900 */
+    --text-muted: #475569; /* Slate-600 */
+    --success: #15803d; /* Restrained emerald-700 */
+    --warning: #b45309; /* Restrained amber-700 */
+    --danger: #b91c1c; /* Restrained red-700 */
+    --info: #0369a1; /* Restrained sky-700 */
   }
 }
 
 body {
   background-color: var(--background);
   color: var(--text-main);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbar for Enterprise Dashboards */
+/* Micro-animation utilities */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease-out both;
+}
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out both;
+}
+
+/* Custom Scrollbar for Enterprise Dashboards - compact and unobtrusive */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 9999px;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Leaflet Map Customizations */
+/* Accessible focus ring style */
+*:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Leaflet Map Customizations - Clean Enterprise Aesthetics */
 .leaflet-popup-content-wrapper {
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
-  padding: 4px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+  padding: 2px !important;
   border: 1px solid #e2e8f0 !important;
 }
 
 .leaflet-popup-tip {
   background: white !important;
+  box-shadow: none !important;
+}
+
+.leaflet-container {
+  font-family: inherit !important;
 }
