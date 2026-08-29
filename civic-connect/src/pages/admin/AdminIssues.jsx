@@ -22,10 +22,11 @@ export const AdminIssues = () => {
   const pageSize = 8;
 
   const filteredIssues = issues.filter((issue) => {
-    const matchesSearch =
-      issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      issue.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      issue.address.toLowerCase().includes(searchTerm.toLowerCase());
+    const q = (searchTerm || '').toLowerCase();
+    const title = (issue.title || '').toLowerCase();
+    const issueId = (issue.id || issue._id || '').toLowerCase();
+    const address = (issue.address || '').toLowerCase();
+    const matchesSearch = !q || title.includes(q) || issueId.includes(q) || address.includes(q);
 
     const matchesCategory = !categoryFilter || issue.category === categoryFilter;
     const matchesStatus = !statusFilter || issue.status === statusFilter;

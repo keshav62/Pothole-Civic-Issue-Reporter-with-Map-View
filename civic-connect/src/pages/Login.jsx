@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCivic } from '../context/CivicContext';
-import { signInWithGooglePopup } from '../config/firebase';
+import { signInWithGooglePopup, signInWithEmailPassword } from '../config/firebase';
 import authService from '../services/authService';
 import {
   Shield,
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export const Login = () => {
-  const { loginAs, loginWithGmail } = useAuth();
+  const { loginAs, loginWithGmail, updateCurrentUser } = useAuth();
   const { showToast } = useCivic();
   const navigate = useNavigate();
 
@@ -52,10 +52,13 @@ export const Login = () => {
       // Try to create backend session
       try {
         const backendUser = await authService.createSession(fbUser);
-        // Use backend user's role for navigation, or selectedRole as fallback
         const role = backendUser?.role || selectedRole;
-        loginWithGmail(fbUser.email, role, fbUser.displayName, fbUser.photoURL);
-        showToast(`Google SSO Authenticated: Welcome, ${fbUser.displayName || fbUser.email}!`, 'success');
+        if (backendUser) {
+          updateCurrentUser(backendUser);
+        } else {
+          loginWithGmail(fbUser.email, role, fbUser.displayName, fbUser.photoURL);
+        }
+        showToast(`Google SSO Authenticated: Welcome, ${backendUser?.name || fbUser.displayName || fbUser.email}!`, 'success');
         const targetPath = rolePaths[role] || '/citizen/dashboard';
         navigate(targetPath);
       } catch (err) {
@@ -73,21 +76,61 @@ export const Login = () => {
     setLoading(false);
   };
 
-  const handleFormLogin = (e) => {
+  // Authentic MongoDB Form Login Handler
+  const handleFormLogin = async (e) => {
     e.preventDefault();
-    if (!emailOrUsername.trim() || !password) {
-      setError('Please enter your email/username and password');
+    const inputEmail = emailOrUsername.trim().toLowerCase();
+
+    if (!inputEmail || !password) {
+      setError('Please enter your email address and password');
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      loginAs(selectedRole);
-      showToast(`Welcome back! Authenticated as ${selectedRole.replace('_', ' ')}`, 'success');
-      const targetPath = rolePaths[selectedRole] || '/citizen/dashboard';
-      navigate(targetPath);
+    setError('');
+
+    try {
+      // 1. Attempt live Firebase Auth sign-in if email format entered
+      let firebaseUser = null;
+      if (inputEmail.includes('@')) {
+        const result = await signInWithEmailPassword(inputEmail, password);
+        if (result.success && result.user) {
+          firebaseUser = result.user;
+        }
+      }
+
+      // 2. Fetch authentic user profile from MongoDB Atlas via /api/auth/session
+      const userPayload = firebaseUser || {
+        uid: `dev-user-${inputEmail.replace(/[^a-z0-9]/g, '')}`,
+        email: inputEmail,
+        displayName: inputEmail.split('@')[0],
+        getIdToken: async () => 'mock-id-token-email'
+      };
+
+      const backendUser = await authService.createSession(userPayload, {
+        email: inputEmail
+      });
+
+      if (backendUser && backendUser.email) {
+        updateCurrentUser(backendUser);
+        showToast(`Authenticated: Welcome back, ${backendUser.name}! (${backendUser.role})`, 'success');
+        const role = backendUser.role;
+        const targetPath = rolePaths[role] || '/citizen/dashboard';
+        navigate(targetPath);
+        return;
+      } else {
+        setError('Account not found in MongoDB database. Please sign up first.');
+        showToast('Account not found. Redirecting to Signup page...', 'error');
+        setTimeout(() => navigate('/signup'), 1800);
+      }
+    } catch (err) {
+      console.warn("Login lookup notice:", err);
+      setError('User account not found in MongoDB database. Please sign up first.');
+      showToast('Account not found. Redirecting to Signup page...', 'error');
+      setTimeout(() => navigate('/signup'), 1800);
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (

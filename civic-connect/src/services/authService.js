@@ -6,7 +6,6 @@
 
 import { apiFetch } from './api.js';
 import { STORAGE_KEYS } from '../utils/constants';
-import { auth } from '../config/firebase';
 
 const authService = {
   /**
@@ -22,40 +21,46 @@ const authService = {
   },
 
   /**
-   * Creates a session on the backend using the provided Firebase user.
+   * Creates or verifies a session on the backend (MongoDB) using Firebase user / profile parameters.
    *
-   * @param {Object} firebaseUser The Firebase user object
+   * @param {Object} firebaseUser The Firebase user or mock user object
+   * @param {Object} profileData Profile details (name, email, role, department, ward, phone, etc.)
    */
-  async createSession(firebaseUser) {
+  async createSession(firebaseUser = {}, profileData = {}) {
+    let token = 'mock-id-token-email';
     try {
-      // Get the Firebase ID token (will be cached or refreshed automatically by Firebase)
-      const token = await firebaseUser.getIdToken();
-      
-      // Store token in case the fallback logic or other components look for it directly
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
-      localStorage.setItem('civicconnect_token', token); // For prompt compatibility
+      if (firebaseUser && typeof firebaseUser.getIdToken === 'function') {
+        token = await firebaseUser.getIdToken();
+      }
+    } catch (err) {
+      console.warn('Failed to retrieve token from firebaseUser:', err);
+    }
 
-      // Call our backend API to create/verify session
-      // apiFetch automatically attaches the token
-      const json = await apiFetch('/api/auth/session', { method: 'POST' });
-      
+    if (token) {
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+      localStorage.setItem('civicconnect_token', token);
+    }
+
+    // Merge email and name into body payload
+    const bodyPayload = {
+      ...profileData,
+      email: profileData.email || firebaseUser?.email || '',
+      name: profileData.name || firebaseUser?.displayName || ''
+    };
+
+    const options = {
+      method: 'POST',
+      body: JSON.stringify(bodyPayload)
+    };
+
+    try {
+      const json = await apiFetch('/api/auth/session', options);
       const user = json.data.user;
       localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
-      
       return user;
     } catch (error) {
-      console.warn('Backend session creation failed, using local fallback:', error);
-      
-      // Fallback local user creation
-      const fallbackUser = {
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        role: 'CITIZEN'
-      };
-      
-      localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(fallbackUser));
-      return fallbackUser;
+      console.warn('Backend session creation API error:', error);
+      throw error;
     }
   },
 
@@ -68,7 +73,7 @@ const authService = {
   },
 
   /**
-   * Logs in a user locally (fallback/demo path).
+   * Logs in a user locally.
    */
   async loginUser({ email, password, role }) {
     const user = { email, role: role || 'CITIZEN' };
@@ -77,7 +82,7 @@ const authService = {
   },
 
   /**
-   * Registers a user locally (fallback/demo path).
+   * Registers a user locally.
    */
   async registerUser({ name, email, password, role, department, phone }) {
     const user = { name, email, role: role || 'CITIZEN', department, phone };

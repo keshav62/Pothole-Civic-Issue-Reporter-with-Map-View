@@ -15,10 +15,11 @@ export const MyReports = () => {
 
   const filteredIssues = issues.filter(issue => {
     const matchesStatus = filterStatus === 'ALL' || issue.status === filterStatus;
-    const matchesSearch = !searchQuery ||
-      issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.ward.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = (searchQuery || '').toLowerCase();
+    const title = (issue.title || '').toLowerCase();
+    const issueId = (issue.id || issue._id || '').toLowerCase();
+    const ward = (issue.ward || '').toLowerCase();
+    const matchesSearch = !q || title.includes(q) || issueId.includes(q) || ward.includes(q);
     return matchesStatus && matchesSearch;
   });
 

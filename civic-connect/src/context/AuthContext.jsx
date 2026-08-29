@@ -89,9 +89,11 @@ export const AuthProvider = ({ children }) => {
     if (auth.currentUser) {
       try {
         const user = await authService.createSession(auth.currentUser);
-        setCurrentUser(user);
-        sessionCreated.current = true;
-        return user;
+        if (user && user.role) {
+          setCurrentUser(user);
+          sessionCreated.current = true;
+          return user;
+        }
       } catch (error) {
         console.error("Backend sync failed in loginWithGmail, falling back to mock:", error);
       }
@@ -134,10 +136,18 @@ export const AuthProvider = ({ children }) => {
   const signupWithGmail = async ({ name, email, role, department, ward, phone, photoURL }) => {
     if (auth.currentUser) {
       try {
-        const user = await authService.createSession(auth.currentUser);
-        setCurrentUser(user);
-        sessionCreated.current = true;
-        return user;
+        const user = await authService.createSession(auth.currentUser, {
+          name,
+          role,
+          department: role === 'CITIZEN' ? null : department,
+          ward,
+          phone
+        });
+        if (user && user.role) {
+          setCurrentUser(user);
+          sessionCreated.current = true;
+          return user;
+        }
       } catch (error) {
         console.error("Backend sync failed in signupWithGmail, falling back to mock:", error);
       }
@@ -177,6 +187,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateCurrentUser = useCallback((user) => {
+    setCurrentUser(user);
+    if (user) {
+      localStorage.setItem('civic_connect_user', JSON.stringify(user));
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       currentUser,
@@ -190,9 +207,10 @@ export const AuthProvider = ({ children }) => {
       loginAs,
       loginWithGmail,
       signupWithGmail,
-      switchRole
+      switchRole,
+      updateCurrentUser
     }),
-    [currentUser, loading, login, logout, register]
+    [currentUser, loading, login, logout, register, updateCurrentUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

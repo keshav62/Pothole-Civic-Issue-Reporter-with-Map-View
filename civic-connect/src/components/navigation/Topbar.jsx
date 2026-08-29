@@ -78,8 +78,11 @@ export const Topbar = ({ toggleSidebar }) => {
 
         {/* Right: Quick Role Switcher, Notifications & Profile Menu */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Quick Role Switcher */}
-          <RoleSwitcher />
+          {/* Official Role Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold shadow-2xs">
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span>{currentUser?.roleLabel || role?.replace('_', ' ') || 'Official'}</span>
+          </div>
 
           {/* Search icon for mobile */}
           <button

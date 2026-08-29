@@ -1,11 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import * as issueService from '../services/issueService';
+import * as userService from '../services/userService';
 import * as notificationService from '../services/notificationService';
 import { MOCK_ISSUES } from '../data/mockIssues';
-import { MOCK_USERS } from '../data/mockUsers';
 import { MOCK_DEPARTMENTS } from '../data/mockDepartments';
-import { MOCK_WORKERS } from '../data/mockWorkers';
 import { MOCK_NOTIFICATIONS } from '../data/mockNotifications';
 
 const CivicContext = createContext(null);
@@ -14,11 +13,24 @@ export const CivicProvider = ({ children }) => {
   const { currentUser } = useAuth();
   
   const [issues, setIssues] = useState([]);
-  const [users, setUsers] = useState(MOCK_USERS);
+  const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState(MOCK_DEPARTMENTS);
-  const [workers, setWorkers] = useState(MOCK_WORKERS);
+  const [workers, setWorkers] = useState([]);
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+
+  const loadUsersAndWorkers = useCallback(async () => {
+    try {
+      const data = await userService.fetchUsers({ limit: 100 });
+      if (data?.users) {
+        setUsers(data.users);
+        const workerList = data.users.filter(u => u.role === 'FIELD_WORKER');
+        setWorkers(workerList);
+      }
+    } catch (err) {
+      console.warn('Failed to load users from API:', err);
+    }
+  }, []);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -36,7 +48,8 @@ export const CivicProvider = ({ children }) => {
       }
     };
     loadIssues();
-  }, [currentUser]);
+    loadUsersAndWorkers();
+  }, [currentUser, loadUsersAndWorkers]);
 
   const refreshIssues = async () => {
     try {
@@ -275,18 +288,34 @@ export const CivicProvider = ({ children }) => {
     showToast(`Issue ${issueId} ESCALATED to Headquarters!`, 'warning');
   };
 
-  const addUser = (newUser) => {
+  const addUser = async (newUser) => {
+    try {
+      const data = await userService.createUser(newUser);
+      if (data?.user) {
+        setUsers(prev => [data.user, ...prev]);
+        showToast(`User ${data.user.name} created in MongoDB Atlas`, 'success');
+        loadUsersAndWorkers();
+        return;
+      }
+    } catch (err) {
+      console.warn('Failed to create user via API, adding to state:', err);
+    }
     const userWithId = {
       ...newUser,
-      id: `USR-${100 + users.length + 1}`,
+      id: `USR-${Date.now()}`,
       lastActive: 'Just now'
     };
     setUsers(prev => [userWithId, ...prev]);
-    showToast(`User ${userWithId.name} created successfully`, 'success');
+    showToast(`User ${userWithId.name} created`, 'success');
   };
 
-  const updateUserStatus = (userId, newStatus) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+  const updateUserStatus = async (userId, newStatus) => {
+    try {
+      await userService.updateUser(userId, { status: newStatus });
+    } catch (err) {
+      console.warn('Failed to update user status via API:', err);
+    }
+    setUsers(prev => prev.map(u => (u.id === userId || u._id === userId) ? { ...u, status: newStatus } : u));
     showToast(`User status updated to ${newStatus}`, 'info');
   };
 
