@@ -1,5 +1,8 @@
 import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../../context/AuthContext';
 import { useWorker } from '../../context/WorkerContext';
 import WorkerStatCard from '../../components/worker/WorkerStatCard';
@@ -40,7 +43,7 @@ const ACTIVITY_CONFIG = {
   completed:      { icon: ClipboardCheck, color: 'text-emerald-600',bg: 'bg-emerald-50',label: 'Task Completed'  },
 };
 
-/** Refined Dark Greeting Banner (Matches Citizen Portal Theme) */
+/** Refined Dark Greeting Banner (Matches Citizen & Admin Portals) */
 const GreetingBanner = ({ stats, worker }) => {
   const greeting = getGreeting();
   return (
@@ -214,14 +217,14 @@ const TodaysTasks = ({ tasks }) => {
 
 const NearbyTasksMap = ({ tasks, worker }) => {
   const activeTasks = tasks.filter(t => t.status !== 'RESOLVED' && t.status !== 'resolved');
-  const PRIORITY_COLORS = { HIGH: '#ef4444', High: '#ef4444', CRITICAL: '#dc2626', MEDIUM: '#f59e0b', Medium: '#f59e0b', LOW: '#60a5fa', Low: '#60a5fa' };
+  const center = [19.1145, 72.8710];
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col h-full">
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Nearby Tasks</h2>
-          <p className="text-xs text-slate-500 mt-0.5">{worker?.ward || 'Your Area'}</p>
+          <h2 className="text-sm font-bold text-slate-900">Nearby Tasks Map</h2>
+          <p className="text-xs text-slate-500 mt-0.5">{worker?.ward || 'Ward 12 - Andheri East'}</p>
         </div>
         <Link
           to="/worker/map"
@@ -231,56 +234,53 @@ const NearbyTasksMap = ({ tasks, worker }) => {
         </Link>
       </div>
 
-      <div className="flex-1 relative m-4 rounded-xl overflow-hidden min-h-[240px] bg-gradient-to-br from-slate-50 via-blue-50/30 to-blue-50/40 border border-slate-100">
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="dash-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#e2e8f0" strokeWidth="0.7"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#dash-grid)" />
+      <div className="flex-1 relative m-3 rounded-xl overflow-hidden min-h-[260px] border border-slate-200/80">
+        <MapContainer
+          center={center}
+          zoom={13}
+          scrollWheelZoom={false}
+          style={{ height: '100%', width: '100%' }}
+        >
+          <TileLayer
+            attribution='&copy; OpenStreetMap'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-          <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 5" />
-          <line x1="38%" y1="0" x2="38%" y2="100%" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="8 5" />
-          <line x1="72%" y1="0" x2="72%" y2="100%" stroke="#e2e8f0" strokeWidth="1.2" strokeDasharray="5 7" />
-          <line x1="0" y1="25%" x2="100%" y2="25%" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="5 7" />
-          <line x1="0" y1="75%" x2="100%" y2="75%" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="5 7" />
+          {activeTasks.map((task) => {
+            if (!task.latitude || !task.longitude) return null;
+            let color = '#3b82f6';
+            if (task.priority === 'CRITICAL' || task.status === 'OVERDUE') color = '#ef4444';
+            else if (task.priority === 'HIGH') color = '#f59e0b';
 
-          {activeTasks.map((task, idx) => {
-            const col = PRIORITY_COLORS[task.priority] || '#94a3b8';
-            const mapX = task.location?.mapX || ((idx * 15 + 20) % 90);
-            const mapY = task.location?.mapY || ((idx * 25 + 15) % 90);
+            const icon = L.divIcon({
+              className: 'custom-nearby-marker',
+              html: `<div style="background-color: ${color}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>`,
+              iconSize: [22, 22],
+              iconAnchor: [11, 11]
+            });
+
             return (
-              <g key={task.id}>
-                <circle cx={`${mapX}%`} cy={`${mapY}%`} r="16" fill={col} fillOpacity="0.12" />
-                <circle cx={`${mapX}%`} cy={`${mapY}%`} r="9" fill={col} fillOpacity="0.25" />
-                <circle cx={`${mapX}%`} cy={`${mapY}%`} r="6" fill={col} />
-                <circle cx={`${mapX}%`} cy={`${mapY}%`} r="2.5" fill="white" />
-              </g>
+              <Marker key={task.id} position={[task.latitude, task.longitude]} icon={icon}>
+                <Popup className="custom-leaflet-popup">
+                  <div className="p-1 text-xs font-sans">
+                    <span className="font-bold text-slate-900 block">{task.title}</span>
+                    <span className="text-[10px] text-slate-500 block">{task.location}</span>
+                  </div>
+                </Popup>
+              </Marker>
             );
           })}
-
-          <circle cx="50%" cy="50%" r="18" fill="#6366f1" fillOpacity="0.12" />
-          <circle cx="50%" cy="50%" r="10" fill="#6366f1" />
-          <circle cx="50%" cy="50%" r="4" fill="white" />
-        </svg>
-
-        <div className="absolute" style={{ left: 'calc(50% + 14px)', top: 'calc(50% - 22px)' }}>
-          <span className="text-[10px] font-bold text-blue-700 bg-white px-1.5 py-0.5 rounded-md border border-blue-200 shadow-2xs">
-            You
-          </span>
-        </div>
+        </MapContainer>
       </div>
 
-      <div className="px-5 pb-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500">
+      <div className="px-4 pb-3.5 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500">
         {[
-          { color: 'bg-blue-500', label: 'Your location' },
-          { color: 'bg-red-500',    label: 'High priority'  },
-          { color: 'bg-amber-500',  label: 'Medium'         },
-          { color: 'bg-blue-400',   label: 'Low'            },
+          { color: 'bg-red-500', label: 'Critical / Overdue' },
+          { color: 'bg-amber-500', label: 'High Priority' },
+          { color: 'bg-blue-500', label: 'Standard' },
         ].map(({ color, label }) => (
-          <span key={label} className="flex items-center gap-1.5">
-            <span className={cn('w-2 h-2 rounded-full flex-shrink-0', color)} />
+          <span key={label} className="flex items-center gap-1.5 text-[11px]">
+            <span className={cn('w-2 h-2 rounded-full shrink-0', color)} />
             {label}
           </span>
         ))}

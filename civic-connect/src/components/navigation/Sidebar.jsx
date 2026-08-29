@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
@@ -88,20 +88,24 @@ export const Sidebar = ({ isOpen, toggleSidebar }) => {
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800/80 bg-slate-950 flex-shrink-0">
+        {/* Brand Header — Clicking redirects to Landing Page */}
+        <Link
+          to="/"
+          className="h-16 flex items-center justify-between px-5 border-b border-slate-800/80 bg-slate-950 flex-shrink-0 hover:bg-slate-900/60 transition-colors cursor-pointer group"
+          title="Go to Landing Page"
+        >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/25 shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 group-hover:bg-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/25 shrink-0 transition-colors">
               <Shield className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-white text-base leading-none tracking-tight">CivicConnect</h1>
+              <h1 className="font-bold text-white text-base leading-none tracking-tight group-hover:text-blue-300 transition-colors">CivicConnect</h1>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
                 {role === 'CITIZEN' ? 'CITIZEN PORTAL' : role === 'SUPER_ADMIN' ? 'SUPER ADMIN' : role === 'DEPARTMENT_ADMIN' ? 'DEPT ADMIN' : 'FIELD WORKER'}
               </p>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Navigation Section */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
