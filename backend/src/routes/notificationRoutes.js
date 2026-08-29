@@ -5,6 +5,7 @@ import {
   markAllNotificationsRead,
 } from '../controllers/notificationController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { validateObjectId } from '../middleware/validateObjectId.js';
 
 const router = Router();
 
@@ -28,6 +29,6 @@ router.patch('/read-all', markAllNotificationsRead);
 // PATCH /api/notifications/:id/read
 // Mark a single notification as read.
 // Returns 403 if the notification belongs to a different user.
-router.patch('/:id/read', markNotificationRead);
+router.patch('/:id/read', validateObjectId, markNotificationRead);
 
 export default router;

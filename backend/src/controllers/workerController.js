@@ -2,6 +2,7 @@ import Issue from '../models/Issue.js';
 import { transitionIssueStatus, getIssueTimeline } from '../services/issueService.js';
 import { uploadBeforeImages, uploadAfterImages } from '../services/imageService.js';
 import { STATUS } from '../utils/constants.js';
+import { ISSUE_STATUSES } from '../models/Issue.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -76,8 +77,15 @@ export const getWorkerTasks = async (req, res, next) => {
 
     const filter = workerTaskFilter(req.user);
 
-    // Optional status filter — worker may want to see only their active tasks
+    // VULN-06 fix: only accept a status value that exists in ISSUE_STATUSES.
+    // Raw req.query strings must never be used directly as MongoDB field values.
     if (status) {
+      if (!ISSUE_STATUSES.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid status '${status}'. Valid values: ${ISSUE_STATUSES.join(', ')}`,
+        });
+      }
       filter.status = status;
     }
 
@@ -260,6 +268,16 @@ export const submitProof = async (req, res, next) => {
   try {
     const issueId    = req.params.id;
     const repairNote = req.body.repairNote?.trim() || '';
+
+    // VULN-07 fix: validate repairNote length before any DB/upload work.
+    // IssueHistory.note has maxlength: 1000; hitting that limit would throw a
+    // Mongoose ValidationError which surfaces as an ugly 500 instead of a 400.
+    if (repairNote.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'repairNote must be 1000 characters or fewer',
+      });
+    }
 
     // req.files is populated by multer's fields() middleware in the route.
     // Each field is an array; default to empty array when not provided.

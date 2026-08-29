@@ -38,10 +38,17 @@ export const buildScopeFilter = (user) => {
     case 'SUPER_ADMIN':
       return {};                                          // all issues
 
-    case 'DEPARTMENT_ADMIN':
-      return { department: user.department               // dept ObjectId
-               ? new mongoose.Types.ObjectId(user.department)
-               : null };
+
+    case 'DEPARTMENT_ADMIN': {
+      // VULN-08 fix: guard ObjectId construction — user.department may be a plain
+      // string code (e.g. "ROAD") rather than a valid ObjectId if the data model
+      // was seeded inconsistently. Throwing BSONError here causes a 500.
+      const deptId = user.department;
+      if (!deptId || !mongoose.Types.ObjectId.isValid(deptId)) {
+        return { _id: null }; // no valid dept — guaranteed no-match filter
+      }
+      return { department: new mongoose.Types.ObjectId(deptId) };
+    }
 
     case 'WARD_OFFICER':
       return { ward: user.ward || '__no_ward__' };       // ward string
