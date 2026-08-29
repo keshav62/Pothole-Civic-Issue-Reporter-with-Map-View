@@ -1,4 +1,4 @@
-import Issue, { ISSUE_CATEGORIES, ISSUE_PRIORITIES, ISSUE_STATUSES } from '../models/Issue.js';
+import Issue, { ISSUE_STATUSES } from '../models/Issue.js';
 
 // ─── Allowed fields per role for PATCH ───────────────────────────────────────
 // This is the authoritative whitelist. The frontend cannot update anything
@@ -24,65 +24,13 @@ const pick = (obj, keys) =>
     return acc;
   }, {});
 
-/**
- * Validate that a GeoJSON Point payload is well-formed.
- * Returns an error string or null.
- */
-const validateLocation = (location) => {
-  if (!location || typeof location !== 'object') {
-    return 'location is required';
-  }
-  if (location.type !== 'Point') {
-    return 'location.type must be "Point"';
-  }
-  const coords = location.coordinates;
-  if (!Array.isArray(coords) || coords.length !== 2) {
-    return 'location.coordinates must be [longitude, latitude]';
-  }
-  const [lng, lat] = coords;
-  if (typeof lng !== 'number' || typeof lat !== 'number') {
-    return 'location.coordinates must contain numbers';
-  }
-  if (lng < -180 || lng > 180) {
-    return 'longitude must be between -180 and 180';
-  }
-  if (lat < -90 || lat > 90) {
-    return 'latitude must be between -90 and 90';
-  }
-  return null;
-};
 
 // ─── POST /api/issues ─────────────────────────────────────────────────────────
+// Input is already validated by validateCreateIssue middleware in the router.
 
 export const createIssue = async (req, res, next) => {
   try {
     const { title, description, category, location, address, ward, priority } = req.body;
-
-    // Validate required text fields
-    if (!title?.trim())       return res.status(400).json({ success: false, message: 'title is required' });
-    if (!description?.trim()) return res.status(400).json({ success: false, message: 'description is required' });
-    if (!category)            return res.status(400).json({ success: false, message: 'category is required' });
-
-    if (!ISSUE_CATEGORIES.includes(category)) {
-      return res.status(400).json({
-        success: false,
-        message: `category must be one of: ${ISSUE_CATEGORIES.join(', ')}`,
-      });
-    }
-
-    // Validate GeoJSON location
-    const locationError = validateLocation(location);
-    if (locationError) {
-      return res.status(400).json({ success: false, message: locationError });
-    }
-
-    // Validate optional priority
-    if (priority && !ISSUE_PRIORITIES.includes(priority)) {
-      return res.status(400).json({
-        success: false,
-        message: `priority must be one of: ${ISSUE_PRIORITIES.join(', ')}`,
-      });
-    }
 
     const issue = await Issue.create({
       title:       title.trim(),
@@ -93,7 +41,7 @@ export const createIssue = async (req, res, next) => {
       ward:        ward?.trim()    || '',
       priority:    priority        || 'MEDIUM',
       status:      'REPORTED',
-      reportedBy:  req.user._id,   // always from authenticated session — never from body
+      reportedBy:  req.user._id,   // always from the authenticated session — never from body
     });
 
     return res.status(201).json({
