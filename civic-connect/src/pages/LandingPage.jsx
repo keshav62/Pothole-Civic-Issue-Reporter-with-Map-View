@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GoogleAuthModal } from '../components/auth/GoogleAuthModal';
 import { Button } from '../components/common/Button';
 import {
   Shield,
@@ -40,17 +39,10 @@ import {
 export const LandingPage = () => {
   const navigate = useNavigate();
   const { loginAs } = useAuth();
-  const [googleAuthOpen, setGoogleAuthOpen] = useState(false);
-  const [googleAuthMode, setGoogleAuthMode] = useState('SIGN_IN');
 
   const handleLaunchRole = (roleKey, redirectPath) => {
     loginAs(roleKey);
     navigate(redirectPath);
-  };
-
-  const openGoogleSignIn = () => {
-    setGoogleAuthMode('SIGN_IN');
-    setGoogleAuthOpen(true);
   };
 
   return (
@@ -484,10 +476,10 @@ export const LandingPage = () => {
                 <div className="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
                   <Lock className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Security & SSO</span>
-                <h3 className="text-lg font-black text-white">Firebase Google SSO</h3>
+                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Security & Access</span>
+                <h3 className="text-lg font-black text-white">Encrypted Authentication</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Verified official authentication via Firebase SSO and Google Auth modal, ensuring strict role-based access control (RBAC).
+                  Verified official authentication via JWT-based secure sessions, ensuring strict role-based access control (RBAC).
                 </p>
               </div>
 
@@ -594,12 +586,6 @@ export const LandingPage = () => {
         </div>
       </footer>
 
-      {/* Firebase Google Auth Modal */}
-      <GoogleAuthModal
-        isOpen={googleAuthOpen}
-        onClose={() => setGoogleAuthOpen(false)}
-        defaultMode={googleAuthMode}
-      />
     </div>
   );
 };

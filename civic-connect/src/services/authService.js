@@ -21,51 +21,6 @@ const authService = {
   },
 
   /**
-   * Creates or verifies a session on the backend (MongoDB) using Firebase user / profile parameters.
-   *
-   * @param {Object} firebaseUser The Firebase user or mock user object
-   * @param {Object} profileData Profile details (name, email, role, department, ward, phone, etc.)
-   */
-  async createSession(firebaseUser = {}, profileData = {}) {
-    let token = 'mock-id-token-email';
-    try {
-      if (firebaseUser && typeof firebaseUser.getIdToken === 'function') {
-        token = await firebaseUser.getIdToken();
-      }
-    } catch (err) {
-      console.warn('Failed to retrieve token from firebaseUser:', err);
-    }
-
-    if (token) {
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
-      localStorage.setItem('civicconnect_token', token);
-    }
-
-    // Merge email and name into body payload
-    const bodyPayload = {
-      ...profileData,
-      email: profileData.email || firebaseUser?.email || '',
-      name: profileData.name || firebaseUser?.displayName || ''
-    };
-
-    const options = {
-      method: 'POST',
-      body: JSON.stringify(bodyPayload),
-      customToken: token
-    };
-
-    try {
-      const json = await apiFetch('/api/auth/session', options);
-      const user = json.data.user;
-      localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
-      return user;
-    } catch (error) {
-      console.warn('Backend session creation API error:', error);
-      throw error;
-    }
-  },
-
-  /**
    * Fetches the current user's profile from the backend API.
    */
   async fetchProfile() {
@@ -74,20 +29,40 @@ const authService = {
   },
 
   /**
-   * Logs in a user locally.
+   * Logs in a user.
    */
-  async loginUser({ email, password, role }) {
-    const user = { email, role: role || 'CITIZEN' };
+  async loginUser({ email, password }) {
+    const options = {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    };
+    
+    const json = await apiFetch('/api/auth/login', options);
+    const { token, user } = json.data;
+    
+    localStorage.setItem('civicconnect_token', token);
+    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
     localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
+    
     return user;
   },
 
   /**
-   * Registers a user locally.
+   * Registers a user.
    */
-  async registerUser({ name, email, password, role, department, phone }) {
-    const user = { name, email, role: role || 'CITIZEN', department, phone };
+  async registerUser({ name, email, password, role, department, ward, phone }) {
+    const options = {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password, role, department, ward, phone })
+    };
+    
+    const json = await apiFetch('/api/auth/register', options);
+    const { token, user } = json.data;
+    
+    localStorage.setItem('civicconnect_token', token);
+    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
     localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
+    
     return user;
   },
 

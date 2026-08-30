@@ -1,7 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { MOCK_USERS } from '../data/mockUsers';
-import { auth, firebaseSignOut } from '../config/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
 import authService from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -15,36 +13,26 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
   });
-  const [loading, setLoading] = useState(false);
-  const sessionCreated = useRef(false);
+  const [loading, setLoading] = useState(true);
 
-  // Listen to Firebase auth state changes
+  // Restore session from backend on mount if we have a user in localStorage
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        console.log("Firebase Auth User Detected:", firebaseUser.email);
-        try {
-          const idToken = await firebaseUser.getIdToken();
-          localStorage.setItem('civic_connect_token', idToken);
-          localStorage.setItem('civicconnect_token', idToken);
-        } catch (err) {
-          console.error("Failed to fetch Firebase ID token:", err);
-        }
-        if (!sessionCreated.current && !authService.getCurrentUser()) {
-          try {
-            sessionCreated.current = true;
-            const backendUser = await authService.createSession(firebaseUser);
-            setCurrentUser(backendUser);
-          } catch (error) {
-            console.error("Failed to create backend session:", error);
-            sessionCreated.current = false;
+    const initAuth = async () => {
+      try {
+        if (authService.getCurrentUser()) {
+          const profile = await authService.fetchProfile();
+          if (profile && profile.user) {
+            setCurrentUser(profile.user);
           }
         }
-      } else {
-        sessionCreated.current = false;
+      } catch (err) {
+        console.warn("Failed to fetch fresh profile, you may need to log in again.", err);
+        // If 401, we might want to log out, but we'll leave it simple for now
+      } finally {
+        setLoading(false);
       }
-    });
-    return () => unsubscribe();
+    };
+    initAuth();
   }, []);
 
   const login = useCallback(async (credentials) => {
@@ -73,7 +61,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       await authService.logoutUser();
-      firebaseSignOut();
       setCurrentUser(null);
     } finally {
       setLoading(false);
@@ -90,101 +77,6 @@ export const AuthProvider = ({ children }) => {
     if (targetUser) {
       setCurrentUser(targetUser);
     }
-  };
-
-  const loginWithGmail = async (email, role = 'SUPER_ADMIN', customName = null, customPhoto = null) => {
-    if (auth.currentUser) {
-      try {
-        const user = await authService.createSession(auth.currentUser);
-        if (user && user.role) {
-          setCurrentUser(user);
-          sessionCreated.current = true;
-          return user;
-        }
-      } catch (error) {
-        console.error("Backend sync failed in loginWithGmail, falling back to mock:", error);
-      }
-    }
-
-    const existing = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    const roleMap = {
-      SUPER_ADMIN: 'Super Admin',
-      DEPARTMENT_ADMIN: 'Department Admin',
-      WARD_OFFICER: 'Ward Officer',
-      FIELD_WORKER: 'Field Worker'
-    };
-
-    const displayName = customName || (existing ? existing.name : email.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
-    const photo = customPhoto || (existing ? existing.avatar : `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80`);
-
-    const user = {
-      id: existing ? existing.id : `USR-FB-${Date.now()}`,
-      name: displayName,
-      email: email,
-      role: role,
-      roleLabel: roleMap[role] || 'Authority Official',
-      department: existing ? existing.department : 'Road Maintenance',
-      ward: existing ? existing.ward : 'Ward 15',
-      status: 'ACTIVE',
-      avatar: photo,
-      lastActive: 'Just now',
-      isFirebaseGoogleAuth: true
-    };
-
-    if (!existing) {
-      MOCK_USERS.unshift(user);
-    }
-
-    setCurrentUser(user);
-    return user;
-  };
-
-  const signupWithGmail = async ({ name, email, role, department, ward, phone, photoURL }) => {
-    if (auth.currentUser) {
-      try {
-        const user = await authService.createSession(auth.currentUser, {
-          name,
-          role,
-          department: role === 'CITIZEN' ? null : department,
-          ward,
-          phone
-        });
-        if (user && user.role) {
-          setCurrentUser(user);
-          sessionCreated.current = true;
-          return user;
-        }
-      } catch (error) {
-        console.error("Backend sync failed in signupWithGmail, falling back to mock:", error);
-      }
-    }
-
-    const roleMap = {
-      SUPER_ADMIN: 'Super Admin',
-      DEPARTMENT_ADMIN: 'Department Admin',
-      WARD_OFFICER: 'Ward Officer',
-      FIELD_WORKER: 'Field Worker'
-    };
-
-    const newUser = {
-      id: `USR-FB-${Date.now()}`,
-      name: name || email.split('@')[0],
-      email: email,
-      phone: phone || '+91 98765 43210',
-      role: role || 'DEPARTMENT_ADMIN',
-      roleLabel: roleMap[role] || 'Authority Official',
-      department: department || 'Road Maintenance',
-      ward: ward || 'Ward 15',
-      status: 'ACTIVE',
-      avatar: photoURL || `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80`,
-      lastActive: 'Just now',
-      isFirebaseGoogleAuth: true
-    };
-
-    MOCK_USERS.unshift(newUser);
-    setCurrentUser(newUser);
-    return newUser;
   };
 
   const switchRole = (role) => {
@@ -212,8 +104,6 @@ export const AuthProvider = ({ children }) => {
       logout,
       register,
       loginAs,
-      loginWithGmail,
-      signupWithGmail,
       switchRole,
       updateCurrentUser
     }),
