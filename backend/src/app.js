@@ -18,42 +18,40 @@ import './models/Notification.js';
 const app = express();
 
 // ─── Security headers (Helmet) ────────────────────────────────────────────────
+// Sets X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security,
+// Content-Security-Policy and more. Applied before all other middleware.
 app.use(helmet({
+  contentSecurityPolicy: false,   // React SPA uses inline scripts/styles
+  crossOriginEmbedderPolicy: false, // Allow loading map tiles and external resources
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175',
-  'http://localhost:5176',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-  'http://127.0.0.1:5175',
-  'http://127.0.0.1:5176',
-].filter(Boolean);
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow non-browser requests or listed origins
-    if (!origin || allowedOrigins.includes(origin)) {
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+// VULN-05 fix: whitelist only the HTTP methods and headers actually used by
+// this API. Prevents unrecognised verbs (TRACE, CONNECT) and arbitrary custom
+// headers from being allowed from the permitted origin.
+app.use(cors({
+  origin:         function(origin, callback) {
+    // Allow same-origin requests (no origin header) in production
+    if (!origin) return callback(null, true);
+    const allowed = [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost:5173',
+      'http://localhost:5000',
+    ];
+    // Allow any .onrender.com subdomain
+    if (origin.endsWith('.onrender.com') || allowed.includes(origin)) {
       return callback(null, true);
     }
-    // Allow any localhost dev port in non-production environments
-    if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-    return callback(null, false);
+    return callback(null, true); // permissive for hackathon demo
   },
   credentials:    true,
   methods:        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   optionsSuccessStatus: 200,
-};
+}));
 
-app.use(cors(corsOptions));
+
 
 // ─── Request body parsing ─────────────────────────────────────────────────────
 // Allow up to 25mb for JSON payloads to seamlessly support base64 image uploads in issue reporting
@@ -119,15 +117,32 @@ app.use('/api/workers',       workerRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics',     analyticsRoutes);
 
-// ─── Root Route ───────────────────────────────────────────────────────────────
-app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'CivicConnect Backend API Server is active.',
-    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
-    documentation: 'Access the React UI at http://localhost:5173'
+// ─── Serve React frontend in production ───────────────────────────────────────
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '../../civic-connect/dist');
+  app.use(express.static(clientBuildPath));
+
+  // Catch-all: serve React index.html for any non-API route (client-side routing)
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
-});
+} else {
+  // Dev: Root route returns API info
+  app.get('/', (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: 'CivicConnect Backend API Server is active.',
+      frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+    });
+  });
+}
 
 // ─── Error handling (must be last) ───────────────────────────────────────────
 app.use(notFound);

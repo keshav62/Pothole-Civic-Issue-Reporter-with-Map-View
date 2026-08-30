@@ -30,25 +30,32 @@ export const TRANSITION_MAP = Object.freeze({
       description:  'Admin/Officer verifies the issue is legitimate',
     },
     {
+      to:           STATUS.ACCEPTED,
+      allowedRoles: [ROLES.FIELD_WORKER, ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
+      description:  'Field worker accepts the reported task',
+    },
+    {
+      to:           STATUS.IN_PROGRESS,
+      allowedRoles: [ROLES.FIELD_WORKER, ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
+      description:  'Field worker starts work directly on reported issue',
+    },
+    {
       to:           STATUS.REJECTED,
       allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.WARD_OFFICER],
       description:  'Admin/Officer rejects the issue (duplicate, invalid, or out of scope)',
     },
   ],
 
-  /**
-   * VERIFIED → ASSIGNED
-   * The issue has been assigned to a department and a specific field worker.
-   * Both assignedWorker and department must be set before this transition.
-   *
-   * VERIFIED → REJECTED
-   * Even after initial verification, further review may reject it.
-   */
   [STATUS.VERIFIED]: [
     {
       to:           STATUS.ASSIGNED,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.FIELD_WORKER],
       description:  'Admin/Dept Admin assigns a department and field worker to the issue',
+    },
+    {
+      to:           STATUS.ACCEPTED,
+      allowedRoles: [ROLES.FIELD_WORKER, ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
+      description:  'Field worker accepts verified issue',
     },
     {
       to:           STATUS.REJECTED,
@@ -57,41 +64,42 @@ export const TRANSITION_MAP = Object.freeze({
     },
   ],
 
-  /**
-   * ASSIGNED → ACCEPTED
-   * The assigned field worker acknowledges the task and commits to handling it.
-   * Only the assigned worker may accept — not any worker.
-   */
   [STATUS.ASSIGNED]: [
     {
       to:           STATUS.ACCEPTED,
-      allowedRoles: [ROLES.FIELD_WORKER],
+      allowedRoles: [ROLES.FIELD_WORKER, ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
       description:  'Assigned field worker accepts the task',
+    },
+    {
+      to:           STATUS.IN_PROGRESS,
+      allowedRoles: [ROLES.FIELD_WORKER, ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
+      description:  'Field worker starts task directly',
     },
   ],
 
-  /**
-   * ACCEPTED → IN_PROGRESS
-   * The field worker has arrived on-site and started the repair / resolution.
-   */
   [STATUS.ACCEPTED]: [
     {
       to:           STATUS.IN_PROGRESS,
-      allowedRoles: [ROLES.FIELD_WORKER],
+      allowedRoles: [ROLES.FIELD_WORKER, ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
       description:  'Field worker starts work on-site',
+    },
+    {
+      to:           STATUS.PENDING_CITIZEN_VERIFICATION,
+      allowedRoles: [ROLES.FIELD_WORKER, ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
+      description:  'Field worker completes accepted task',
     },
   ],
 
-  /**
-   * IN_PROGRESS → PENDING_CITIZEN_VERIFICATION
-   * The field worker has completed the work and uploaded before/after proof.
-   * The issue now waits for the citizen who reported it to confirm the fix.
-   */
   [STATUS.IN_PROGRESS]: [
     {
       to:           STATUS.PENDING_CITIZEN_VERIFICATION,
-      allowedRoles: [ROLES.FIELD_WORKER],
+      allowedRoles: [ROLES.FIELD_WORKER, ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
       description:  'Field worker marks the task as done; citizen verification pending',
+    },
+    {
+      to:           STATUS.RESOLVED,
+      allowedRoles: [ROLES.FIELD_WORKER, ROLES.SUPER_ADMIN, ROLES.DEPARTMENT_ADMIN],
+      description:  'Task resolved directly',
     },
   ],
 

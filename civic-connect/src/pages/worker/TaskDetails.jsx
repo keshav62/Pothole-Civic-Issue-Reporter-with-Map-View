@@ -32,7 +32,7 @@ export const TaskDetails = () => {
   const navigate = useNavigate();
 
   const { tasks, updateTaskStatus } = useWorker();
-  const { issues } = useCivic();
+  const { issues, updateIssueStatus } = useCivic();
   const { showToast } = React.useContext(ToastContext);
 
   const [fetchedTask, setFetchedTask] = useState(null);
@@ -128,19 +128,28 @@ export const TaskDetails = () => {
   const afterImg = task.afterImage || task.images?.[1];
 
   const handleAccept = async () => {
-    setLocalStatus('ACCEPTED');
-    await updateTaskStatus(task._id || task.id || task.issueId, 'ACCEPTED');
-    if (showToast) showToast("Task accepted successfully!", "success");
+    const targetId = task._id || task.id || task.issueId || cleanId;
+    setLocalStatus('IN_PROGRESS');
+    if (setFetchedTask) setFetchedTask(prev => prev ? { ...prev, status: 'IN_PROGRESS' } : prev);
+    await updateTaskStatus(targetId, 'IN_PROGRESS');
+    if (updateIssueStatus) await updateIssueStatus(targetId, 'IN_PROGRESS');
+    if (showToast) showToast("Task accepted & started! Proceed to upload resolution proof.", "success");
+    navigate(`/worker/tasks/${targetId}/upload`);
   };
 
   const handleStart = async () => {
+    const targetId = task._id || task.id || task.issueId || cleanId;
     setLocalStatus('IN_PROGRESS');
-    await updateTaskStatus(task._id || task.id || task.issueId, 'IN_PROGRESS');
-    if (showToast) showToast("Task started. Timeline updated.", "success");
+    if (setFetchedTask) setFetchedTask(prev => prev ? { ...prev, status: 'IN_PROGRESS' } : prev);
+    await updateTaskStatus(targetId, 'IN_PROGRESS');
+    if (updateIssueStatus) await updateIssueStatus(targetId, 'IN_PROGRESS');
+    if (showToast) showToast("Task started! Proceed to upload resolution proof.", "success");
+    navigate(`/worker/tasks/${targetId}/upload`);
   };
 
   const handleUploadProof = () => {
-    navigate(`/worker/tasks/${task._id || task.id || task.issueId}/upload`);
+    const targetId = task._id || task.id || task.issueId || cleanId;
+    navigate(`/worker/tasks/${targetId}/upload`);
   };
 
   return (

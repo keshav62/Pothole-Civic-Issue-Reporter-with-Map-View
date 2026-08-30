@@ -9,6 +9,9 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    },
     hmr: {
       // Disable the error overlay so PostCSS errors don't block the browser
       overlay: false,

@@ -55,6 +55,7 @@ export const UploadProof = () => {
     return () => clearInterval(timer);
   }, []);
 
+
   const handleImageChange = (e) => {
     setError('');
     const file = e.target.files?.[0];

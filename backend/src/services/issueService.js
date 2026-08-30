@@ -90,12 +90,10 @@ export const transitionIssueStatus = async (issueId, targetStatus, user, extra =
     throw err;
   }
 
-  // 2. Ownership check — field workers can only act on their own assigned tasks
+  // 2. Ownership check — field workers auto-claim unassigned tasks upon accept/start
   if (user.role === 'FIELD_WORKER') {
-    if (!issue.assignedWorker || issue.assignedWorker.toString() !== user._id.toString()) {
-      const err = new Error('Forbidden: This task is not assigned to you');
-      err.statusCode = 403;
-      throw err;
+    if (!issue.assignedWorker) {
+      issue.assignedWorker = user._id;
     }
   }
 

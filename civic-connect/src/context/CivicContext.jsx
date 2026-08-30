@@ -100,8 +100,9 @@ export const CivicProvider = ({ children }) => {
       try {
         const data = await issueService.fetchIssues({ limit: 100 });
         if (data?.issues?.length) {
-          setIssues(data.issues);
-          const liveNotifs = generateLiveNotifications(data.issues);
+          const normalizedIssues = data.issues.map(iss => ({ ...iss, id: iss.id || iss._id }));
+          setIssues(normalizedIssues);
+          const liveNotifs = generateLiveNotifications(normalizedIssues);
           if (liveNotifs.length > 0) {
             setNotifications(liveNotifs);
           }
@@ -114,24 +115,20 @@ export const CivicProvider = ({ children }) => {
       }
     };
     loadIssues();
-<<<<<<< HEAD
-    loadUsersAndWorkers();
+    if (currentUser) {
+      loadUsersAndWorkers();
+    }
 
     const interval = setInterval(loadIssues, 10000);
     return () => clearInterval(interval);
   }, [currentUser, loadUsersAndWorkers, generateLiveNotifications]);
-=======
-    if (currentUser) {
-      loadUsersAndWorkers();
-    }
-  }, [currentUser, loadUsersAndWorkers]);
->>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
   const refreshIssues = async () => {
     try {
       const data = await issueService.fetchIssues({ limit: 100 });
       if (data?.issues?.length) {
-        setIssues(data.issues);
+        const normalizedIssues = data.issues.map(iss => ({ ...iss, id: iss.id || iss._id }));
+        setIssues(normalizedIssues);
       }
     } catch (err) {
       console.warn('Failed to refresh issues from API:', err);
@@ -268,10 +265,11 @@ export const CivicProvider = ({ children }) => {
       console.warn('API call failed, updating locally:', err);
     }
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId || issue._id === issueId) {
+      const isMatch = issue.id === issueId || issue._id === issueId || issue.issueId === issueId || String(issue._id) === String(issueId);
+      if (isMatch) {
         const newTimeline = [
           ...(issue.timeline || []),
-          { status: newStatus, title: `Status changed to ${newStatus}`, date: new Date().toLocaleString(), actor: 'System' }
+          { status: newStatus, title: `Status changed to ${newStatus}`, date: new Date().toLocaleString(), actor: 'Field Worker' }
         ];
         return { ...issue, status: newStatus, timeline: newTimeline };
       }
@@ -282,7 +280,8 @@ export const CivicProvider = ({ children }) => {
 
   const updateIssueImages = (issueId, beforeImage, afterImage) => {
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId || issue._id === issueId) {
+      const isMatch = issue.id === issueId || issue._id === issueId || issue.issueId === issueId || String(issue._id) === String(issueId);
+      if (isMatch) {
         return {
           ...issue,
           images: {
@@ -302,10 +301,11 @@ export const CivicProvider = ({ children }) => {
       console.warn('API call failed, updating locally:', err);
     }
     setIssues(prev => prev.map(issue => {
-      if (issue.id === issueId || issue._id === issueId) {
+      const isMatch = issue.id === issueId || issue._id === issueId || issue.issueId === issueId || String(issue._id) === String(issueId);
+      if (isMatch) {
         const newTimeline = [
           ...(issue.timeline || []),
-          { status: 'IN_PROGRESS', title: 'Work Started by Worker', date: new Date().toLocaleString(), actor: issue.assignedWorker || 'Worker' }
+          { status: 'IN_PROGRESS', title: 'Work Started by Field Worker', date: new Date().toLocaleString(), actor: 'Field Worker' }
         ];
         return { ...issue, status: 'IN_PROGRESS', timeline: newTimeline };
       }

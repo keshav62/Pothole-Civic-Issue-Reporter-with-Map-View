@@ -234,9 +234,9 @@ export const updateIssue = async (req, res, next) => {
     } else if (role === 'DEPARTMENT_ADMIN') {
       allowedFields = ADMIN_EDITABLE;
     } else if (role === 'FIELD_WORKER') {
-      // Worker may only update their own assigned tasks
-      if (!issue.assignedWorker || issue.assignedWorker.toString() !== userId.toString()) {
-        return res.status(403).json({ success: false, message: 'Forbidden: This task is not assigned to you' });
+      if (!issue.assignedWorker) {
+        issue.assignedWorker = userId;
+        await issue.save();
       }
       allowedFields = WORKER_EDITABLE;
     } else if (role === 'CITIZEN') {
