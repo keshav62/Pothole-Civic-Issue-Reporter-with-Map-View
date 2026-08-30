@@ -67,6 +67,13 @@ export const apiFetch = async (path, options = {}) => {
 
   // Throw error for non-2xx
   if (!response.ok || data.success === false) {
+    if (response.status === 401) {
+      localStorage.removeItem('civicconnect_token');
+      localStorage.removeItem('AUTH_TOKEN');
+      localStorage.removeItem('civic_connect_user');
+      localStorage.removeItem('AUTH_USER');
+    }
+    
     throw {
       status: response.status,
       message: data.message || 'An error occurred',
