@@ -29,7 +29,26 @@ const authService = {
   },
 
   /**
-   * Logs in a user.
+   * Log in via Demo Mode
+   */
+  async demoLogin(role) {
+    const options = {
+      method: 'POST',
+      body: JSON.stringify({ role })
+    };
+    
+    const json = await apiFetch('/api/auth/demo-login', options);
+    const { token, user } = json.data;
+    
+    localStorage.setItem('civicconnect_token', token);
+    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
+    
+    return { token, user };
+  },
+
+  /**
+   * Log in with Email & Password
    */
   async loginUser({ email, password }) {
     const options = {

@@ -147,3 +147,47 @@ export const getMe = (req, res) => {
     },
   });
 };
+
+/**
+ * @desc    Demo login to get a real JWT for a mock role
+ * @route   POST /api/auth/demo-login
+ * @access  Public
+ */
+export const demoLogin = async (req, res, next) => {
+  try {
+    const { role } = req.body;
+    const requestedRole = role || 'CITIZEN';
+    const email = `demo-${requestedRole.toLowerCase()}@civicconnect.mock`;
+    
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        name: `Demo ${requestedRole}`,
+        email,
+        password: 'demoPassword123!',
+        role: requestedRole,
+        department: requestedRole === 'DEPARTMENT_ADMIN' ? 'Roads & Highways' : null,
+        ward: 'Ward 1',
+        phone: '555-0199'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Demo authentication successful for ${requestedRole}`,
+      data: {
+        token: generateToken(user._id),
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          photoURL: user.photoURL,
+          isActive: user.isActive,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

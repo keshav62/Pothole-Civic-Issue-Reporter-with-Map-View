@@ -67,24 +67,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const loginAs = (userOrRoleId) => {
-    let targetUser = null;
-    if (typeof userOrRoleId === 'string') {
-      targetUser = MOCK_USERS.find(u => u.role === userOrRoleId || u.id === userOrRoleId);
-    } else {
-      targetUser = userOrRoleId;
+  const loginAs = useCallback(async (userOrRoleId) => {
+    setLoading(true);
+    try {
+      let role = userOrRoleId;
+      if (typeof userOrRoleId === 'string') {
+        const mockMatch = MOCK_USERS.find(u => u.id === userOrRoleId);
+        if (mockMatch) role = mockMatch.role;
+      } else if (userOrRoleId && userOrRoleId.role) {
+        role = userOrRoleId.role;
+      }
+      
+      const { user } = await authService.demoLogin(role);
+      setCurrentUser(user);
+    } catch (err) {
+      console.error("Demo login failed", err);
+    } finally {
+      setLoading(false);
     }
-    if (targetUser) {
-      setCurrentUser(targetUser);
-    }
-  };
+  }, []);
 
-  const switchRole = (role) => {
-    const matchingUser = MOCK_USERS.find(u => u.role === role);
-    if (matchingUser) {
-      setCurrentUser(matchingUser);
-    }
-  };
+  const switchRole = useCallback(async (role) => {
+    await loginAs(role);
+  }, [loginAs]);
 
   const updateCurrentUser = useCallback((user) => {
     setCurrentUser(user);

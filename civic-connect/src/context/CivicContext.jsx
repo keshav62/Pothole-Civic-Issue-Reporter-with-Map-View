@@ -97,6 +97,8 @@ export const CivicProvider = ({ children }) => {
 
   useEffect(() => {
     const loadIssues = async () => {
+      if (!currentUser) return; // Only fetch if authenticated
+
       try {
         const data = await issueService.fetchIssues({ limit: 100 });
         if (data?.issues?.length) {
@@ -114,8 +116,8 @@ export const CivicProvider = ({ children }) => {
         setIssues(MOCK_ISSUES);
       }
     };
-    loadIssues();
     if (currentUser) {
+      loadIssues();
       loadUsersAndWorkers();
     }
 
