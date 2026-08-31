@@ -114,18 +114,13 @@ export const CivicProvider = ({ children }) => {
       }
     };
     loadIssues();
-<<<<<<< HEAD
-    loadUsersAndWorkers();
+    if (currentUser) {
+      loadUsersAndWorkers();
+    }
 
     const interval = setInterval(loadIssues, 10000);
     return () => clearInterval(interval);
   }, [currentUser, loadUsersAndWorkers, generateLiveNotifications]);
-=======
-    if (currentUser) {
-      loadUsersAndWorkers();
-    }
-  }, [currentUser, loadUsersAndWorkers]);
->>>>>>> 8ac4962db56f74d0175fdd10612f3967b108d442
 
   const refreshIssues = async () => {
     try {
